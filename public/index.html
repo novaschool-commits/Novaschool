@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova School — Online School, Grades 1–12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,500;1,9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1B2A3C; --ink-soft:#4A5768; --paper:#F5F4EF; --paper-alt:#EBE9E1; --card:#FFFFFF; --line:#DCD9CE;
+  --coral:#E8542A; --coral-dark:#C4431E; --indigo:#3B4CCA; --green:#0F9D6C; --magenta:#C2408A; --amber:#D98F00; --teal:#1B8AA0;
+  --radius:14px; --shadow: 0 1px 2px rgba(27,42,60,.06), 0 8px 24px -12px rgba(27,42,60,.18);
+  --display:'Fraunces',serif; --body:'Inter',sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--body); line-height:1.5; -webkit-font-smoothing:antialiased;}
+h1,h2,h3,h4{font-family:var(--display); margin:0; font-weight:600; letter-spacing:-.01em;}
+p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit; cursor:pointer;} img,svg{display:block;}
+:focus-visible{outline:2.5px solid var(--indigo); outline-offset:2px; border-radius:4px;}
+.mono{font-family:var(--mono);}
+.screen{display:none;} .screen.active{display:block;}
+.wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+.eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
+.eyebrow::before{content:''; width:14px; height:1.5px; background:currentColor; display:inline-block;}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 22px; border-radius:999px; border:1.5px solid transparent; font-weight:600; font-size:15px; transition:transform .15s ease, background .15s ease, border-color .15s ease;}
+.btn:active{transform:scale(.97);} .btn:disabled{opacity:.55; cursor:default;}
+.btn-primary{background:var(--coral); color:#fff;} .btn-primary:hover{background:var(--coral-dark);}
+.btn-ink{background:var(--ink); color:#fff;} .btn-ink:hover{background:#0f1c29;}
+.btn-outline{background:transparent; border-color:var(--line); color:var(--ink);} .btn-outline:hover{border-color:var(--ink);}
+.btn-sm{padding:8px 14px; font-size:13.5px; border-radius:999px;}
+.icon{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+
+/* LANDING */
+.nav{position:sticky; top:0; z-index:40; background:rgba(245,244,239,.88); backdrop-filter:blur(10px); border-bottom:1px solid var(--line);}
+.nav-inner{display:flex; align-items:center; justify-content:space-between; padding:18px 0;}
+.brand{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:21px;}
+.brand-mark{width:30px; height:30px; border-radius:8px; background:var(--ink); position:relative; overflow:hidden; flex-shrink:0;}
+.brand-mark span{position:absolute; inset:0; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr;}
+.brand-mark span i{display:block;} .brand-mark span i:nth-child(1){background:var(--coral);} .brand-mark span i:nth-child(2){background:var(--amber);}
+.brand-mark span i:nth-child(3){background:var(--teal);} .brand-mark span i:nth-child(4){background:var(--magenta);}
+.nav-links{display:flex; align-items:center; gap:32px; font-size:14.5px; font-weight:500; color:var(--ink-soft);}
+.nav-links a:hover{color:var(--ink);} .nav-cta{display:flex; gap:10px; align-items:center;}
+.hero{padding:76px 0 40px;} .hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center;}
+.hero h1{font-size:clamp(34px,4.6vw,58px); line-height:1.04;} .hero h1 em{font-style:italic; color:var(--coral);}
+.hero-sub{margin-top:20px; font-size:17.5px; color:var(--ink-soft); max-width:46ch; line-height:1.6;}
+.hero-ctas{display:flex; gap:12px; margin-top:30px; flex-wrap:wrap;}
+.hero-meta{margin-top:26px; display:flex; gap:22px; font-size:13px; color:var(--ink-soft); font-family:var(--mono);}
+.hero-meta b{color:var(--ink); font-family:var(--body); font-weight:700;}
+.rail-card{background:var(--card); border-radius:20px; box-shadow:var(--shadow); padding:22px; border:1px solid var(--line);}
+.rail-head{display:flex; justify-content:space-between; align-items:baseline; padding:2px 6px 14px; border-bottom:1px dashed var(--line);}
+.rail-head .day{font-family:var(--display); font-weight:700; font-size:19px;} .rail-head .date{font-family:var(--mono); font-size:12.5px; color:var(--ink-soft);}
+.rail{display:flex; flex-direction:column; gap:8px; padding-top:14px;}
+.rail-block{display:grid; grid-template-columns:64px 1fr auto; align-items:center; gap:12px; padding:12px 12px; border-radius:10px; background:var(--paper-alt);
+  opacity:0; transform:translateY(8px); animation:railIn .5s ease forwards; border-left:4px solid var(--subj, var(--indigo));}
+.rail-block .t{font-family:var(--mono); font-size:12px; color:var(--ink-soft);} .rail-block .s{font-weight:600; font-size:14.5px;}
+.rail-block .r{font-family:var(--mono); font-size:11px; color:var(--ink-soft);}
+.rail-block.break{background:transparent; border-left-color:var(--line); opacity:.6;} .rail-block.break .s{font-weight:500; color:var(--ink-soft); font-style:italic;}
+@keyframes railIn{to{opacity:1; transform:translateY(0);}}
+@media (prefers-reduced-motion: reduce){.rail-block{animation:none; opacity:1; transform:none;}}
+.section{padding:88px 0;} .section-head{max-width:640px; margin-bottom:44px;} .section-head h2{font-size:clamp(26px,3vw,38px); margin-top:12px;}
+.section-head p{margin-top:14px; color:var(--ink-soft); font-size:16px; line-height:1.6;}
+.feature-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+.feature{background:var(--card); padding:30px 26px;} .feature .fi{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:18px;}
+.feature h3{font-size:17px; font-weight:600; font-family:var(--body);} .feature p{margin-top:8px; font-size:14px; color:var(--ink-soft); line-height:1.55;}
+.week{background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:auto; box-shadow:var(--shadow);}
+.week table{width:100%; border-collapse:collapse; min-width:760px;}
+.week th{text-align:left; font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); padding:14px 16px; border-bottom:1px solid var(--line); background:var(--paper-alt); position:sticky; top:0;}
+.week td{padding:10px 16px; border-bottom:1px solid var(--line); vertical-align:top;} .week tr:last-child td{border-bottom:none;}
+.chip{display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:12.5px; font-weight:600; color:#fff;}
+.roles-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+.role-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:26px 22px; transition:border-color .15s, transform .15s;}
+.role-card:hover{border-color:var(--role-c); transform:translateY(-3px);}
+.role-card .ri{width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:var(--role-c); color:#fff; margin-bottom:16px;}
+.role-card h3{font-size:17px; font-family:var(--body); font-weight:700;} .role-card p{margin-top:8px; font-size:13.5px; color:var(--ink-soft); line-height:1.55; min-height:64px;}
+.role-card .go{margin-top:14px; font-size:13px; font-weight:600; color:var(--role-c); display:flex; align-items:center; gap:6px;}
+.cta-band{background:var(--ink); border-radius:20px; padding:56px 48px; display:flex; align-items:center; justify-content:space-between; gap:24px; color:#fff; flex-wrap:wrap;}
+.cta-band h2{color:#fff; font-size:clamp(24px,3vw,32px); max-width:20ch;} .cta-band p{color:#B9C2CE; margin-top:10px; font-size:15px;}
+footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
+.foot-inner{display:flex; justify-content:space-between; align-items:center; font-size:13.5px; color:var(--ink-soft); flex-wrap:wrap; gap:12px;}
+
+/* LOGIN */
+.login-shell{min-height:100vh; display:grid; grid-template-columns:.95fr 1.05fr;}
+.login-side{background:var(--ink); color:#fff; padding:52px; display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden;}
+.login-side .quote{font-family:var(--display); font-style:italic; font-size:26px; line-height:1.4; max-width:34ch;} .login-side .quote span{color:var(--amber);}
+.login-side .back{font-size:14px; color:#B9C2CE; display:inline-flex; align-items:center; gap:6px;}
+.login-side .rail-card{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.14);}
+.login-side .rail-head{border-bottom-color:rgba(255,255,255,.14);} .login-side .rail-head .day{color:#fff;} .login-side .rail-block{background:rgba(255,255,255,.06);}
+.login-main{display:flex; align-items:center; justify-content:center; padding:40px;} .login-box{width:100%; max-width:400px;}
+.role-tabs{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; background:var(--paper-alt); padding:5px; border-radius:12px; margin-bottom:30px;}
+.role-tab{padding:9px 4px; text-align:center; font-size:13px; font-weight:600; border-radius:9px; color:var(--ink-soft);}
+.role-tab.active{background:var(--card); color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08);}
+.field{margin-bottom:16px;} .field label{display:block; font-size:13px; font-weight:600; margin-bottom:7px;}
+.field input{width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:14.5px; background:var(--card);}
+.field input:focus{border-color:var(--indigo); outline:none;} .login-box .btn{width:100%; margin-top:6px;}
+.login-hint{margin-top:18px; font-size:12.5px; color:var(--ink-soft); background:var(--paper-alt); padding:12px 14px; border-radius:10px; line-height:1.6;}
+.login-hint code{background:var(--card); padding:1px 5px; border-radius:4px; font-family:var(--mono);}
+.login-error{margin-top:14px; font-size:13px; color:var(--coral-dark); background:#FDECE8; padding:10px 14px; border-radius:10px; display:none;}
+.apply-link{margin-top:24px; text-align:center; font-size:13.5px; color:var(--ink-soft);} .apply-link a{color:var(--indigo); font-weight:600;}
+
+/* APP SHELL */
+.app-shell{display:grid; grid-template-columns:236px 1fr; min-height:100vh;}
+.app-sidebar{background:var(--ink); color:#fff; padding:22px 16px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh;}
+.app-brand{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:18px; padding:6px 8px 26px;}
+.side-nav{display:flex; flex-direction:column; gap:2px; flex:1;}
+.side-link{display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:9px; font-size:14px; font-weight:500; color:#B9C2CE;}
+.side-link:hover{background:rgba(255,255,255,.06); color:#fff;} .side-link.active{background:rgba(255,255,255,.12); color:#fff;} .side-link .icon{width:17px; height:17px;}
+.side-foot{border-top:1px solid rgba(255,255,255,.12); padding-top:14px; margin-top:10px;}
+.side-user{display:flex; align-items:center; gap:10px; padding:8px;}
+.avatar{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; font-family:var(--body);}
+.side-user .u-name{font-size:13.5px; font-weight:600;} .side-user .u-role{font-size:11.5px; color:#B9C2CE;}
+.logout-link{display:flex; align-items:center; gap:9px; font-size:13px; color:#B9C2CE; padding:10px 8px; margin-top:4px;} .logout-link:hover{color:#fff;}
+.app-main{padding:30px 36px 60px; max-width:1180px;}
+.app-topbar{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; gap:20px; flex-wrap:wrap;}
+.app-topbar h1{font-size:26px;} .app-topbar .sub{color:var(--ink-soft); font-size:14.5px; margin-top:6px;}
+.top-actions{display:flex; gap:10px; align-items:center;}
+.bell{width:38px; height:38px; border-radius:10px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; position:relative;}
+.bell .dot{position:absolute; top:8px; right:9px; width:7px; height:7px; border-radius:50%; background:var(--coral);}
+.grid-2{display:grid; grid-template-columns:1.4fr 1fr; gap:20px;} .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;} .grid-4{display:grid; grid-template-columns:repeat(4,1fr); gap:16px;}
+.stack{display:flex; flex-direction:column; gap:20px;}
+.card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px;}
+.card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;} .card-head h3{font-size:15.5px; font-family:var(--body); font-weight:700;} .card-head a{font-size:12.5px; font-weight:600; color:var(--indigo);}
+.kpi{padding:20px;} .kpi .k-label{font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);}
+.kpi .k-val{font-family:var(--display); font-size:30px; font-weight:700; margin-top:8px;}
+.list-row{display:flex; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--paper-alt); gap:10px;}
+.list-row:last-child{border-bottom:none;} .list-row .l-main{display:flex; align-items:center; gap:11px; min-width:0;}
+.list-row .l-title{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .list-row .l-sub{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+.tag{padding:4px 9px; border-radius:999px; font-size:11px; font-weight:700; color:#fff; white-space:nowrap;}
+.ring-wrap{display:flex; align-items:center; gap:18px;}
+.ring{width:84px; height:84px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; position:relative;}
+.ring::before{content:''; position:absolute; inset:0; border-radius:50%; background:conic-gradient(var(--green) calc(var(--pct)*1%), var(--paper-alt) 0);}
+.ring::after{content:''; position:absolute; inset:9px; background:var(--card); border-radius:50%;} .ring span{position:relative; font-family:var(--mono); font-weight:600; font-size:16px; z-index:1;}
+.bar-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;} .bar-row .b-label{width:44px; font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); flex-shrink:0;}
+.bar-track{flex:1; height:9px; background:var(--paper-alt); border-radius:6px; overflow:hidden;} .bar-fill{height:100%; border-radius:6px; background:var(--indigo);}
+.bar-row .b-val{width:34px; text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); flex-shrink:0;}
+.progress-note{font-size:13px; color:var(--ink-soft); line-height:1.5;} .empty{text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13.5px;}
+.table-simple{width:100%; border-collapse:collapse;} .table-simple th{text-align:left; font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--ink-soft); padding:8px 10px; border-bottom:1px solid var(--line);}
+.table-simple td{padding:11px 10px; border-bottom:1px solid var(--paper-alt); font-size:13.5px;} .table-simple tr:last-child td{border-bottom:none;}
+.toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0; background:var(--ink); color:#fff; padding:13px 20px; border-radius:12px; font-size:13.5px; font-weight:500; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:200; transition:all .25s ease; pointer-events:none; max-width:340px;}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+.child-switch{display:flex; gap:8px; margin-bottom:22px;} .child-pill{padding:8px 16px; border-radius:999px; border:1.5px solid var(--line); font-size:13.5px; font-weight:600; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
+.child-pill.active{border-color:var(--amber); color:var(--ink); background:#FDF3E0;}
+.grade-input{width:64px; padding:6px 8px; border-radius:8px; border:1.5px solid var(--line); font-family:var(--mono); font-size:13px;}
+.queue-detail{margin-top:6px; padding:10px 12px; background:var(--paper-alt); border-radius:10px; display:none;}
+.queue-detail.open{display:block;}
+.queue-detail .qrow{display:flex; align-items:center; justify-content:space-between; padding:6px 0; gap:8px;}
+
+@media (max-width: 980px){
+  .hero-grid{grid-template-columns:1fr;} .feature-grid{grid-template-columns:1fr 1fr;} .roles-grid{grid-template-columns:1fr 1fr;}
+  .grid-2{grid-template-columns:1fr;} .grid-3, .grid-4{grid-template-columns:1fr 1fr;}
+  .login-shell{grid-template-columns:1fr;} .login-side{display:none;}
+  .app-shell{grid-template-columns:76px 1fr;} .app-brand span.txt, .side-link .txt, .side-user, .logout-link .txt{display:none;}
+  .app-sidebar{align-items:center;} .side-link{justify-content:center;} .app-main{padding:24px 18px 50px;}
+}
+@media (max-width: 620px){
+  .feature-grid{grid-template-columns:1fr;} .roles-grid{grid-template-columns:1fr;} .grid-3, .grid-4{grid-template-columns:1fr;}
+  .nav-links{display:none;} .cta-band{flex-direction:column; align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ LANDING ============================================================ -->
+<section class="screen active" data-screen="landing">
+  <div class="nav">
+    <div class="wrap nav-inner">
+      <div class="brand"><div class="brand-mark"><span><i></i><i></i><i></i><i></i></span></div>Nova School</div>
+      <nav class="nav-links"><a href="#features">Platform</a><a href="#day">A day at Nova School</a><a href="#roles">For your role</a></nav>
+      <div class="nav-cta">
+        <button class="btn btn-outline btn-sm" onclick="go('login')">Log in</button>
+        <button class="btn btn-primary btn-sm" onclick="go('login')">Apply for admission</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">Online school · Grades 1–12</p>
+        <h1>School, run on a <em>schedule</em> that actually holds together.</h1>
+        <p class="hero-sub">Live classes, recorded lessons, homework, exams, attendance, fees and report cards — one timetable ties it all together, backed by a real database behind every dashboard.</p>
+        <div class="hero-ctas">
+          <button class="btn btn-primary" onclick="go('login')">Apply for admission</button>
+          <button class="btn btn-outline" onclick="go('login')">Log in to your account</button>
+        </div>
+        <div class="hero-meta"><span><b>4</b> roles</span><span><b>SQLite</b> database</span><span><b>JWT</b> secured API</span></div>
+      </div>
+      <div class="rail-card">
+        <div class="rail-head"><span class="day">Monday</span><span class="date mono">Term 2 · Week 6</span></div>
+        <div class="rail" id="heroRail"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap section" id="features">
+    <div class="section-head"><p class="eyebrow">The platform</p><h2>Everything a school day needs, none of it scattered.</h2>
+      <p>Six systems, one login, one database. Built so a Grade 8 parent and a Math teacher get exactly the view they need.</p></div>
+    <div class="feature-grid" id="featureGrid"></div>
+  </div>
+
+  <div class="wrap section" id="day">
+    <div class="section-head"><p class="eyebrow">A day at Nova School</p><h2>The same timetable, from bell to grade book.</h2>
+      <p>This is Grade 8, Section B's real weekly schedule, stored in the database and served by the API.</p></div>
+    <div class="week"><table><thead><tr><th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr></thead><tbody id="weekBody"></tbody></table></div>
+  </div>
+
+  <div class="wrap section" id="roles">
+    <div class="section-head"><p class="eyebrow">Built for four roles</p><h2>One school, four very different mornings.</h2>
+      <p>Log in as any of the seeded demo accounts to see a live dashboard.</p></div>
+    <div class="roles-grid" id="rolesGrid"></div>
+  </div>
+
+  <div class="wrap" style="padding-bottom:90px;">
+    <div class="cta-band">
+      <div><h2>Admissions for the next term are open.</h2><p>Grades 1 through 12 · rolling applications · decisions within 5 business days.</p></div>
+      <button class="btn" style="background:#fff; color:var(--ink);" onclick="go('login')">Start an application →</button>
+    </div>
+  </div>
+
+  <footer><div class="wrap foot-inner">
+    <div class="brand" style="font-size:16px;"><div class="brand-mark" style="width:22px;height:22px;"><span><i></i><i></i><i></i><i></i></span></div>Nova School</div>
+    <span>© 2026 Nova School. A demonstration full-stack platform.</span><span>Admissions · Support · Privacy</span>
+  </div></footer>
+</section>
+
+<!-- ============================================================ LOGIN ============================================================ -->
+<section class="screen" data-screen="login">
+  <div class="login-shell">
+    <div class="login-side">
+      <a class="back" href="javascript:void(0)" onclick="go('landing')">← Back to Nova School</a>
+      <div>
+        <p class="quote">“Attendance, homework and the timetable finally live in <span>one place</span> — backed by a database, not a spreadsheet.”</p>
+        <p style="margin-top:16px; color:#B9C2CE; font-size:13.5px;">— a parent of a Grade 8 student</p>
+      </div>
+      <div class="rail-card">
+        <div class="rail-head"><span class="day">Today</span><span class="date mono">Section 8B</span></div>
+        <div class="rail" id="loginRail"></div>
+      </div>
+    </div>
+    <div class="login-main">
+      <div class="login-box">
+        <h2 style="font-size:26px; margin-bottom:6px;">Welcome back</h2>
+        <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:26px;">Sign in with a seeded demo account.</p>
+        <div class="role-tabs" id="roleTabs"></div>
+        <div class="field"><label>Email address</label><input type="email" id="loginEmail" placeholder="you@novaschool.pk"></div>
+        <div class="field"><label>Password</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+        <button class="btn btn-ink" id="loginBtn" onclick="doLogin()">Sign in</button>
+        <div class="login-error" id="loginError"></div>
+        <div class="login-hint">Demo accounts (password for all: <code>password123</code>):<br>
+          <code>student@novaschool.pk</code> · <code>parent@novaschool.pk</code><br>
+          <code>teacher@novaschool.pk</code> · <code>admin@novaschool.pk</code></div>
+        <p class="apply-link">New family? <a href="javascript:void(0)" onclick="go('landing'); setTimeout(()=>document.getElementById('roles').scrollIntoView(),50)">Start an admission application</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ STUDENT ============================================================ -->
+<section class="screen" data-screen="student">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand"><div class="brand-mark" style="width:24px;height:24px;"><span><i></i><i></i><i></i><i></i></span></div><span class="txt">Nova School</span></div>
+      <nav class="side-nav">
+        <a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
+      </nav>
+      <div class="side-foot">
+        <div class="side-user"><div class="avatar" style="background:var(--indigo);" id="studentAvatar">--</div><div><div class="u-name" id="studentName">—</div><div class="u-role" id="studentSection">—</div></div></div>
+        <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
+      </div>
+    </aside>
+    <main class="app-main">
+      <div class="app-topbar">
+        <div><h1 id="studentGreeting">Good morning</h1><p class="sub">Monday, Term 2 · Week 6 — live from the database.</p></div>
+        <div class="top-actions"><div class="bell"><div class="dot"></div><svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card"><div class="card-head"><h3>Today's timetable</h3></div><div class="rail" id="studentRail"><p class="empty">Loading…</p></div></div>
+        <div class="stack">
+          <div class="card" style="background:var(--ink); color:#fff;">
+            <p style="font-family:var(--mono); font-size:11.5px; text-transform:uppercase; color:#B9C2CE;">Live classes</p>
+            <h3 style="color:#fff; font-size:18px; margin-top:8px;">Join from today's timetable</h3>
+            <p style="color:#B9C2CE; font-size:13px; margin-top:6px;">Video infrastructure isn't wired up in this demo — this button shows where it plugs in.</p>
+            <button class="btn" style="background:var(--coral); color:#fff; margin-top:16px; width:100%;" onclick="toast('Demo: this is where an Agora/LiveKit join link would open.')">Join next class</button>
+          </div>
+          <div class="card"><div class="card-head"><h3>Attendance this term</h3></div>
+            <div class="ring-wrap"><div class="ring" id="studentRing" style="--pct:0;"><span id="studentPct">—</span></div>
+              <div class="progress-note" id="studentAttNote">Loading attendance…</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="stack">
+          <div class="card"><div class="card-head"><h3>Homework due</h3></div><div id="studentHomework"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Recent grades</h3></div><div id="studentGrades"><p class="empty">Loading…</p></div></div>
+        </div>
+        <div class="stack">
+          <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Progress by subject</h3></div><div id="studentProgress"><p class="empty">Loading…</p></div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================ PARENT ============================================================ -->
+<section class="screen" data-screen="parent">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand"><div class="brand-mark" style="width:24px;height:24px;"><span><i></i><i></i><i></i><i></i></span></div><span class="txt">Nova School</span></div>
+      <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
+      <div class="side-foot">
+        <div class="side-user"><div class="avatar" style="background:var(--amber);" id="parentAvatar">--</div><div><div class="u-name" id="parentName">—</div><div class="u-role">Parent account</div></div></div>
+        <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
+      </div>
+    </aside>
+    <main class="app-main">
+      <div class="app-topbar"><div><h1 id="parentGreeting">Welcome</h1><p class="sub">Here's how your children are doing this week.</p></div>
+        <div class="top-actions"><div class="bell"><div class="dot"></div><svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></div></div></div>
+      <div class="child-switch" id="childSwitch"></div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card"><div class="card-head"><h3>Attendance trend</h3><span class="mono" style="font-size:12px; color:var(--ink-soft);">by week</span></div><div id="parentAttendanceBars"><p class="empty">Loading…</p></div></div>
+        <div class="card" style="background:var(--paper-alt); border:1.5px dashed var(--line);">
+          <div class="card-head"><h3>Fees — Term 2</h3></div>
+          <p style="font-family:var(--display); font-size:28px; font-weight:700;" id="parentFeeAmount">—</p>
+          <p class="progress-note" id="parentFeeNote">Loading…</p>
+          <button class="btn btn-primary" style="margin-top:16px; width:100%;" id="parentPayBtn" onclick="payFee()">Pay now</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="stack"><div class="card"><div class="card-head"><h3>Recent grades</h3></div>
+          <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div>
+        <div class="stack">
+          <div class="card"><div class="card-head"><h3>Messages</h3></div><div id="parentMessages"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>School announcements</h3></div><div id="parentAnnouncements"><p class="empty">Loading…</p></div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================ TEACHER ============================================================ -->
+<section class="screen" data-screen="teacher">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand"><div class="brand-mark" style="width:24px;height:24px;"><span><i></i><i></i><i></i><i></i></span></div><span class="txt">Nova School</span></div>
+      <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a></nav>
+      <div class="side-foot">
+        <div class="side-user"><div class="avatar" style="background:var(--magenta);" id="teacherAvatar">--</div><div><div class="u-name" id="teacherName">—</div><div class="u-role" id="teacherSubject">—</div></div></div>
+        <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
+      </div>
+    </aside>
+    <main class="app-main">
+      <div class="app-topbar"><div><h1 id="teacherGreeting">Good morning</h1><p class="sub" id="teacherSub">Loading your day…</p></div>
+        <div class="top-actions"><button class="btn btn-primary btn-sm" onclick="toast('Demo: opens the content uploader — wire this to your S3/GCS storage service.')">+ Upload content</button></div></div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card"><div class="card-head"><h3>Today's classes</h3></div><div id="teacherClasses"><p class="empty">Loading…</p></div></div>
+        <div class="card"><div class="card-head"><h3>Grading queue</h3></div><div id="teacherQueue"><p class="empty">Loading…</p></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-head"><h3 id="teacherRosterTitle">Roster</h3></div><div id="teacherRoster"><p class="empty">Loading…</p></div></div>
+        <div class="stack"><div class="card"><div class="card-head"><h3>Messages</h3></div><div id="teacherMessages"><p class="empty">Loading…</p></div></div></div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================ ADMIN ============================================================ -->
+<section class="screen" data-screen="admin">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand"><div class="brand-mark" style="width:24px;height:24px;"><span><i></i><i></i><i></i><i></i></span></div><span class="txt">Nova School</span></div>
+      <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
+      <div class="side-foot">
+        <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
+        <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
+      </div>
+    </aside>
+    <main class="app-main">
+      <div class="app-topbar"><div><h1>School overview</h1><p class="sub">Live counts from the database.</p></div>
+        <div class="top-actions"><button class="btn btn-outline btn-sm" onclick="toast('Demo: export would stream a CSV/PDF from the reporting endpoint.')">Export report</button></div></div>
+      <div class="grid-4" style="margin-bottom:20px;" id="adminKpis">
+        <div class="card kpi"><p class="k-label">Total students</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Total teachers</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Fee collection</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Attendance (avg)</p><p class="k-val">—</p></div>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card"><div class="card-head"><h3>Enrollment by grade</h3></div><div id="adminEnrollBars"><p class="empty">Loading…</p></div></div>
+        <div class="card"><div class="card-head"><h3>Pending admission applications</h3></div><div id="adminAdmissions"><p class="empty">Loading…</p></div></div>
+      </div>
+      <div class="card"><div class="card-head"><h3>Sections at a glance</h3></div>
+        <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Class teacher</th><th>Capacity</th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
+      </div>
+    </main>
+  </div>
+</section>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================== static/decorative data for the marketing pages ============================== */
+const SUBJECT_COLORS = { Math:'var(--indigo)', Science:'var(--green)', English:'var(--coral)', History:'var(--amber)', Art:'var(--magenta)', PE:'var(--teal)', Reading:'var(--teal)', Break:'var(--line)', Lunch:'var(--line)' };
+const ROLES = [
+  {key:'student', name:'Student', color:'var(--indigo)', desc:'Join live classes, submit homework, track grades and attendance in one timetable-driven view.', icon:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>'},
+  {key:'parent', name:'Parent', color:'var(--amber)', desc:'Monitor attendance and grades, pay fees, and message teachers for every child.', icon:'<path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/>'},
+  {key:'teacher', name:'Teacher', color:'var(--magenta)', desc:'Run live classes, upload lessons, assign and grade work, and message students and parents.', icon:'<path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/>'},
+  {key:'admin', name:'Admin', color:'var(--ink)', desc:'Oversee admissions, classes, staffing, fee collection and reporting across the whole school.', icon:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'}
+];
+const FEATURES = [
+  {t:'Live online classes', d:'Scheduled sessions tied to the real timetable in the database.', c:'var(--indigo)', i:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>'},
+  {t:'Recorded lessons & library', d:'Class content organized by subject and grade.', c:'var(--green)', i:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/>'},
+  {t:'Homework & grading', d:'Real submit and grade actions write straight to the database.', c:'var(--coral)', i:'<path d="M9 11l2 2 4-4"/><rect x="3" y="4" width="18" height="17" rx="2"/>'},
+  {t:'Attendance & report cards', d:'Attendance rolls up into per-term summaries automatically.', c:'var(--amber)', i:'<path d="M4 20V10M12 20V4M20 20v-7"/>'},
+  {t:'Online fee payments', d:'Invoices and payment status, visible on the parent dashboard.', c:'var(--magenta)', i:'<path d="M3 10h18M7 15h4M5 21h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"/>'},
+  {t:'Messaging & announcements', d:'Threaded messages between students, parents and teachers.', c:'var(--teal)', i:'<path d="M4 4h16v13H7l-3 3z"/>'},
+];
+const WEEK = {
+  Monday:[['9:00','Math','Rm 204'],['9:50','Science','Rm 118'],['10:40','Break',''],['11:00','English','Rm 302'],['11:50','History','Rm 210'],['12:40','Lunch',''],['13:30','Art','Studio 2'],['14:20','PE','Field A']],
+  Tuesday:[['9:00','English','Rm 302'],['9:50','Math','Rm 204'],['10:40','Break',''],['11:00','PE','Field A'],['11:50','Science','Rm 118'],['12:40','Lunch',''],['13:30','History','Rm 210'],['14:20','Art','Studio 2']],
+  Wednesday:[['9:00','Science','Rm 118'],['9:50','Math','Rm 204'],['10:40','Break',''],['11:00','English','Rm 302'],['11:50','Art','Studio 2'],['12:40','Lunch',''],['13:30','History','Rm 210'],['14:20','PE','Field A']],
+  Thursday:[['9:00','Math','Rm 204'],['9:50','History','Rm 210'],['10:40','Break',''],['11:00','Science','Rm 118'],['11:50','English','Rm 302'],['12:40','Lunch',''],['13:30','PE','Field A'],['14:20','Art','Studio 2']],
+  Friday:[['9:00','English','Rm 302'],['9:50','Art','Studio 2'],['10:40','Break',''],['11:00','Math','Rm 204'],['11:50','Science','Rm 118'],['12:40','Lunch',''],['13:30','History','Rm 210'],['14:20','PE','Field A']],
+};
+function railBlock(time, subj, room, i){
+  const isBreak = subj==='Break' || subj==='Lunch'; const color = SUBJECT_COLORS[subj] || 'var(--indigo)';
+  return `<div class="rail-block ${isBreak?'break':''}" style="--subj:${color}; animation-delay:${i*70}ms;">
+    <span class="t">${time}</span><span class="s">${subj}${room?` <span style="color:var(--ink-soft); font-weight:400;">· ${room}</span>`:''}</span>
+    ${!isBreak?`<span class="r mono" style="color:${color};">●</span>`:''}</div>`;
+}
+function renderStaticRail(elId, dayKey, limit){
+  const el = document.getElementById(elId); if(!el) return;
+  const rows = (WEEK[dayKey]||WEEK.Monday).slice(0, limit||99);
+  el.innerHTML = rows.map((r,i)=>railBlock(r[0],r[1],r[2],i)).join('');
+}
+function renderWeekTable(){
+  const days = Object.keys(WEEK); const rowCount = WEEK.Monday.length; let html='';
+  for(let r=0;r<rowCount;r++){
+    html += `<tr><td class="mono" style="color:var(--ink-soft);">${WEEK.Monday[r][0]}</td>`;
+    days.forEach(d=>{ const [,subj,room] = WEEK[d][r]; const isBreak = subj==='Break'||subj==='Lunch';
+      html += `<td>${isBreak ? `<span style="color:var(--ink-soft); font-style:italic; font-size:13px;">${subj}</span>` : `<span class="chip" style="background:${SUBJECT_COLORS[subj]};">${subj}</span><div style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">${room}</div>`}</td>`; });
+    html += '</tr>';
+  }
+  document.getElementById('weekBody').innerHTML = html;
+}
+function renderFeatures(){
+  document.getElementById('featureGrid').innerHTML = FEATURES.map(f=>`<div class="feature"><div class="fi" style="background:${f.c}22; color:${f.c};"><svg class="icon" viewBox="0 0 24 24" style="width:20px;height:20px;">${f.i}</svg></div><h3>${f.t}</h3><p>${f.d}</p></div>`).join('');
+}
+function renderRoles(){
+  document.getElementById('rolesGrid').innerHTML = ROLES.map(r=>`<div class="role-card" style="--role-c:${r.color};" onclick="go('login'); selectRole('${r.key}')"><div class="ri"><svg class="icon" viewBox="0 0 24 24" style="stroke:#fff;">${r.icon}</svg></div><h3>${r.name}</h3><p>${r.desc}</p><div class="go">Preview dashboard <svg class="icon" viewBox="0 0 24 24" style="width:13px;height:13px;"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div>`).join('');
+}
+function renderRoleTabs(){
+  document.getElementById('roleTabs').innerHTML = ROLES.map((r,i)=>`<div class="role-tab ${i===0?'active':''}" data-role="${r.key}" onclick="selectRole('${r.key}')">${r.name}</div>`).join('');
+}
+const DEMO_EMAILS = { student:'student@novaschool.pk', parent:'parent@novaschool.pk', teacher:'teacher@novaschool.pk', admin:'admin@novaschool.pk' };
+function selectRole(key){
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.toggle('active', t.dataset.role===key));
+  document.getElementById('loginEmail').value = DEMO_EMAILS[key] || '';
+  document.getElementById('loginPass').value = 'password123';
+}
+
+/* ============================== app state & API helper ============================== */
+let authToken = null;
+let currentUser = null;
+
+async function api(path, opts = {}) {
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (authToken) headers['Authorization'] = 'Bearer ' + authToken;
+  const res = await fetch('/api' + path, Object.assign({}, opts, { headers }));
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* no body */ }
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+function toast(msg){
+  const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastTimer); window._toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+function initials(first, last){ return `${(first||'?')[0]}${(last||'?')[0]}`.toUpperCase(); }
+function go(screen){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelector(`.screen[data-screen="${screen}"]`).classList.add('active');
+  window.scrollTo(0,0);
+}
+function logout(){ authToken = null; currentUser = null; go('login'); }
+
+/* ============================== login flow ============================== */
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  const errBox = document.getElementById('loginError');
+  errBox.style.display = 'none';
+  if (!email || !password) { errBox.textContent = 'Enter an email and password.'; errBox.style.display = 'block'; return; }
+
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  try {
+    const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    authToken = data.token; currentUser = data.user;
+    go(currentUser.role);
+    loadDashboard(currentUser.role);
+  } catch (err) {
+    errBox.textContent = err.message; errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+function loadDashboard(role){
+  if (role === 'student') loadStudentDashboard();
+  if (role === 'parent') loadParentDashboard();
+  if (role === 'teacher') loadTeacherDashboard();
+  if (role === 'admin') loadAdminDashboard();
+}
+
+/* ============================== STUDENT ============================== */
+async function loadStudentDashboard(){
+  const p = currentUser.profile || {};
+  document.getElementById('studentAvatar').textContent = initials(p.first_name, p.last_name);
+  document.getElementById('studentName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
+  document.getElementById('studentSection').textContent = p.section_code ? `Section ${p.section_code}` : '';
+  document.getElementById('studentGreeting').textContent = `Good morning, ${p.first_name || ''}`;
+
+  try {
+    const d = await api('/student/dashboard');
+
+    document.getElementById('studentRail').innerHTML = d.timetable.length
+      ? d.timetable.map((r,i)=>railBlock(r.start_time, r.subject, r.room, i)).join('')
+      : '<p class="empty">No classes scheduled.</p>';
+
+    const ring = document.getElementById('studentRing');
+    if (d.attendancePct !== null) {
+      ring.style.setProperty('--pct', d.attendancePct);
+      document.getElementById('studentPct').textContent = d.attendancePct + '%';
+      document.getElementById('studentAttNote').textContent = `${d.attendancePct}% attendance recorded this term, computed live from the attendance table.`;
+    } else {
+      document.getElementById('studentAttNote').textContent = 'No attendance recorded yet.';
+    }
+
+    document.getElementById('studentHomework').innerHTML = d.homeworkDue.length
+      ? d.homeworkDue.map(h => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${SUBJECT_COLORS[h.subject]||'var(--indigo)'};">${h.subject}</span><div><div class="l-title">${h.title}</div><div class="l-sub">Due ${h.due_date}</div></div></div><button class="btn btn-outline btn-sm" onclick="submitHomework(${h.id}, this)">Submit</button></div>`).join('')
+      : '<p class="empty">Nothing due — you\u2019re all caught up.</p>';
+
+    document.getElementById('studentGrades').innerHTML = d.recentGrades.length
+      ? d.recentGrades.map(g => `<div class="list-row"><div class="l-main"><div><div class="l-title">${g.subject} — ${g.assessment}</div></div></div><span class="tag" style="background:${SUBJECT_COLORS[g.subject]||'var(--indigo)'};">${g.score}</span></div>`).join('')
+      : '<p class="empty">No grades recorded yet.</p>';
+
+    document.getElementById('studentAnnouncements').innerHTML = d.announcements.length
+      ? d.announcements.map(a => `<div class="list-row"><div class="l-main"><div><div class="l-title">${a.title}</div></div></div></div>`).join('')
+      : '<p class="empty">No announcements.</p>';
+
+    const bySubject = {};
+    d.recentGrades.forEach(g => { const m = /(\d+)\s*\/\s*(\d+)/.exec(g.score); if (m) { bySubject[g.subject] = Math.round((Number(m[1])/Number(m[2]))*100); } });
+    const entries = Object.entries(bySubject);
+    document.getElementById('studentProgress').innerHTML = entries.length
+      ? entries.map(([s,v]) => `<div class="bar-row"><span class="b-label">${s}</span><div class="bar-track"><div class="bar-fill" style="width:${v}%; background:${SUBJECT_COLORS[s]||'var(--indigo)'};"></div></div><span class="b-val">${v}%</span></div>`).join('')
+      : '<p class="empty">Not enough numeric grades yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function submitHomework(assignmentId, btnEl){
+  btnEl.disabled = true; btnEl.textContent = 'Submitting…';
+  try {
+    const res = await api(`/student/assignments/${assignmentId}/submit`, { method: 'POST' });
+    toast(res.message);
+    loadStudentDashboard();
+  } catch (err) {
+    toast(err.message); btnEl.disabled = false; btnEl.textContent = 'Submit';
+  }
+}
+
+/* ============================== PARENT ============================== */
+let parentChildren = [];
+let activeChildId = null;
+
+async function loadParentDashboard(){
+  const p = currentUser.profile || {};
+  document.getElementById('parentAvatar').textContent = initials(p.first_name, p.last_name);
+  document.getElementById('parentName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
+  document.getElementById('parentGreeting').textContent = `Welcome, ${p.first_name || ''}`;
+
+  try {
+    const data = await api('/parent/children');
+    parentChildren = data.children;
+    document.getElementById('childSwitch').innerHTML = parentChildren.map(c =>
+      `<div class="child-pill ${c.id===activeChildId?'active':''}" onclick="selectChild(${c.id})"><div class="avatar" style="width:20px;height:20px;font-size:10px;background:var(--indigo);">${initials(c.first_name,c.last_name)}</div>${c.first_name} — ${c.grade||''}</div>`
+    ).join('');
+    if (!activeChildId && parentChildren.length) activeChildId = parentChildren[0].id;
+    if (activeChildId) await loadChildData(activeChildId);
+
+    const fees = await api('/parent/fees-summary');
+    document.getElementById('parentFeeAmount').textContent = '$' + fees.totalDue.toFixed(2);
+    document.getElementById('parentFeeNote').textContent = fees.totalDue > 0
+      ? `Combined balance across ${parentChildren.length} ${parentChildren.length===1?'child':'children'}${fees.nearestDueDate ? ', due ' + fees.nearestDueDate : ''}.`
+      : 'All invoices are paid up. Nice.';
+    document.getElementById('parentPayBtn').disabled = fees.totalDue <= 0;
+    document.getElementById('parentPayBtn').textContent = fees.totalDue <= 0 ? 'Paid in full' : 'Pay now';
+
+    const msgs = await api('/parent/messages');
+    document.getElementById('parentMessages').innerHTML = msgs.messages.length
+      ? msgs.messages.map(m => `<div class="list-row"><div class="l-main"><div class="avatar" style="width:30px;height:30px;font-size:11px;background:var(--indigo);">${m.from[0]}</div><div><div class="l-title">${m.from}${m.outgoing ? ' (you)' : ''}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
+      : '<p class="empty">No messages yet.</p>';
+
+    const ann = await api('/parent/announcements');
+    document.getElementById('parentAnnouncements').innerHTML = ann.announcements.length
+      ? ann.announcements.map(a => `<div class="list-row"><div class="l-main"><div class="l-title">${a.title}</div></div></div>`).join('')
+      : '<p class="empty">No announcements.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function selectChild(id){ activeChildId = id; loadParentDashboard(); }
+
+async function loadChildData(studentId){
+  try {
+    const d = await api(`/parent/dashboard/${studentId}`);
+    document.getElementById('parentAttendanceBars').innerHTML = d.attendanceTrend.length
+      ? d.attendanceTrend.map((w,i) => `<div class="bar-row"><span class="b-label">Wk ${i+1}</span><div class="bar-track"><div class="bar-fill" style="width:${w.pct}%;"></div></div><span class="b-val">${w.pct}%</span></div>`).join('')
+      : '<p class="empty">No attendance recorded yet.</p>';
+
+    document.getElementById('parentGradeTable').innerHTML = d.grades.length
+      ? d.grades.map(g => `<tr><td><span class="tag" style="background:${SUBJECT_COLORS[g.subject]||'var(--indigo)'};">${g.subject}</span></td><td>${g.assessment}</td><td class="mono">${g.score}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="empty">No grades recorded yet.</td></tr>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function payFee(){
+  const unpaid = (await api('/parent/fees-summary')).invoices.filter(i => i.status !== 'paid');
+  if (!unpaid.length) { toast('Nothing left to pay.'); return; }
+  try {
+    for (const inv of unpaid) {
+      const res = await api(`/parent/invoices/${inv.id}/pay`, { method: 'POST' });
+      toast(res.message);
+    }
+    loadParentDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== TEACHER ============================== */
+async function loadTeacherDashboard(){
+  const p = currentUser.profile || {};
+  document.getElementById('teacherAvatar').textContent = initials(p.first_name, p.last_name);
+  document.getElementById('teacherName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
+  document.getElementById('teacherSubject').textContent = p.subject || '';
+  document.getElementById('teacherGreeting').textContent = `Good morning, ${p.first_name ? 'Ms./Mr. ' + p.last_name : ''}`;
+
+  try {
+    const d = await api('/teacher/dashboard');
+    document.getElementById('teacherSub').textContent = `${d.todaysClasses.length} classes today · ${d.gradingQueue.reduce((s,q)=>s+q.pending,0)} submissions waiting to be graded.`;
+
+    document.getElementById('teacherClasses').innerHTML = d.todaysClasses.length
+      ? d.todaysClasses.map(c => `<div class="list-row"><div class="l-main"><span class="tag mono" style="background:var(--indigo);">${c.start_time}</span><div><div class="l-title">${c.subject}</div><div class="l-sub">Section ${c.section_code} · ${c.room||''}</div></div></div><button class="btn btn-primary btn-sm" onclick="toast('Demo: starting live class room…')">Start</button></div>`).join('')
+      : '<p class="empty">No classes today.</p>';
+
+    document.getElementById('teacherQueue').innerHTML = d.gradingQueue.length
+      ? d.gradingQueue.map(q => `
+        <div>
+          <div class="list-row"><div class="l-main"><div><div class="l-title">${q.title}</div><div class="l-sub">Section ${q.section_code} · ${q.pending} submission${q.pending===1?'':'s'}</div></div></div><button class="btn btn-outline btn-sm" onclick="toggleQueue(${q.assignment_id})">Grade</button></div>
+          <div class="queue-detail" id="queue-${q.assignment_id}"></div>
+        </div>`).join('')
+      : '<p class="empty">Nothing waiting to be graded. 🎉</p>';
+
+    document.getElementById('teacherRosterTitle').textContent = d.roster.section ? `Section ${d.roster.section} — roster` : 'Roster';
+    document.getElementById('teacherRoster').innerHTML = d.roster.students.length
+      ? d.roster.students.map(s => `<div class="list-row"><div class="l-main"><div class="avatar" style="width:28px;height:28px;font-size:10.5px;background:var(--magenta);">${initials(s.first_name,s.last_name)}</div><div class="l-title">${s.first_name} ${s.last_name}</div></div><span class="mono" style="font-size:12px; color:var(--ink-soft);">${s.admission_no}</span></div>`).join('')
+      : '<p class="empty">You are not the class teacher for any section.</p>';
+
+    document.getElementById('teacherMessages').innerHTML = d.messages.length
+      ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
+      : '<p class="empty">No messages yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleQueue(assignmentId){
+  const el = document.getElementById(`queue-${assignmentId}`);
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.queue-detail.open').forEach(d => d.classList.remove('open'));
+  if (isOpen) return;
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  el.classList.add('open');
+  try {
+    const d = await api(`/teacher/assignments/${assignmentId}/submissions`);
+    el.innerHTML = d.submissions.length
+      ? d.submissions.map(s => `
+        <div class="qrow"><span>${s.first_name} ${s.last_name}</span>
+          <span style="display:flex; gap:8px; align-items:center;">
+            <input type="number" class="grade-input" min="0" max="${d.assignment.maxMarks}" placeholder="/${d.assignment.maxMarks}" id="mark-${s.id}">
+            <button class="btn btn-ink btn-sm" onclick="saveGrade(${s.id}, ${assignmentId})">Save</button>
+          </span></div>`).join('')
+      : '<p class="empty">All graded.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function saveGrade(submissionId, assignmentId){
+  const input = document.getElementById(`mark-${submissionId}`);
+  const marks = Number(input.value);
+  if (!input.value || Number.isNaN(marks)) { toast('Enter a mark first.'); return; }
+  try {
+    const res = await api(`/teacher/submissions/${submissionId}/grade`, { method: 'POST', body: JSON.stringify({ marks }) });
+    toast(res.message);
+    loadTeacherDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== ADMIN ============================== */
+async function loadAdminDashboard(){
+  const p = currentUser.profile || {};
+  document.getElementById('adminAvatar').textContent = initials(p.first_name, p.last_name);
+  document.getElementById('adminName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
+  document.getElementById('adminTitle').textContent = p.title || 'Administrator';
+
+  try {
+    const o = await api('/admin/overview');
+    const kpis = document.getElementById('adminKpis').children;
+    kpis[0].querySelector('.k-val').textContent = o.totalStudents;
+    kpis[1].querySelector('.k-val').textContent = o.totalTeachers;
+    kpis[2].querySelector('.k-val').textContent = o.feeCollectionPct + '%';
+    kpis[3].querySelector('.k-val').textContent = o.attendancePct + '%';
+
+    const maxCount = Math.max(1, ...o.enrollmentByGrade.map(g => g.count));
+    document.getElementById('adminEnrollBars').innerHTML = o.enrollmentByGrade.length
+      ? o.enrollmentByGrade.map(g => `<div class="bar-row"><span class="b-label">${g.grade.replace('Grade ','G')}</span><div class="bar-track"><div class="bar-fill" style="width:${(g.count/maxCount)*100}%;"></div></div><span class="b-val mono">${g.count}</span></div>`).join('')
+      : '<p class="empty">No enrollment data yet.</p>';
+
+    await loadAdmissions();
+
+    const s = await api('/admin/sections');
+    document.getElementById('adminSectionsTable').innerHTML = s.sections.map(sec =>
+      `<tr><td>${sec.grade}</td><td class="mono">${sec.sectionName}</td><td>${sec.studentCount}</td><td>${sec.classTeacher}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td></tr>`
+    ).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAdmissions(){
+  const a = await api('/admin/admissions');
+  document.getElementById('adminAdmissions').innerHTML = a.applications.length
+    ? a.applications.map(app => `<div class="list-row"><div class="l-main"><div><div class="l-title">${app.applicant_name}</div><div class="l-sub">Applying — ${app.grade_applied}</div></div></div><div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="decideAdmission(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="decideAdmission(${app.id},'approved')">Approve</button></div></div>`).join('')
+    : '<p class="empty">No pending applications.</p>';
+}
+
+async function decideAdmission(id, decision){
+  try {
+    const res = await api(`/admin/admissions/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision }) });
+    toast(res.message);
+    loadAdmissions();
+    loadAdminDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== init (marketing pages only — dashboards load after login) ============================== */
+renderStaticRail('heroRail','Monday');
+renderStaticRail('loginRail','Monday',4);
+renderWeekTable();
+renderFeatures();
+renderRoles();
+renderRoleTabs();
+selectRole('student');
+</script>
+</body>
+</html>

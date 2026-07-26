@@ -1,0 +1,16 @@
+# Optional: lets Render create the service automatically from this repo
+# via "New +" -> "Blueprint" instead of clicking through the manual setup.
+# You still create the Neon database yourself and paste DATABASE_URL in
+# after the Blueprint deploys once (see README for the manual steps too).
+services:
+  - type: web
+    name: nova-school-app
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
