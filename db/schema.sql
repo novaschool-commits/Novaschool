@@ -66,6 +66,21 @@ CREATE TABLE IF NOT EXISTS timetable (
   teacher_id INTEGER REFERENCES teachers(id)
 );
 
+-- Idempotent: adds the column on a database that already has this table
+-- from before this feature existed, without touching existing rows.
+ALTER TABLE timetable ADD COLUMN IF NOT EXISTS meeting_link TEXT;
+
+CREATE TABLE IF NOT EXISTS lessons (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  section_code TEXT REFERENCES sections(section_code),
+  teacher_id INTEGER REFERENCES teachers(id),
+  video_url TEXT NOT NULL,          -- YouTube/Vimeo link (or any video URL)
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS attendance (
   id SERIAL PRIMARY KEY,
   student_id INTEGER REFERENCES students(id),
@@ -134,4 +149,49 @@ CREATE TABLE IF NOT EXISTS admission_applications (
   parent_email TEXT,
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','declined')),
   submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tests & quizzes: MCQ (auto-graded) and descriptive (manually graded) questions.
+CREATE TABLE IF NOT EXISTS exams (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  section_code TEXT REFERENCES sections(section_code),
+  teacher_id INTEGER REFERENCES teachers(id),
+  duration_minutes INTEGER NOT NULL DEFAULT 30,
+  is_published BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS exam_questions (
+  id SERIAL PRIMARY KEY,
+  exam_id INTEGER REFERENCES exams(id),
+  question_text TEXT NOT NULL,
+  question_type TEXT NOT NULL CHECK(question_type IN ('mcq','descriptive')),
+  options JSONB,               -- array of option strings; MCQ only
+  correct_answer TEXT,         -- MCQ only, matched against the chosen option
+  marks INTEGER NOT NULL DEFAULT 1,
+  position INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS exam_attempts (
+  id SERIAL PRIMARY KEY,
+  exam_id INTEGER REFERENCES exams(id),
+  student_id INTEGER REFERENCES students(id),
+  started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  submitted_at TIMESTAMPTZ,
+  status TEXT NOT NULL DEFAULT 'in_progress' CHECK(status IN ('in_progress','submitted','graded')),
+  auto_score NUMERIC DEFAULT 0,
+  total_score NUMERIC,
+  UNIQUE(exam_id, student_id)
+);
+
+CREATE TABLE IF NOT EXISTS exam_answers (
+  id SERIAL PRIMARY KEY,
+  attempt_id INTEGER REFERENCES exam_attempts(id),
+  question_id INTEGER REFERENCES exam_questions(id),
+  student_answer TEXT,
+  is_correct BOOLEAN,
+  marks_awarded NUMERIC,
+  UNIQUE(attempt_id, question_id)
 );

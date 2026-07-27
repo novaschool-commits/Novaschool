@@ -95,6 +95,9 @@ async function seed({ force = false } = {}) {
     async function insertAdmission(name, grade, email, status) {
       await client.query('INSERT INTO admission_applications (applicant_name, grade_applied, parent_email, status) VALUES ($1,$2,$3,$4)', [name, grade, email, status]);
     }
+    async function insertLesson(title, subject, sectionCode, teacherId, videoUrl, description) {
+      await client.query('INSERT INTO lessons (title, subject, section_code, teacher_id, video_url, description) VALUES ($1,$2,$3,$4,$5,$6)', [title, subject, sectionCode, teacherId, videoUrl, description]);
+    }
 
     // ---------- Admin ----------
     const adminUserId = await insertUser('admin@novaschool.pk', 'admin');
@@ -222,6 +225,14 @@ async function seed({ force = false } = {}) {
     await insertAdmission('Sofia Marin', 'Grade 3', 'family.marin@example.com', 'pending');
     await insertAdmission('Devon Ackah', 'Grade 9', 'family.ackah@example.com', 'pending');
     await insertAdmission('Wren Castellanos', 'Grade 1', 'family.castellanos@example.com', 'pending');
+
+    // ---------- Sample recorded lesson (clearly a placeholder — replace via the teacher dashboard) ----------
+    await insertLesson(
+      'Sample lesson video (edit or delete this)',
+      'Science', '8B', marcusId,
+      'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+      'This is placeholder content so you can see how recorded lessons display. Add your own from the teacher dashboard.'
+    );
 
     await client.query('COMMIT');
   } catch (err) {
