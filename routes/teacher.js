@@ -347,4 +347,92 @@ router.post('/exams/attempts/:attemptId/grade', asyncHandler(async (req, res) =>
   res.json({ message: 'Grading saved and published to the student\u2019s gradebook.' });
 }));
 
+// ---------- Timetable management ----------
+
+router.get('/timetable', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const sectionCode = req.query.section;
+  if (!sectionCode) return res.status(400).json({ error: 'section query parameter is required.' });
+
+  const allowedSection = await get('SELECT 1 FROM timetable WHERE teacher_id = $1 AND section_code = $2 LIMIT 1', [teacher.id, sectionCode]);
+  const teachesHere = !!allowedSection || (await get('SELECT 1 FROM sections WHERE class_teacher_id = $1 AND section_code = $2', [teacher.id, sectionCode]));
+  if (!teachesHere) return res.status(403).json({ error: 'You do not teach a class in that section.' });
+
+  const rows = await all(
+    `SELECT t.id, t.day_of_week, t.start_time, t.subject, t.room, t.teacher_id,
+            tc.first_name AS teacher_first, tc.last_name AS teacher_last
+     FROM timetable t LEFT JOIN teachers tc ON tc.id = t.teacher_id
+     WHERE t.section_code = $1 ORDER BY
+       CASE t.day_of_week WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 ELSE 6 END,
+       t.start_time`,
+    [sectionCode]
+  );
+
+  res.json({ periods: rows.map(r => ({
+    id: r.id, day: r.day_of_week, startTime: r.start_time, subject: r.subject, room: r.room,
+    teacherName: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned',
+    isMine: r.teacher_id === teacher.id
+  })) });
+}));
+
+router.post('/timetable', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { section_code, day_of_week, start_time, subject, room } = req.body || {};
+  if (!section_code || !day_of_week || !start_time || !subject) {
+    return res.status(400).json({ error: 'section_code, day_of_week, start_time, and subject are required.' });
+  }
+  const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  if (!validDays.includes(day_of_week)) {
+    return res.status(400).json({ error: 'day_of_week must be Monday–Friday.' });
+  }
+
+  const teachesHere = await get('SELECT 1 FROM timetable WHERE teacher_id = $1 AND section_code = $2 LIMIT 1', [teacher.id, section_code])
+    || await get('SELECT 1 FROM sections WHERE class_teacher_id = $1 AND section_code = $2', [teacher.id, section_code]);
+  if (!teachesHere) return res.status(403).json({ error: 'You do not teach a class in that section.' });
+
+  const clash = await get(
+    'SELECT 1 FROM timetable WHERE section_code = $1 AND day_of_week = $2 AND start_time = $3',
+    [section_code, day_of_week, start_time]
+  );
+  if (clash) return res.status(409).json({ error: 'This section already has a period at that day and time.' });
+
+  await run(
+    'INSERT INTO timetable (section_code, day_of_week, start_time, subject, room, teacher_id) VALUES ($1,$2,$3,$4,$5,$6)',
+    [section_code, day_of_week, start_time, subject, room || null, teacher.id]
+  );
+  res.status(201).json({ message: 'Period added.' });
+}));
+
+router.patch('/timetable/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const id = Number(req.params.id);
+  const slot = await get('SELECT * FROM timetable WHERE id = $1 AND teacher_id = $2', [id, teacher.id]);
+  if (!slot) return res.status(404).json({ error: 'Period not found, or it belongs to another teacher.' });
+
+  const { subject, room, start_time, day_of_week } = req.body || {};
+  await run(
+    'UPDATE timetable SET subject = COALESCE($1, subject), room = $2, start_time = COALESCE($3, start_time), day_of_week = COALESCE($4, day_of_week) WHERE id = $5',
+    [subject || null, room !== undefined ? room : slot.room, start_time || null, day_of_week || null, id]
+  );
+  res.json({ message: 'Period updated.' });
+}));
+
+router.delete('/timetable/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const id = Number(req.params.id);
+  const slot = await get('SELECT * FROM timetable WHERE id = $1 AND teacher_id = $2', [id, teacher.id]);
+  if (!slot) return res.status(404).json({ error: 'Period not found, or it belongs to another teacher.' });
+
+  await run('DELETE FROM timetable WHERE id = $1', [id]);
+  res.json({ message: 'Period removed.' });
+}));
+
 module.exports = router;
