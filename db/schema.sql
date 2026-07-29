@@ -195,3 +195,44 @@ CREATE TABLE IF NOT EXISTS exam_answers (
   marks_awarded NUMERIC,
   UNIQUE(attempt_id, question_id)
 );
+
+-- Self-paced Courses: a subject/curriculum/level catalog students can browse on
+-- their own, separate from a specific class section's homework/tests. Teachers
+-- populate the actual content (real curriculum material is their responsibility,
+-- not generated here).
+CREATE TABLE IF NOT EXISTS courses (
+  id SERIAL PRIMARY KEY,
+  subject TEXT NOT NULL,               -- e.g. 'Physics', 'Chinese', 'Mathematics'
+  curriculum TEXT NOT NULL,            -- e.g. 'Pakistani SNC', 'Cambridge O Level', 'Cambridge A Level'
+  level TEXT NOT NULL,                 -- e.g. 'Grade 5', 'O Level', 'AS Level', 'A Level'
+  title TEXT NOT NULL,
+  description TEXT,
+  owner_teacher_id INTEGER REFERENCES teachers(id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS course_topics (
+  id SERIAL PRIMARY KEY,
+  course_id INTEGER REFERENCES courses(id),
+  title TEXT NOT NULL,
+  position INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS course_lessons (
+  id SERIAL PRIMARY KEY,
+  topic_id INTEGER REFERENCES course_topics(id),
+  title TEXT NOT NULL,
+  content_type TEXT NOT NULL DEFAULT 'video' CHECK(content_type IN ('video','text')),
+  video_url TEXT,
+  body_text TEXT,
+  position INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS course_progress (
+  id SERIAL PRIMARY KEY,
+  student_id INTEGER REFERENCES students(id),
+  lesson_id INTEGER REFERENCES course_lessons(id),
+  completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(student_id, lesson_id)
+);

@@ -98,6 +98,17 @@ async function seed({ force = false } = {}) {
     async function insertLesson(title, subject, sectionCode, teacherId, videoUrl, description) {
       await client.query('INSERT INTO lessons (title, subject, section_code, teacher_id, video_url, description) VALUES ($1,$2,$3,$4,$5,$6)', [title, subject, sectionCode, teacherId, videoUrl, description]);
     }
+    async function insertCourse(subject, curriculum, level, title, description, teacherId) {
+      const r = await client.query('INSERT INTO courses (subject, curriculum, level, title, description, owner_teacher_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id', [subject, curriculum, level, title, description, teacherId]);
+      return r.rows[0].id;
+    }
+    async function insertCourseTopic(courseId, title, position) {
+      const r = await client.query('INSERT INTO course_topics (course_id, title, position) VALUES ($1,$2,$3) RETURNING id', [courseId, title, position]);
+      return r.rows[0].id;
+    }
+    async function insertCourseLesson(topicId, title, videoUrl, position) {
+      await client.query('INSERT INTO course_lessons (topic_id, title, content_type, video_url, position) VALUES ($1,$2,$3,$4,$5)', [topicId, title, 'video', videoUrl, position]);
+    }
 
     // ---------- Admin ----------
     const adminUserId = await insertUser('admin@novaschool.pk', 'admin');
@@ -233,6 +244,16 @@ async function seed({ force = false } = {}) {
       'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
       'This is placeholder content so you can see how recorded lessons display. Add your own from the teacher dashboard.'
     );
+
+    // ---------- Sample self-paced course (structure demo only — NOT real curriculum content) ----------
+    const sampleCourseId = await insertCourse(
+      'Mathematics', 'Pakistani SNC', 'Grade 8',
+      'Sample course structure (edit or delete this)',
+      'This is a placeholder showing how subject/curriculum/level courses are organized — replace with real content from the teacher dashboard.',
+      elenaId
+    );
+    const sampleTopicId = await insertCourseTopic(sampleCourseId, 'Sample Topic 1', 1);
+    await insertCourseLesson(sampleTopicId, 'Sample lesson (edit or delete this)', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 1);
 
     await client.query('COMMIT');
   } catch (err) {

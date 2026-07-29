@@ -181,12 +181,12 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div>
         <p class="eyebrow">Online school · Grades 1–12</p>
         <h1>School, run on a <em>schedule</em> that actually holds together.</h1>
-        <p class="hero-sub">Live classes, recorded lessons, homework, exams, attendance, fees and report cards — one timetable ties it all together, backed by a real database behind every dashboard.</p>
+        <p class="hero-sub">Live classes, recorded lessons, homework, exams, attendance, fees and report cards — one timetable ties it all together, for the whole school to rely on.</p>
         <div class="hero-ctas">
           <button class="btn btn-primary" onclick="go('login')">Apply for admission</button>
           <button class="btn btn-outline" onclick="go('login')">Log in to your account</button>
         </div>
-        <div class="hero-meta"><span><b>4</b> roles</span><span><b>Postgres</b> database</span><span><b>JWT</b> secured API</span></div>
+        <div class="hero-meta"><span><b>Grades 1–12</b></span><span><b>Live</b> & recorded classes</span><span><b>Secure</b> student logins</span></div>
       </div>
       <div class="rail-card">
         <div class="rail-head"><span class="day">Monday</span><span class="date mono">Term 2 · Week 6</span></div>
@@ -197,13 +197,13 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
   <div class="wrap section" id="features">
     <div class="section-head"><p class="eyebrow">The platform</p><h2>Everything a school day needs, none of it scattered.</h2>
-      <p>Six systems, one login, one database. Built so a Grade 8 parent and a Math teacher get exactly the view they need.</p></div>
+      <p>Six systems, one login. Built so a Grade 8 parent and a Math teacher get exactly the view they need.</p></div>
     <div class="feature-grid" id="featureGrid"></div>
   </div>
 
   <div class="wrap section" id="day">
     <div class="section-head"><p class="eyebrow">A day at Nova School</p><h2>The same timetable, from bell to grade book.</h2>
-      <p>This is Grade 8, Section B's real weekly schedule, stored in the database and served by the API.</p></div>
+      <p>This is Grade 8, Section B's real weekly schedule, kept up to date automatically.</p></div>
     <div class="week"><table><thead><tr><th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr></thead><tbody id="weekBody"></tbody></table></div>
   </div>
 
@@ -222,7 +222,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
   <footer><div class="wrap foot-inner">
     <div class="brand" style="font-size:16px;"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:22px;height:22px;">Nova School</div>
-    <span>© 2026 Nova School. A demonstration full-stack platform.</span><span>Admissions · Support · Privacy</span>
+    <span>© 2026 Nova School. Online school, grades 1–12.</span><span>Admissions · Support · Privacy</span>
   </div></footer>
 </section>
 
@@ -303,6 +303,17 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
           <div class="card"><div class="card-head"><h3>Progress by subject</h3></div><div id="studentProgress"><p class="empty">Loading…</p></div></div>
         </div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Courses — study at your own pace</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px;">
+          <select class="grade-input" style="width:100%;" id="courseSubjectFilter" onchange="loadStudentCourses()"><option value="">All subjects</option></select>
+          <select class="grade-input" style="width:100%;" id="courseCurriculumFilter" onchange="loadStudentCourses()">
+            <option value="">All curricula</option><option>Pakistani SNC</option><option>Cambridge O Level</option><option>Cambridge A Level</option>
+          </select>
+          <select class="grade-input" style="width:100%;" id="courseLevelFilter" onchange="loadStudentCourses()"><option value="">All levels</option></select>
+        </div>
+        <div id="studentCourses"><p class="empty">Loading…</p></div>
       </div>
     </main>
   </div>
@@ -408,6 +419,22 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <button class="btn btn-primary btn-sm" onclick="createExam()">Create</button>
         </div>
         <div id="teacherExams"><p class="empty">Loading…</p></div>
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Courses (self-paced)</h3><button class="btn btn-ink btn-sm" onclick="toggleNewCourseForm()">+ Create course</button></div>
+        <div id="newCourseForm" style="display:none; margin-bottom:16px; padding:14px; background:var(--paper-alt); border-radius:10px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="courseSubject" placeholder="Subject (e.g. Physics, Chinese)">
+            <select class="grade-input" style="width:100%;" id="courseCurriculum">
+              <option>Pakistani SNC</option><option>Cambridge O Level</option><option>Cambridge A Level</option>
+            </select>
+            <input class="grade-input" style="width:100%;" id="courseLevel" placeholder="Level (e.g. Grade 8, O Level)">
+            <input class="grade-input" style="width:100%;" id="courseTitle" placeholder="Course title">
+          </div>
+          <textarea id="courseDescription" placeholder="Short description (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="createCourse()">Create</button>
+        </div>
+        <div id="teacherCourses"><p class="empty">Loading…</p></div>
       </div>
     </main>
   </div>
@@ -671,6 +698,7 @@ async function loadStudentDashboard(){
       : '<p class="empty">No recorded lessons yet.</p>';
 
     await loadStudentExams();
+    await loadStudentCourses();
   } catch (err) {
     toast(err.message);
   }
@@ -789,6 +817,90 @@ async function submitExam(examId){
     const res = await api(`/student/exams/${examId}/submit`, { method: 'POST', body: JSON.stringify({ answers }) });
     toast(res.message);
     loadStudentExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ---------- Self-paced Courses (student) ---------- */
+const COURSE_SUBJECTS = ['Mathematics','Physics','Chemistry','Biology','Science','English','Chinese','Arabic','French','Urdu','Islamiat','Pakistan Studies','Computer Science'];
+const PAKISTANI_LEVELS = ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12'];
+const CAMBRIDGE_LEVELS = ['O Level','AS Level','A Level'];
+
+function populateCourseFilters(){
+  const subjEl = document.getElementById('courseSubjectFilter');
+  if (subjEl && subjEl.options.length <= 1) {
+    subjEl.innerHTML += COURSE_SUBJECTS.map(s => `<option>${s}</option>`).join('');
+  }
+  const levelEl = document.getElementById('courseLevelFilter');
+  if (levelEl) {
+    const allLevels = [...PAKISTANI_LEVELS, ...CAMBRIDGE_LEVELS];
+    levelEl.innerHTML = '<option value="">All levels</option>' + allLevels.map(l => `<option>${l}</option>`).join('');
+  }
+}
+
+async function loadStudentCourses(){
+  populateCourseFilters();
+  const subject = document.getElementById('courseSubjectFilter').value;
+  const curriculum = document.getElementById('courseCurriculumFilter').value;
+  const level = document.getElementById('courseLevelFilter').value;
+  const params = new URLSearchParams();
+  if (subject) params.set('subject', subject);
+  if (curriculum) params.set('curriculum', curriculum);
+  if (level) params.set('level', level);
+
+  try {
+    const d = await api(`/student/courses?${params.toString()}`);
+    document.getElementById('studentCourses').innerHTML = d.courses.length
+      ? d.courses.map(c => {
+          const pct = c.lessonCount ? Math.round((c.completedCount / c.lessonCount) * 100) : 0;
+          return `<div style="border-bottom:1px solid var(--paper-alt); padding:12px 0;">
+            <div class="list-row" style="border:none; padding:0;">
+              <div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${c.subject}</span>
+                <div><div class="l-title">${c.title}</div><div class="l-sub">${c.curriculum} · ${c.level} · ${c.lessonCount} lesson${c.lessonCount===1?'':'s'}</div></div></div>
+              <button class="btn btn-outline btn-sm" onclick="toggleCourseDetail(${c.id})">${pct}% done</button>
+            </div>
+            <div class="queue-detail" id="course-${c.id}"></div>
+          </div>`;
+        }).join('')
+      : '<p class="empty">No courses match those filters yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleCourseDetail(courseId){
+  const el = document.getElementById(`course-${courseId}`);
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.queue-detail.open').forEach(d => d.classList.remove('open'));
+  if (isOpen) return;
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  el.classList.add('open');
+  try {
+    const d = await api(`/student/courses/${courseId}`);
+    el.innerHTML = d.topics.length
+      ? d.topics.map(t => `
+        <p style="font-weight:700; font-size:13px; margin:10px 0 6px;">${t.title}</p>
+        ${t.lessons.map(l => {
+          const embed = videoEmbedSrc(l.videoUrl || '');
+          const player = l.contentType === 'video' && embed
+            ? `<div style="position:relative; padding-top:56.25%; border-radius:8px; overflow:hidden; margin:6px 0;"><iframe src="${embed}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div>`
+            : l.contentType === 'text' ? `<p style="font-size:13px; margin:6px 0; padding:8px; background:var(--paper-alt); border-radius:8px;">${l.bodyText || ''}</p>` : '';
+          return `<div class="qrow"><span>${l.title}</span>
+            <label style="display:flex; align-items:center; gap:6px; font-size:12.5px;">
+              <input type="checkbox" ${l.completed ? 'checked' : ''} onchange="toggleLessonComplete(${l.id}, ${courseId}, this.checked)"> Done
+            </label></div>${player}`;
+        }).join('')}`).join('')
+      : '<p class="empty">No topics added yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleLessonComplete(lessonId, courseId, checked){
+  try {
+    await api(`/student/courses/lessons/${lessonId}/complete`, { method: checked ? 'POST' : 'DELETE' });
+    loadStudentCourses();
   } catch (err) {
     toast(err.message);
   }
@@ -913,6 +1025,7 @@ async function loadTeacherDashboard(){
 
     await loadTeacherLessons();
     await loadTeacherExams();
+    await loadTeacherCourses();
   } catch (err) {
     toast(err.message);
   }
@@ -1226,6 +1339,147 @@ async function saveGrading(attemptId, examId, descriptiveQuestionIds){
     toggleAttempts(examId);
     toggleAttempts(examId);
     loadTeacherExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ---------- Self-paced Courses (teacher management) ---------- */
+
+function toggleNewCourseForm(){
+  const el = document.getElementById('newCourseForm');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function createCourse(){
+  const subject = document.getElementById('courseSubject').value.trim();
+  const curriculum = document.getElementById('courseCurriculum').value;
+  const level = document.getElementById('courseLevel').value.trim();
+  const title = document.getElementById('courseTitle').value.trim();
+  const description = document.getElementById('courseDescription').value.trim();
+
+  if (!subject || !level || !title) { toast('Subject, level, and title are required.'); return; }
+
+  try {
+    const res = await api('/teacher/courses', { method: 'POST', body: JSON.stringify({ subject, curriculum, level, title, description }) });
+    toast(res.message);
+    document.getElementById('courseSubject').value = '';
+    document.getElementById('courseLevel').value = '';
+    document.getElementById('courseTitle').value = '';
+    document.getElementById('courseDescription').value = '';
+    toggleNewCourseForm();
+    loadTeacherCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadTeacherCourses(){
+  try {
+    const d = await api('/teacher/courses');
+    document.getElementById('teacherCourses').innerHTML = d.courses.length
+      ? d.courses.map(c => `
+        <div style="border-bottom:1px solid var(--paper-alt); padding:12px 0;">
+          <div class="list-row" style="border:none; padding:0 0 8px;">
+            <div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${c.subject}</span>
+              <div><div class="l-title">${c.title}</div><div class="l-sub">${c.curriculum} · ${c.level} · ${c.topicCount} topic${c.topicCount===1?'':'s'}, ${c.lessonCount} lesson${c.lessonCount===1?'':'s'}</div></div></div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn btn-outline btn-sm" onclick="toggleCourseManage(${c.id})">Manage</button>
+              ${c.isMine ? `<button class="btn btn-outline btn-sm" onclick="deleteCourse(${c.id})">Delete</button>` : ''}
+            </div>
+          </div>
+          <div class="queue-detail" id="manage-course-${c.id}"></div>
+        </div>`).join('')
+      : '<p class="empty">No courses created yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteCourse(id){
+  try {
+    const res = await api(`/teacher/courses/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    loadTeacherCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleCourseManage(courseId){
+  const el = document.getElementById(`manage-course-${courseId}`);
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.queue-detail.open').forEach(d => d.classList.remove('open'));
+  if (isOpen) return;
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  el.classList.add('open');
+  await renderCourseManage(courseId);
+}
+
+async function renderCourseManage(courseId){
+  const el = document.getElementById(`manage-course-${courseId}`);
+  try {
+    const d = await api(`/teacher/courses/${courseId}`);
+    const topicsHtml = d.topics.map(t => `
+      <div style="margin:10px 0; padding:10px; background:var(--card); border:1px solid var(--line); border-radius:10px;">
+        <div class="qrow"><span style="font-weight:700;">${t.title}</span><button class="btn btn-outline btn-sm" onclick="deleteCourseTopic(${t.id}, ${courseId})">Delete topic</button></div>
+        ${t.lessons.map(l => `<div class="qrow"><span>${l.title}</span><button class="btn btn-outline btn-sm" onclick="deleteCourseLesson(${l.id}, ${courseId})">Delete</button></div>`).join('')}
+        <div style="display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;">
+          <input class="grade-input" style="width:140px;" id="lessonTitle-${t.id}" placeholder="Lesson title">
+          <input class="grade-input" style="width:160px;" id="lessonVideo-${t.id}" placeholder="Video URL">
+          <button class="btn btn-ink btn-sm" onclick="addCourseLesson(${t.id}, ${courseId})">Add lesson</button>
+        </div>
+      </div>`).join('');
+    el.innerHTML = topicsHtml + `
+      <div style="display:flex; gap:6px; margin-top:10px;">
+        <input class="grade-input" style="flex:1;" id="newTopicTitle-${courseId}" placeholder="New topic title">
+        <button class="btn btn-ink btn-sm" onclick="addCourseTopic(${courseId})">Add topic</button>
+      </div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function addCourseTopic(courseId){
+  const title = document.getElementById(`newTopicTitle-${courseId}`).value.trim();
+  if (!title) { toast('Enter a topic title.'); return; }
+  try {
+    await api(`/teacher/courses/${courseId}/topics`, { method: 'POST', body: JSON.stringify({ title }) });
+    renderCourseManage(courseId);
+    loadTeacherCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteCourseTopic(topicId, courseId){
+  try {
+    await api(`/teacher/courses/topics/${topicId}`, { method: 'DELETE' });
+    renderCourseManage(courseId);
+    loadTeacherCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function addCourseLesson(topicId, courseId){
+  const title = document.getElementById(`lessonTitle-${topicId}`).value.trim();
+  const video_url = document.getElementById(`lessonVideo-${topicId}`).value.trim();
+  if (!title || !video_url) { toast('Lesson title and video URL are required.'); return; }
+  try {
+    await api(`/teacher/courses/topics/${topicId}/lessons`, { method: 'POST', body: JSON.stringify({ title, content_type: 'video', video_url }) });
+    renderCourseManage(courseId);
+    loadTeacherCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteCourseLesson(lessonId, courseId){
+  try {
+    await api(`/teacher/courses/lessons/${lessonId}`, { method: 'DELETE' });
+    renderCourseManage(courseId);
+    loadTeacherCourses();
   } catch (err) {
     toast(err.message);
   }

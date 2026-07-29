@@ -250,4 +250,96 @@ router.post('/exams/:id/submit', asyncHandler(async (req, res) => {
   });
 }));
 
+// ---------- Self-paced Courses ----------
+
+router.get('/courses', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const { subject, curriculum, level } = req.query;
+  const conditions = [];
+  const params = [student.id];
+  let idx = 2;
+  if (subject) { conditions.push(`c.subject = $${idx++}`); params.push(subject); }
+  if (curriculum) { conditions.push(`c.curriculum = $${idx++}`); params.push(curriculum); }
+  if (level) { conditions.push(`c.level = $${idx++}`); params.push(level); }
+  const whereExtra = conditions.length ? 'AND ' + conditions.join(' AND ') : '';
+
+  const courses = await all(
+    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.description,
+            (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count,
+            (SELECT COUNT(*) FROM course_progress cp
+               JOIN course_lessons cl2 ON cl2.id = cp.lesson_id
+               JOIN course_topics ct2 ON ct2.id = cl2.topic_id
+               WHERE ct2.course_id = c.id AND cp.student_id = $1) AS completed_count
+     FROM courses c WHERE 1=1 ${whereExtra}
+     ORDER BY c.subject, c.curriculum, c.level`,
+    params
+  );
+
+  res.json({ courses: courses.map(c => ({
+    id: c.id, subject: c.subject, curriculum: c.curriculum, level: c.level,
+    title: c.title, description: c.description,
+    lessonCount: Number(c.lesson_count), completedCount: Number(c.completed_count)
+  })) });
+}));
+
+router.get('/courses/:id', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const courseId = Number(req.params.id);
+  const course = await get('SELECT * FROM courses WHERE id = $1', [courseId]);
+  if (!course) return res.status(404).json({ error: 'Course not found.' });
+
+  const topics = await all('SELECT id, title FROM course_topics WHERE course_id = $1 ORDER BY position, id', [courseId]);
+  const lessons = await all(
+    `SELECT cl.id, cl.topic_id, cl.title, cl.content_type, cl.video_url, cl.body_text
+     FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id
+     WHERE ct.course_id = $1 ORDER BY cl.position, cl.id`,
+    [courseId]
+  );
+  const completedRows = await all(
+    `SELECT cp.lesson_id FROM course_progress cp
+     JOIN course_lessons cl ON cl.id = cp.lesson_id JOIN course_topics ct ON ct.id = cl.topic_id
+     WHERE ct.course_id = $1 AND cp.student_id = $2`,
+    [courseId, student.id]
+  );
+  const completedIds = new Set(completedRows.map(r => r.lesson_id));
+
+  res.json({
+    course: { id: course.id, subject: course.subject, curriculum: course.curriculum, level: course.level, title: course.title, description: course.description },
+    topics: topics.map(t => ({
+      id: t.id, title: t.title,
+      lessons: lessons.filter(l => l.topic_id === t.id).map(l => ({
+        id: l.id, title: l.title, contentType: l.content_type, videoUrl: l.video_url, bodyText: l.body_text,
+        completed: completedIds.has(l.id)
+      }))
+    }))
+  });
+}));
+
+router.post('/courses/lessons/:lessonId/complete', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const lessonId = Number(req.params.lessonId);
+  const lesson = await get('SELECT id FROM course_lessons WHERE id = $1', [lessonId]);
+  if (!lesson) return res.status(404).json({ error: 'Lesson not found.' });
+
+  await run(
+    'INSERT INTO course_progress (student_id, lesson_id) VALUES ($1,$2) ON CONFLICT (student_id, lesson_id) DO NOTHING',
+    [student.id, lessonId]
+  );
+  res.json({ message: 'Marked complete.' });
+}));
+
+router.delete('/courses/lessons/:lessonId/complete', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  await run('DELETE FROM course_progress WHERE student_id = $1 AND lesson_id = $2', [student.id, Number(req.params.lessonId)]);
+  res.json({ message: 'Unmarked.' });
+}));
+
 module.exports = router;

@@ -435,4 +435,136 @@ router.delete('/timetable/:id', asyncHandler(async (req, res) => {
   res.json({ message: 'Period removed.' });
 }));
 
+// ---------- Self-paced Courses (management) ----------
+
+router.get('/courses', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const courses = await all(
+    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.owner_teacher_id,
+            (SELECT COUNT(*) FROM course_topics WHERE course_id = c.id) AS topic_count,
+            (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count
+     FROM courses c ORDER BY c.subject, c.curriculum, c.level`
+  );
+
+  res.json({ courses: courses.map(c => ({
+    id: c.id, subject: c.subject, curriculum: c.curriculum, level: c.level, title: c.title,
+    topicCount: Number(c.topic_count), lessonCount: Number(c.lesson_count), isMine: c.owner_teacher_id === teacher.id
+  })) });
+}));
+
+router.post('/courses', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { subject, curriculum, level, title, description } = req.body || {};
+  if (!subject || !curriculum || !level || !title) {
+    return res.status(400).json({ error: 'subject, curriculum, level, and title are required.' });
+  }
+
+  const r = await run(
+    'INSERT INTO courses (subject, curriculum, level, title, description, owner_teacher_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+    [subject, curriculum, level, title, description || null, teacher.id]
+  );
+  res.status(201).json({ message: 'Course created.', courseId: r.rows[0].id });
+}));
+
+router.delete('/courses/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const id = Number(req.params.id);
+  const course = await get('SELECT * FROM courses WHERE id = $1 AND owner_teacher_id = $2', [id, teacher.id]);
+  if (!course) return res.status(404).json({ error: 'Course not found, or it belongs to another teacher.' });
+
+  const topicIds = (await all('SELECT id FROM course_topics WHERE course_id = $1', [id])).map(t => t.id);
+  for (const tid of topicIds) {
+    await run('DELETE FROM course_progress WHERE lesson_id IN (SELECT id FROM course_lessons WHERE topic_id = $1)', [tid]);
+    await run('DELETE FROM course_lessons WHERE topic_id = $1', [tid]);
+  }
+  await run('DELETE FROM course_topics WHERE course_id = $1', [id]);
+  await run('DELETE FROM courses WHERE id = $1', [id]);
+  res.json({ message: 'Course deleted.' });
+}));
+
+router.get('/courses/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const courseId = Number(req.params.id);
+  const course = await get('SELECT * FROM courses WHERE id = $1', [courseId]);
+  if (!course) return res.status(404).json({ error: 'Course not found.' });
+
+  const topics = await all('SELECT id, title FROM course_topics WHERE course_id = $1 ORDER BY position, id', [courseId]);
+  const lessons = await all(
+    `SELECT cl.id, cl.topic_id, cl.title, cl.content_type, cl.video_url, cl.body_text
+     FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = $1 ORDER BY cl.position, cl.id`,
+    [courseId]
+  );
+
+  res.json({
+    course: { id: course.id, title: course.title, isMine: course.owner_teacher_id === teacher.id },
+    topics: topics.map(t => ({ id: t.id, title: t.title, lessons: lessons.filter(l => l.topic_id === t.id) }))
+  });
+}));
+
+router.post('/courses/:id/topics', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const courseId = Number(req.params.id);
+  const course = await get('SELECT id FROM courses WHERE id = $1', [courseId]);
+  if (!course) return res.status(404).json({ error: 'Course not found.' });
+
+  const { title } = req.body || {};
+  if (!title) return res.status(400).json({ error: 'title is required.' });
+
+  const posRow = await get('SELECT COALESCE(MAX(position),0)+1 AS next FROM course_topics WHERE course_id = $1', [courseId]);
+  await run('INSERT INTO course_topics (course_id, title, position) VALUES ($1,$2,$3)', [courseId, title, posRow.next]);
+  res.status(201).json({ message: 'Topic added.' });
+}));
+
+router.delete('/courses/topics/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const id = Number(req.params.id);
+  await run('DELETE FROM course_progress WHERE lesson_id IN (SELECT id FROM course_lessons WHERE topic_id = $1)', [id]);
+  await run('DELETE FROM course_lessons WHERE topic_id = $1', [id]);
+  await run('DELETE FROM course_topics WHERE id = $1', [id]);
+  res.json({ message: 'Topic deleted.' });
+}));
+
+router.post('/courses/topics/:id/lessons', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const topicId = Number(req.params.id);
+  const topic = await get('SELECT id FROM course_topics WHERE id = $1', [topicId]);
+  if (!topic) return res.status(404).json({ error: 'Topic not found.' });
+
+  const { title, content_type, video_url, body_text } = req.body || {};
+  if (!title || !['video', 'text'].includes(content_type)) {
+    return res.status(400).json({ error: 'title and a valid content_type (video/text) are required.' });
+  }
+
+  const posRow = await get('SELECT COALESCE(MAX(position),0)+1 AS next FROM course_lessons WHERE topic_id = $1', [topicId]);
+  await run(
+    'INSERT INTO course_lessons (topic_id, title, content_type, video_url, body_text, position) VALUES ($1,$2,$3,$4,$5,$6)',
+    [topicId, title, content_type, content_type === 'video' ? video_url : null, content_type === 'text' ? body_text : null, posRow.next]
+  );
+  res.status(201).json({ message: 'Lesson added.' });
+}));
+
+router.delete('/courses/lessons/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const id = Number(req.params.id);
+  await run('DELETE FROM course_progress WHERE lesson_id = $1', [id]);
+  await run('DELETE FROM course_lessons WHERE id = $1', [id]);
+  res.json({ message: 'Lesson deleted.' });
+}));
+
 module.exports = router;
