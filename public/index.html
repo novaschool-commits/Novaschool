@@ -543,8 +543,8 @@ function selectRole(key){
 }
 
 /* ============================== app state & API helper ============================== */
-let authToken = null;
-let currentUser = null;
+let authToken = localStorage.getItem('nova_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('nova_user') || 'null');
 
 async function api(path, opts = {}) {
   const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
@@ -552,6 +552,10 @@ async function api(path, opts = {}) {
   const res = await fetch('/api' + path, Object.assign({}, opts, { headers }));
   let data = {};
   try { data = await res.json(); } catch (e) { /* no body */ }
+  if (res.status === 401 && authToken) {
+    logout();
+    throw new Error('Your session expired — please log in again.');
+  }
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
@@ -566,7 +570,7 @@ function go(screen){
   document.querySelector(`.screen[data-screen="${screen}"]`).classList.add('active');
   window.scrollTo(0,0);
 }
-function logout(){ authToken = null; currentUser = null; go('login'); }
+function logout(){ authToken = null; currentUser = null; localStorage.removeItem('nova_token'); localStorage.removeItem('nova_user'); go('login'); }
 
 /* ============================== login flow ============================== */
 async function doLogin(){
@@ -581,6 +585,8 @@ async function doLogin(){
   try {
     const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
     authToken = data.token; currentUser = data.user;
+    localStorage.setItem('nova_token', authToken);
+    localStorage.setItem('nova_user', JSON.stringify(currentUser));
     go(currentUser.role);
     loadDashboard(currentUser.role);
   } catch (err) {
@@ -1577,6 +1583,13 @@ renderFeatures();
 renderRoles();
 renderRoleTabs();
 selectRole('student');
+
+// If a saved session exists (e.g. after a page refresh), jump straight back
+// to that dashboard instead of showing the landing page.
+if (authToken && currentUser && currentUser.role) {
+  go(currentUser.role);
+  loadDashboard(currentUser.role);
+}
 </script>
 </body>
 </html>
