@@ -255,6 +255,17 @@ async function seed({ force = false } = {}) {
     const sampleTopicId = await insertCourseTopic(sampleCourseId, 'Sample Topic 1', 1);
     await insertCourseLesson(sampleTopicId, 'Sample lesson (edit or delete this)', 'https://www.youtube.com/watch?v=aqz-KE-bpKQ', 1);
 
+    // ---------- Sample entrance test questions (placeholders — manage from the admin dashboard) ----------
+    async function insertEntranceQ(testType, text, options, correct, position) {
+      await client.query(
+        'INSERT INTO entrance_test_questions (test_type, question_text, options, correct_answer, position) VALUES ($1,$2,$3,$4,$5)',
+        [testType, text, JSON.stringify(options), correct, position]
+      );
+    }
+    await insertEntranceQ('student_admission', 'What is 7 + 8?', ['13', '15', '17', '21'], '15', 1);
+    await insertEntranceQ('student_admission', 'Which of these is a vowel?', ['B', 'E', 'K', 'T'], 'E', 2);
+    await insertEntranceQ('teacher_recruitment', 'What is the boiling point of water at sea level (°C)?', ['90', '100', '110', '120'], '100', 1);
+
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

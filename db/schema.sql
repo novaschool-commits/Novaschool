@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS messages (
   body TEXT NOT NULL,
   sent_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS announcements (
   id SERIAL PRIMARY KEY,
@@ -149,6 +150,54 @@ CREATE TABLE IF NOT EXISTS admission_applications (
   parent_email TEXT,
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','declined')),
   submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+-- Idempotent additions for photo/document/entrance-test support on a database
+-- that already has this table from before these features existed.
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS photo_base64 TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS document_base64 TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS document_filename TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS entrance_score TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS curriculum TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS monthly_fee NUMERIC;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS fee_currency TEXT;
+
+-- Single-row settings table. Tracks whether Nova School has become an
+-- examination-authority in its own right (registered with a board), which
+-- changes how higher-grade report cards are labeled/handled.
+CREATE TABLE IF NOT EXISTS school_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  exam_authority_status TEXT NOT NULL DEFAULT 'not_registered' CHECK(exam_authority_status IN ('not_registered','pending','registered')),
+  exam_authority_name TEXT,
+  CONSTRAINT single_row CHECK (id = 1)
+);
+INSERT INTO school_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+-- Teacher recruitment applications (same idea as admissions, for job candidates).
+CREATE TABLE IF NOT EXISTS teacher_applications (
+  id SERIAL PRIMARY KEY,
+  applicant_name TEXT NOT NULL,
+  subject_applied TEXT NOT NULL,
+  email TEXT NOT NULL,
+  phone TEXT,
+  photo_base64 TEXT,
+  document_base64 TEXT,
+  document_filename TEXT,
+  entrance_score TEXT,
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','declined')),
+  submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Simple entrance/screening test question banks — one set for prospective
+-- students, one for prospective teachers. Auto-graded MCQ only, deliberately
+-- simpler than the full internal Tests & Quizzes engine since these are
+-- one-shot and taken by people with no account yet.
+CREATE TABLE IF NOT EXISTS entrance_test_questions (
+  id SERIAL PRIMARY KEY,
+  test_type TEXT NOT NULL CHECK(test_type IN ('student_admission','teacher_recruitment')),
+  question_text TEXT NOT NULL,
+  options JSONB NOT NULL,
+  correct_answer TEXT NOT NULL,
+  position INTEGER DEFAULT 0
 );
 
 -- Tests & quizzes: MCQ (auto-graded) and descriptive (manually graded) questions.

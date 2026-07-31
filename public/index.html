@@ -168,10 +168,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   <div class="nav">
     <div class="wrap nav-inner">
       <div class="brand"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:30px;height:30px;">Nova School</div>
-      <nav class="nav-links"><a href="#features">Platform</a><a href="#day">A day at Nova School</a><a href="#roles">For your role</a></nav>
+      <nav class="nav-links"><a href="#features">Platform</a><a href="#day">A day at Nova School</a><a href="#roles">For your role</a><a href="#news">News</a></nav>
       <div class="nav-cta">
         <button class="btn btn-outline btn-sm" onclick="go('login')">Log in</button>
-        <button class="btn btn-primary btn-sm" onclick="go('login')">Apply for admission</button>
+        <button class="btn btn-primary btn-sm" onclick="go('apply')">Apply for admission</button>
       </div>
     </div>
   </div>
@@ -183,7 +183,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <h1>School, run on a <em>schedule</em> that actually holds together.</h1>
         <p class="hero-sub">Live classes, recorded lessons, homework, exams, attendance, fees and report cards — one timetable ties it all together, for the whole school to rely on.</p>
         <div class="hero-ctas">
-          <button class="btn btn-primary" onclick="go('login')">Apply for admission</button>
+          <button class="btn btn-primary" onclick="go('apply')">Apply for admission</button>
           <button class="btn btn-outline" onclick="go('login')">Log in to your account</button>
         </div>
         <div class="hero-meta"><span><b>Grades 1–12</b></span><span><b>Live</b> & recorded classes</span><span><b>Secure</b> student logins</span></div>
@@ -213,16 +213,21 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     <div class="roles-grid" id="rolesGrid"></div>
   </div>
 
+  <div class="wrap section" id="news" style="padding-top:0;">
+    <div class="section-head"><p class="eyebrow">News & announcements</p><h2>What's happening at Nova School.</h2></div>
+    <div id="publicNews"><p class="empty">Loading…</p></div>
+  </div>
+
   <div class="wrap" style="padding-bottom:90px;">
     <div class="cta-band">
       <div><h2>Admissions for the next term are open.</h2><p>Grades 1 through 12 · rolling applications · decisions within 5 business days.</p></div>
-      <button class="btn" style="background:#fff; color:var(--ink);" onclick="go('login')">Start an application →</button>
+      <button class="btn" style="background:#fff; color:var(--ink);" onclick="go('apply')">Start an application →</button>
     </div>
   </div>
 
   <footer><div class="wrap foot-inner">
     <div class="brand" style="font-size:16px;"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:22px;height:22px;">Nova School</div>
-    <span>© 2026 Nova School. Online school, grades 1–12.</span><span>Admissions · Support · Privacy</span>
+    <span>© 2026 Nova School. Online school, grades 1–12.</span><span>Admissions · <a href="javascript:void(0)" onclick="go('applyTeach')" style="color:var(--ink); font-weight:600;">Careers</a> · Support · Privacy</span>
   </div></footer>
 </section>
 
@@ -253,13 +258,91 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="login-hint">Demo accounts (password for all: <code>password123</code>):<br>
           <code>student@novaschool.pk</code> · <code>parent@novaschool.pk</code><br>
           <code>teacher@novaschool.pk</code> · <code>admin@novaschool.pk</code></div>
-        <p class="apply-link">New family? <a href="javascript:void(0)" onclick="go('landing'); setTimeout(()=>document.getElementById('roles').scrollIntoView(),50)">Start an admission application</a></p>
+        <p class="apply-link">New family? <a href="javascript:void(0)" onclick="go('apply')">Start an admission application</a></p>
+        <p class="apply-link">Want to teach here? <a href="javascript:void(0)" onclick="go('applyTeach')">Apply for a teaching position</a></p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ============================================================ ADMISSION APPLICATION ============================================================ -->
+<section class="screen" data-screen="apply">
+  <div class="wrap" style="max-width:640px; padding:60px 28px 100px;">
+    <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Nova School</a>
+    <h2 style="font-size:28px; margin-bottom:8px;">Admission application</h2>
+    <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Grades 1–12 · rolling applications · decisions within 5 business days.</p>
+
+    <div id="applyFormSection" class="card">
+      <div class="field"><label>Student's full name</label><input id="applyName" placeholder="e.g. Aiden Silva"></div>
+      <div class="field"><label>Grade applying for</label><input id="applyGrade" placeholder="e.g. Grade 5, or O Level"></div>
+      <div class="field"><label>Curriculum</label>
+        <select id="applyCurriculum" style="width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:14.5px; background:var(--card);">
+          <option value="Pakistani">Pakistani curriculum (fees in PKR)</option>
+          <option value="International">International — UK/O-Level/A-Level (fees in USD)</option>
+        </select>
+      </div>
+      <div class="field"><label>Parent/guardian email</label><input type="email" id="applyEmail" placeholder="you@example.com"></div>
+      <div class="field"><label>Student photo (optional)</label><input type="file" id="applyPhoto" accept="image/*"></div>
+      <div class="field"><label>Supporting document — birth certificate, previous school record, etc. (optional)</label><input type="file" id="applyDocument"></div>
+      <button class="btn btn-primary" style="width:100%;" id="applySubmitBtn" onclick="submitAdmissionApplication()">Submit application</button>
+    </div>
+
+    <div id="applyConfirmSection" style="display:none;" class="card">
+      <p id="applyConfirmMessage" style="font-size:14.5px; margin-bottom:18px;"></p>
+
+      <div id="feeVoucher" style="border:1.5px dashed var(--line); border-radius:12px; padding:22px; margin-bottom:18px; position:relative; overflow:hidden;">
+        <img src="assets/logo-icon.jpg" alt="" style="position:absolute; top:50%; left:50%; width:220px; height:auto; transform:translate(-50%,-50%); opacity:0.08; pointer-events:none;">
+        <div style="position:relative;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <img src="assets/logo-icon.jpg" alt="Nova School" style="width:40px;height:40px;border-radius:6px;">
+            <span class="mono" style="font-size:12px; color:var(--ink-soft);">Provisional Fee Voucher</span>
+          </div>
+          <p style="font-size:13px; color:var(--ink-soft); margin-bottom:4px;">Applicant</p>
+          <p id="voucherName" style="font-weight:700; font-size:16px; margin-bottom:12px;"></p>
+          <p style="font-size:13px; color:var(--ink-soft); margin-bottom:4px;">Grade / Curriculum</p>
+          <p id="voucherGrade" style="font-weight:600; font-size:14.5px; margin-bottom:12px;"></p>
+          <p style="font-size:13px; color:var(--ink-soft); margin-bottom:4px;">Monthly fee</p>
+          <p id="voucherAmount" style="font-weight:700; font-size:22px; color:var(--brand);"></p>
+          <p style="font-size:12px; color:var(--ink-soft); margin-top:10px;">This is a provisional fee estimate generated at application time — final confirmation follows admission approval.</p>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-bottom:18px;" onclick="window.print()">Print / Save voucher as PDF</button>
+
+      <p style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;">Optional: take a short entrance sample test now — it helps the school place your child appropriately.</p>
+      <button class="btn btn-outline" id="applyTestStartBtn" onclick="startEntranceTest('student')">Take the entrance test</button>
+      <div id="applyTestArea" style="margin-top:18px;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ TEACHER RECRUITMENT APPLICATION ============================================================ -->
+<section class="screen" data-screen="applyTeach">
+  <div class="wrap" style="max-width:640px; padding:60px 28px 100px;">
+    <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Nova School</a>
+    <h2 style="font-size:28px; margin-bottom:8px;">Apply to teach at Nova School</h2>
+    <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Tell us about yourself — we review every application personally.</p>
+
+    <div id="teachFormSection" class="card">
+      <div class="field"><label>Full name</label><input id="teachName" placeholder="e.g. Elena Whitfield"></div>
+      <div class="field"><label>Subject you'd like to teach</label><input id="teachSubject" placeholder="e.g. Physics, Chinese, Islamiat"></div>
+      <div class="field"><label>Email</label><input type="email" id="teachEmail" placeholder="you@example.com"></div>
+      <div class="field"><label>Phone (optional)</label><input id="teachPhone" placeholder="+92…"></div>
+      <div class="field"><label>Photo (optional)</label><input type="file" id="teachPhoto" accept="image/*"></div>
+      <div class="field"><label>CV / certificates (optional)</label><input type="file" id="teachDocument"></div>
+      <button class="btn btn-primary" style="width:100%;" id="teachSubmitBtn" onclick="submitTeacherApplication()">Submit application</button>
+    </div>
+
+    <div id="teachConfirmSection" style="display:none;" class="card">
+      <p id="teachConfirmMessage" style="font-size:14.5px; margin-bottom:18px;"></p>
+      <p style="font-size:13px; color:var(--ink-soft); margin-bottom:14px;">Optional: take a short screening test now.</p>
+      <button class="btn btn-outline" id="teachTestStartBtn" onclick="startEntranceTest('teacher')">Take the screening test</button>
+      <div id="teachTestArea" style="margin-top:18px;"></div>
+    </div>
+  </div>
+</section>
+
 <!-- ============================================================ STUDENT ============================================================ -->
+
 <section class="screen" data-screen="student">
   <div class="app-shell">
     <aside class="app-sidebar">
@@ -269,6 +352,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--indigo);" id="studentAvatar">--</div><div><div class="u-name" id="studentName">—</div><div class="u-role" id="studentSection">—</div></div></div>
+        <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -301,7 +385,17 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div class="stack">
           <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Messages</h3></div>
+            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;">
+              <div id="msgContacts-student" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
+              <div>
+                <div id="msgThread-student" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
+                <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-student" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
+              </div>
+            </div>
+          </div>
           <div class="card"><div class="card-head"><h3>Progress by subject</h3></div><div id="studentProgress"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Report card</h3></div><div id="reportCardArea"><p class="empty">Loading…</p></div></div>
         </div>
       </div>
       <div class="card" style="margin-top:20px;">
@@ -327,6 +421,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--amber);" id="parentAvatar">--</div><div><div class="u-name" id="parentName">—</div><div class="u-role">Parent account</div></div></div>
+        <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -347,7 +442,15 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="stack"><div class="card"><div class="card-head"><h3>Recent grades</h3></div>
           <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div>
         <div class="stack">
-          <div class="card"><div class="card-head"><h3>Messages</h3></div><div id="parentMessages"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Messages</h3></div>
+            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;">
+              <div id="msgContacts-parent" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
+              <div>
+                <div id="msgThread-parent" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
+                <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-parent" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('parent')">Send</button></div>
+              </div>
+            </div>
+          </div>
           <div class="card"><div class="card-head"><h3>School announcements</h3></div><div id="parentAnnouncements"><p class="empty">Loading…</p></div></div>
         </div>
       </div>
@@ -363,6 +466,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--magenta);" id="teacherAvatar">--</div><div><div class="u-name" id="teacherName">—</div><div class="u-role" id="teacherSubject">—</div></div></div>
+        <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -375,7 +479,15 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
       <div class="grid-2">
         <div class="card"><div class="card-head"><h3 id="teacherRosterTitle">Roster</h3></div><div id="teacherRoster"><p class="empty">Loading…</p></div></div>
-        <div class="stack"><div class="card"><div class="card-head"><h3>Messages</h3></div><div id="teacherMessages"><p class="empty">Loading…</p></div></div></div>
+        <div class="stack"><div class="card"><div class="card-head"><h3>Messages</h3></div>
+          <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;">
+            <div id="msgContacts-teacher" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
+            <div>
+              <div id="msgThread-teacher" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
+              <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-teacher" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('teacher')">Send</button></div>
+            </div>
+          </div>
+        </div></div>
       </div>
       <div class="card" style="margin-top:20px;">
         <div class="card-head"><h3>Recorded lessons</h3></div>
@@ -448,6 +560,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
+        <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -466,6 +579,58 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
       <div class="card"><div class="card-head"><h3>Sections at a glance</h3></div>
         <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Class teacher</th><th>Capacity</th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Examination authority status</h3></div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Controls whether higher-grade (9–12, O/A Level) report cards are marked official-from-Nova-School or arranged through an external board. Grades 1–8 are always published online by the school regardless of this setting.</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <select class="grade-input" style="width:100%;" id="settingsStatus">
+            <option value="not_registered">Not registered — results arranged manually via boards</option>
+            <option value="pending">Registration pending</option>
+            <option value="registered">Registered — Nova School issues official results</option>
+          </select>
+          <input class="grade-input" style="width:100%;" id="settingsAuthorityName" placeholder="Board/authority name (optional)">
+        </div>
+        <button class="btn btn-ink btn-sm" onclick="saveSchoolSettings()">Save</button>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Teacher applications</h3></div>
+        <div id="adminTeacherApps"><p class="empty">Loading…</p></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Communications oversight</h3><span class="mono" style="font-size:11.5px; color:var(--ink-soft);">most recent 50, read-only</span></div>
+        <div id="adminMessages"><p class="empty">Loading…</p></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Post an announcement</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <input class="grade-input" style="width:100%;" id="annTitle" placeholder="Title">
+          <select class="grade-input" style="width:100%;" id="annAudience">
+            <option value="all">Everyone</option><option value="students">Students</option><option value="parents">Parents</option><option value="teachers">Teachers</option>
+          </select>
+        </div>
+        <textarea id="annBody" placeholder="Message (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; min-height:60px; resize:vertical;"></textarea>
+        <button class="btn btn-ink btn-sm" onclick="postAnnouncement()">Post</button>
+        <div id="adminAnnouncementsList" style="margin-top:16px;"><p class="empty">Loading…</p></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Entrance test questions</h3></div>
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <button class="btn btn-outline btn-sm" id="etqTabStudent" onclick="switchEntranceTestTab('student')">Student admission</button>
+          <button class="btn btn-outline btn-sm" id="etqTabTeacher" onclick="switchEntranceTestTab('teacher')">Teacher recruitment</button>
+        </div>
+        <div style="margin-bottom:14px; padding:14px; background:var(--paper-alt); border-radius:10px;">
+          <textarea id="etqText" placeholder="Question text" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid var(--line); font-family:inherit; font-size:13px; min-height:44px; margin-bottom:8px;"></textarea>
+          <input class="grade-input" style="width:100%; margin-bottom:8px;" id="etqOptions" placeholder="Options, comma-separated (e.g. 4, 6, 8, 10)">
+          <input class="grade-input" style="width:100%; margin-bottom:8px;" id="etqCorrect" placeholder="Correct answer (must match one option exactly)">
+          <button class="btn btn-ink btn-sm" onclick="addEntranceQuestion()">Add question</button>
+        </div>
+        <div id="adminEntranceQuestions"><p class="empty">Loading…</p></div>
       </div>
     </main>
   </div>
@@ -603,6 +768,202 @@ function loadDashboard(role){
   if (role === 'admin') loadAdminDashboard();
 }
 
+/* ============================== PUBLIC: News, Admissions, Careers ============================== */
+
+async function loadPublicNews(){
+  try {
+    const d = await api('/public/announcements');
+    document.getElementById('publicNews').innerHTML = d.announcements.length
+      ? `<div class="feature-grid">${d.announcements.map(a => `<div class="feature"><h3>${a.title}</h3><p>${a.body || ''}</p></div>`).join('')}</div>`
+      : '<p class="empty">No news posted yet.</p>';
+  } catch (err) { /* silent on landing page */ }
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+let lastApplicationId = null;
+let lastTeacherApplicationId = null;
+
+async function submitAdmissionApplication(){
+  const applicant_name = document.getElementById('applyName').value.trim();
+  const grade_applied = document.getElementById('applyGrade').value.trim();
+  const parent_email = document.getElementById('applyEmail').value.trim();
+  const curriculum = document.getElementById('applyCurriculum').value;
+  const photoFile = document.getElementById('applyPhoto').files[0];
+  const docFile = document.getElementById('applyDocument').files[0];
+
+  if (!applicant_name || !grade_applied || !parent_email) { toast('Name, grade, and email are required.'); return; }
+
+  const btn = document.getElementById('applySubmitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  try {
+    const photo_base64 = await fileToBase64(photoFile);
+    const document_base64 = await fileToBase64(docFile);
+    const res = await api('/admissions/apply', {
+      method: 'POST',
+      body: JSON.stringify({ applicant_name, grade_applied, parent_email, curriculum, photo_base64, document_base64, document_filename: docFile ? docFile.name : null })
+    });
+    lastApplicationId = res.applicationId;
+    document.getElementById('applyFormSection').style.display = 'none';
+    document.getElementById('applyConfirmSection').style.display = 'block';
+    document.getElementById('applyConfirmMessage').textContent = res.message;
+    if (res.voucher) {
+      document.getElementById('voucherName').textContent = res.voucher.applicantName;
+      document.getElementById('voucherGrade').textContent = `${res.voucher.gradeApplied} — ${res.voucher.curriculum}`;
+      const symbol = res.voucher.currency === 'USD' ? '$' : 'Rs ';
+      document.getElementById('voucherAmount').textContent = `${symbol}${res.voucher.amount} / month`;
+    }
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit application';
+  }
+}
+
+async function submitTeacherApplication(){
+  const applicant_name = document.getElementById('teachName').value.trim();
+  const subject_applied = document.getElementById('teachSubject').value.trim();
+  const email = document.getElementById('teachEmail').value.trim();
+  const phone = document.getElementById('teachPhone').value.trim();
+  const photoFile = document.getElementById('teachPhoto').files[0];
+  const docFile = document.getElementById('teachDocument').files[0];
+
+  if (!applicant_name || !subject_applied || !email) { toast('Name, subject, and email are required.'); return; }
+
+  const btn = document.getElementById('teachSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  try {
+    const photo_base64 = await fileToBase64(photoFile);
+    const document_base64 = await fileToBase64(docFile);
+    const res = await api('/teacher-applications/apply', {
+      method: 'POST',
+      body: JSON.stringify({ applicant_name, subject_applied, email, phone, photo_base64, document_base64, document_filename: docFile ? docFile.name : null })
+    });
+    lastTeacherApplicationId = res.applicationId;
+    document.getElementById('teachFormSection').style.display = 'none';
+    document.getElementById('teachConfirmSection').style.display = 'block';
+    document.getElementById('teachConfirmMessage').textContent = res.message;
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Submit application';
+  }
+}
+
+async function startEntranceTest(kind){
+  const areaId = kind === 'student' ? 'applyTestArea' : 'teachTestArea';
+  const btnId = kind === 'student' ? 'applyTestStartBtn' : 'teachTestStartBtn';
+  const area = document.getElementById(areaId);
+  document.getElementById(btnId).style.display = 'none';
+  area.innerHTML = '<p class="empty">Loading…</p>';
+
+  try {
+    const d = await api(`/entrance-test/${kind}`);
+    if (!d.questions.length) { area.innerHTML = '<p class="empty">No entrance test has been set up yet.</p>'; return; }
+    area.innerHTML = d.questions.map((q, i) => `
+      <div style="margin-bottom:16px;">
+        <p style="font-weight:600; font-size:14px; margin-bottom:6px;">${i+1}. ${q.question_text}</p>
+        ${(q.options || []).map(opt => `<label style="display:flex; align-items:center; gap:8px; padding:6px 0; font-size:13.5px;"><input type="radio" name="etq-${q.id}" value="${opt.replace(/"/g,'&quot;')}"> ${opt}</label>`).join('')}
+      </div>`).join('') + `<button class="btn btn-ink btn-sm" onclick="submitEntranceTest('${kind}')">Submit test</button>`;
+    area.dataset.questionIds = d.questions.map(q => q.id).join(',');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function submitEntranceTest(kind){
+  const areaId = kind === 'student' ? 'applyTestArea' : 'teachTestArea';
+  const area = document.getElementById(areaId);
+  const questionIds = area.dataset.questionIds.split(',').map(Number);
+  const answers = questionIds.map(qid => {
+    const checked = document.querySelector(`input[name="etq-${qid}"]:checked`);
+    return { question_id: qid, answer: checked ? checked.value : '' };
+  });
+
+  const applicationId = kind === 'student' ? lastApplicationId : lastTeacherApplicationId;
+  const endpoint = kind === 'student' ? `/admissions/${applicationId}/entrance-test` : `/teacher-applications/${applicationId}/entrance-test`;
+
+  try {
+    const res = await api(endpoint, { method: 'POST', body: JSON.stringify({ answers }) });
+    area.innerHTML = `<p style="font-weight:700; font-size:15px;">${res.message}</p>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Messaging (shared: student/parent/teacher) ============================== */
+const chatState = {}; // scope -> active partner userId
+
+async function loadMessageContacts(scope){
+  try {
+    const [contactsRes, threadsRes] = await Promise.all([api('/messages/contacts'), api('/messages/threads')]);
+    const threadsByUser = {};
+    threadsRes.threads.forEach(t => { threadsByUser[t.userId] = t; });
+
+    const merged = contactsRes.contacts.map(c => ({ ...c, thread: threadsByUser[c.userId] || null }));
+    merged.sort((a, b) => {
+      if (a.thread && !b.thread) return -1;
+      if (!a.thread && b.thread) return 1;
+      if (a.thread && b.thread) return new Date(b.thread.lastAt) - new Date(a.thread.lastAt);
+      return a.name.localeCompare(b.name);
+    });
+
+    const container = document.getElementById(`msgContacts-${scope}`);
+    container.innerHTML = merged.length
+      ? merged.map(c => `
+        <div onclick="openChatThread('${scope}', ${c.userId})" style="cursor:pointer; padding:8px 6px; border-radius:8px; margin-bottom:2px; ${chatState[scope]===c.userId ? 'background:var(--paper-alt);' : ''}">
+          <div style="font-size:12.5px; font-weight:600; display:flex; justify-content:space-between; align-items:center;">
+            <span>${c.name}</span>${c.thread && c.thread.unread ? `<span class="tag" style="background:var(--brand); font-size:10px; padding:2px 6px;">${c.thread.unread}</span>` : ''}
+          </div>
+          <div style="font-size:11px; color:var(--ink-soft); text-transform:capitalize;">${c.role}</div>
+        </div>`).join('')
+      : '<p class="empty" style="font-size:12px;">No contacts yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function openChatThread(scope, userId){
+  chatState[scope] = userId;
+  loadMessageContacts(scope); // refresh highlight + unread badges
+  const threadEl = document.getElementById(`msgThread-${scope}`);
+  threadEl.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/messages/thread/${userId}`);
+    threadEl.innerHTML = d.messages.length
+      ? d.messages.map(m => `<div style="margin-bottom:8px; text-align:${m.outgoing ? 'right' : 'left'};">
+          <span style="display:inline-block; max-width:80%; padding:7px 11px; border-radius:12px; font-size:13px; background:${m.outgoing ? 'var(--brand)' : 'var(--paper-alt)'}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${m.body}</span>
+        </div>`).join('')
+      : '<p class="empty">No messages yet — say hello.</p>';
+    threadEl.scrollTop = threadEl.scrollHeight;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function sendChatMessage(scope){
+  const partnerId = chatState[scope];
+  if (!partnerId) { toast('Pick a contact first.'); return; }
+  const input = document.getElementById(`msgInput-${scope}`);
+  const body = input.value.trim();
+  if (!body) return;
+  try {
+    await api('/messages', { method: 'POST', body: JSON.stringify({ recipient_id: partnerId, body }) });
+    input.value = '';
+    openChatThread(scope, partnerId);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 /* ============================== STUDENT ============================== */
 function studentRailBlock(time, subj, room, meetingLink, i){
   const isBreak = subj==='Break' || subj==='Lunch';
@@ -705,6 +1066,44 @@ async function loadStudentDashboard(){
 
     await loadStudentExams();
     await loadStudentCourses();
+    await loadMessageContacts('student');
+    await loadReportCard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadReportCard(){
+  try {
+    const d = await api('/student/report-card');
+    const gradesRows = d.grades.length
+      ? d.grades.map(g => `<tr><td>${g.subject}</td><td>${g.assessment}</td><td class="mono">${g.score}</td></tr>`).join('')
+      : '<tr><td colspan="3" class="empty">No grades recorded yet.</td></tr>';
+
+    if (d.officiallyIssued) {
+      document.getElementById('reportCardArea').innerHTML = `
+        <div style="border:1.5px dashed var(--line); border-radius:12px; padding:20px; position:relative; overflow:hidden;">
+          <img src="assets/logo-icon.jpg" alt="" style="position:absolute; top:50%; left:50%; width:180px; height:auto; transform:translate(-50%,-50%); opacity:0.07; pointer-events:none;">
+          <div style="position:relative;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+              <img src="assets/logo-icon.jpg" alt="" style="width:32px;height:32px;border-radius:6px;">
+              <span class="mono" style="font-size:11px; color:var(--ink-soft);">Official Report Card</span>
+            </div>
+            <p style="font-weight:700; font-size:15px;">${d.student.name}</p>
+            <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">${d.student.grade} · Section ${d.student.section} · ${d.student.admissionNo}</p>
+            <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">Attendance: ${d.attendancePct !== null ? d.attendancePct + '%' : 'Not yet recorded'}</p>
+            <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>
+          </div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="window.print()">Print / Save as PDF</button>`;
+    } else {
+      const boardNote = d.examAuthorityName ? `through ${d.examAuthorityName}` : 'through the relevant examination board or authority near you';
+      document.getElementById('reportCardArea').innerHTML = `
+        <div style="padding:12px 14px; background:var(--paper-alt); border-radius:10px; margin-bottom:14px; font-size:12.5px; color:var(--ink-soft);">
+          This grade's official results are issued ${boardNote} — not by Nova School directly. What's below is an internal progress summary for reference only, not an official transcript.
+        </div>
+        <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>`;
+    }
   } catch (err) {
     toast(err.message);
   }
@@ -939,10 +1338,7 @@ async function loadParentDashboard(){
     document.getElementById('parentPayBtn').disabled = fees.totalDue <= 0;
     document.getElementById('parentPayBtn').textContent = fees.totalDue <= 0 ? 'Paid in full' : 'Pay now';
 
-    const msgs = await api('/parent/messages');
-    document.getElementById('parentMessages').innerHTML = msgs.messages.length
-      ? msgs.messages.map(m => `<div class="list-row"><div class="l-main"><div class="avatar" style="width:30px;height:30px;font-size:11px;background:var(--indigo);">${m.from[0]}</div><div><div class="l-title">${m.from}${m.outgoing ? ' (you)' : ''}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
-      : '<p class="empty">No messages yet.</p>';
+    await loadMessageContacts('parent');
 
     const ann = await api('/parent/announcements');
     document.getElementById('parentAnnouncements').innerHTML = ann.announcements.length
@@ -1025,13 +1421,10 @@ async function loadTeacherDashboard(){
       ? d.roster.students.map(s => `<div class="list-row"><div class="l-main"><div class="avatar" style="width:28px;height:28px;font-size:10.5px;background:var(--magenta);">${initials(s.first_name,s.last_name)}</div><div class="l-title">${s.first_name} ${s.last_name}</div></div><span class="mono" style="font-size:12px; color:var(--ink-soft);">${s.admission_no}</span></div>`).join('')
       : '<p class="empty">You are not the class teacher for any section.</p>';
 
-    document.getElementById('teacherMessages').innerHTML = d.messages.length
-      ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
-      : '<p class="empty">No messages yet.</p>';
-
     await loadTeacherLessons();
     await loadTeacherExams();
     await loadTeacherCourses();
+    await loadMessageContacts('teacher');
   } catch (err) {
     toast(err.message);
   }
@@ -1552,6 +1945,12 @@ async function loadAdminDashboard(){
     document.getElementById('adminSectionsTable').innerHTML = s.sections.map(sec =>
       `<tr><td>${sec.grade}</td><td class="mono">${sec.sectionName}</td><td>${sec.studentCount}</td><td>${sec.classTeacher}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td></tr>`
     ).join('');
+
+    await loadTeacherApps();
+    await loadAdminAnnouncementsList();
+    await loadEntranceQuestions();
+    await loadAdminMessages();
+    await loadSchoolSettings();
   } catch (err) {
     toast(err.message);
   }
@@ -1560,8 +1959,23 @@ async function loadAdminDashboard(){
 async function loadAdmissions(){
   const a = await api('/admin/admissions');
   document.getElementById('adminAdmissions').innerHTML = a.applications.length
-    ? a.applications.map(app => `<div class="list-row"><div class="l-main"><div><div class="l-title">${app.applicant_name}</div><div class="l-sub">Applying — ${app.grade_applied}</div></div></div><div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="decideAdmission(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="decideAdmission(${app.id},'approved')">Approve</button></div></div>`).join('')
+    ? a.applications.map(app => `<div class="list-row"><div class="l-main">
+        ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--indigo);">${app.applicantName[0]}</div>`}
+        <div><div class="l-title">${app.applicantName}</div><div class="l-sub">Applying — ${app.gradeApplied}${app.entranceScore ? ' · Entrance test: ' + app.entranceScore : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadAdmissionDoc(${app.id})" style="color:var(--indigo);">${app.documentFilename}</a>` : ''}</div></div></div>
+        <div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="decideAdmission(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="decideAdmission(${app.id},'approved')">Approve</button></div></div>`).join('')
     : '<p class="empty">No pending applications.</p>';
+}
+
+async function downloadAdmissionDoc(id){
+  try {
+    const d = await api(`/admin/admissions/${id}/document`);
+    const link = document.createElement('a');
+    link.href = `data:application/octet-stream;base64,${d.documentBase64}`;
+    link.download = d.filename || 'document';
+    link.click();
+  } catch (err) {
+    toast(err.message);
+  }
 }
 
 async function decideAdmission(id, decision){
@@ -1575,6 +1989,158 @@ async function decideAdmission(id, decision){
   }
 }
 
+async function loadTeacherApps(){
+  try {
+    const d = await api('/admin/teacher-applications');
+    document.getElementById('adminTeacherApps').innerHTML = d.applications.length
+      ? d.applications.map(app => `<div class="list-row"><div class="l-main">
+          ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--magenta);">${app.applicantName[0]}</div>`}
+          <div><div class="l-title">${app.applicantName}</div><div class="l-sub">${app.subjectApplied} · ${app.email}${app.entranceScore ? ' · Score: ' + app.entranceScore : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadTeacherAppDoc(${app.id})" style="color:var(--indigo);">${app.documentFilename}</a>` : ''}</div></div></div>
+          <div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="decideTeacherApp(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="decideTeacherApp(${app.id},'approved')">Approve</button></div></div>`).join('')
+      : '<p class="empty">No pending teacher applications.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function downloadTeacherAppDoc(id){
+  try {
+    const d = await api(`/admin/teacher-applications/${id}/document`);
+    const link = document.createElement('a');
+    link.href = `data:application/octet-stream;base64,${d.documentBase64}`;
+    link.download = d.filename || 'document';
+    link.click();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function decideTeacherApp(id, decision){
+  try {
+    const res = await api(`/admin/teacher-applications/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision }) });
+    toast(res.message);
+    loadTeacherApps();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function postAnnouncement(){
+  const title = document.getElementById('annTitle').value.trim();
+  const body = document.getElementById('annBody').value.trim();
+  const audience = document.getElementById('annAudience').value;
+  if (!title) { toast('Enter a title.'); return; }
+  try {
+    const res = await api('/admin/announcements', { method: 'POST', body: JSON.stringify({ title, body, audience }) });
+    toast(res.message);
+    document.getElementById('annTitle').value = '';
+    document.getElementById('annBody').value = '';
+    loadAdminAnnouncementsList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAdminAnnouncementsList(){
+  try {
+    const d = await api('/admin/announcements-all');
+    document.getElementById('adminAnnouncementsList').innerHTML = d.announcements.length
+      ? d.announcements.map(a => `<div class="list-row"><div class="l-main"><div><div class="l-title">${a.title}</div><div class="l-sub">${a.audience}</div></div></div><button class="btn btn-outline btn-sm" onclick="deleteAnnouncementAdmin(${a.id})">Delete</button></div>`).join('')
+      : '<p class="empty">No announcements yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteAnnouncementAdmin(id){
+  try {
+    await api(`/admin/announcements/${id}`, { method: 'DELETE' });
+    loadAdminAnnouncementsList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+let currentEntranceTestTab = 'student';
+function switchEntranceTestTab(tab){
+  currentEntranceTestTab = tab;
+  document.getElementById('etqTabStudent').classList.toggle('btn-ink', tab === 'student');
+  document.getElementById('etqTabTeacher').classList.toggle('btn-ink', tab === 'teacher');
+  loadEntranceQuestions();
+}
+
+async function loadEntranceQuestions(){
+  try {
+    const d = await api(`/admin/entrance-test-questions?type=${currentEntranceTestTab}`);
+    document.getElementById('adminEntranceQuestions').innerHTML = d.questions.length
+      ? d.questions.map(q => `<div class="list-row"><div class="l-main"><div><div class="l-title">${q.question_text}</div><div class="l-sub">Options: ${(q.options||[]).join(', ')} · Correct: ${q.correct_answer}</div></div></div><button class="btn btn-outline btn-sm" onclick="deleteEntranceQuestion(${q.id})">Delete</button></div>`).join('')
+      : '<p class="empty">No questions yet for this test.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function addEntranceQuestion(){
+  const question_text = document.getElementById('etqText').value.trim();
+  const options = document.getElementById('etqOptions').value.split(',').map(s => s.trim()).filter(Boolean);
+  const correct_answer = document.getElementById('etqCorrect').value.trim();
+  const test_type = currentEntranceTestTab === 'teacher' ? 'teacher_recruitment' : 'student_admission';
+
+  if (!question_text || options.length < 2 || !correct_answer) { toast('Question text, at least 2 options, and the correct answer are required.'); return; }
+
+  try {
+    const res = await api('/admin/entrance-test-questions', { method: 'POST', body: JSON.stringify({ test_type, question_text, options, correct_answer }) });
+    toast(res.message);
+    document.getElementById('etqText').value = '';
+    document.getElementById('etqOptions').value = '';
+    document.getElementById('etqCorrect').value = '';
+    loadEntranceQuestions();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteEntranceQuestion(id){
+  try {
+    await api(`/admin/entrance-test-questions/${id}`, { method: 'DELETE' });
+    loadEntranceQuestions();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAdminMessages(){
+  try {
+    const d = await api('/admin/messages');
+    document.getElementById('adminMessages').innerHTML = d.messages.length
+      ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from} → ${m.to}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
+      : '<p class="empty">No messages sent yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadSchoolSettings(){
+  try {
+    const d = await api('/admin/settings');
+    document.getElementById('settingsStatus').value = d.examAuthorityStatus;
+    document.getElementById('settingsAuthorityName').value = d.examAuthorityName || '';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function saveSchoolSettings(){
+  const exam_authority_status = document.getElementById('settingsStatus').value;
+  const exam_authority_name = document.getElementById('settingsAuthorityName').value.trim();
+  try {
+    const res = await api('/admin/settings', { method: 'POST', body: JSON.stringify({ exam_authority_status, exam_authority_name }) });
+    toast(res.message);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 /* ============================== init (marketing pages only — dashboards load after login) ============================== */
 renderStaticRail('heroRail','Monday');
 renderStaticRail('loginRail','Monday',4);
@@ -1582,6 +2148,7 @@ renderWeekTable();
 renderFeatures();
 renderRoles();
 renderRoleTabs();
+loadPublicNews();
 selectRole('student');
 
 // If a saved session exists (e.g. after a page refresh), jump straight back
