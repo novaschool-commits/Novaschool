@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
 const { get, all, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
@@ -217,6 +218,90 @@ router.post('/settings', asyncHandler(async (req, res) => {
   }
   await run('UPDATE school_settings SET exam_authority_status = $1, exam_authority_name = $2 WHERE id = 1', [exam_authority_status, exam_authority_name || null]);
   res.json({ message: 'Settings updated.' });
+}));
+
+// ---------- People management: create real accounts ----------
+
+router.post('/teachers', asyncHandler(async (req, res) => {
+  const { first_name, last_name, email, password, subject } = req.body || {};
+  if (!first_name || !last_name || !email || !password) {
+    return res.status(400).json({ error: 'First name, last name, email, and password are required.' });
+  }
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+
+  const existing = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  if (existing) return res.status(409).json({ error: 'An account with that email already exists.' });
+
+  const userRow = await run('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), bcrypt.hashSync(password, 10), 'teacher']);
+  const userId = userRow.rows[0].id;
+  await run('INSERT INTO teachers (user_id, first_name, last_name, subject) VALUES ($1,$2,$3,$4)', [userId, first_name, last_name, subject || null]);
+
+  res.status(201).json({ message: `Teacher account created for ${first_name} ${last_name}. They can log in with ${email}.` });
+}));
+
+router.get('/teachers', asyncHandler(async (req, res) => {
+  const rows = await all('SELECT t.id, t.first_name, t.last_name, t.subject, u.email FROM teachers t JOIN users u ON u.id = t.user_id ORDER BY t.last_name');
+  res.json({ teachers: rows });
+}));
+
+router.post('/students', asyncHandler(async (req, res) => {
+  const { first_name, last_name, admission_no, section_code, email, password } = req.body || {};
+  if (!first_name || !last_name || !admission_no || !section_code) {
+    return res.status(400).json({ error: 'First name, last name, admission number, and section are required.' });
+  }
+
+  const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
+  if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist yet — create it first.` });
+
+  const existingAdm = await get('SELECT id FROM students WHERE admission_no = $1', [admission_no]);
+  if (existingAdm) return res.status(409).json({ error: 'That admission number is already in use.' });
+
+  let userId = null;
+  if (email && password) {
+    if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+    const existingEmail = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existingEmail) return res.status(409).json({ error: 'An account with that email already exists.' });
+    const userRow = await run('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), bcrypt.hashSync(password, 10), 'student']);
+    userId = userRow.rows[0].id;
+  }
+
+  const studentRow = await run(
+    'INSERT INTO students (user_id, admission_no, first_name, last_name, section_code) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+    [userId, admission_no, first_name, last_name, section_code]
+  );
+
+  res.status(201).json({
+    message: userId ? `Student account created for ${first_name} ${last_name}. They can log in with ${email}.` : `Student ${first_name} ${last_name} added (no login — roster only).`,
+    studentId: studentRow.rows[0].id
+  });
+}));
+
+router.get('/students', asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT s.id, s.first_name, s.last_name, s.admission_no, s.section_code, u.email
+     FROM students s LEFT JOIN users u ON u.id = s.user_id ORDER BY s.last_name`
+  );
+  res.json({ students: rows });
+}));
+
+router.post('/parents', asyncHandler(async (req, res) => {
+  const { first_name, last_name, email, password, student_id } = req.body || {};
+  if (!first_name || !last_name || !email || !password) {
+    return res.status(400).json({ error: 'First name, last name, email, and password are required.' });
+  }
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+
+  const existing = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  if (existing) return res.status(409).json({ error: 'An account with that email already exists.' });
+
+  const userRow = await run('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), bcrypt.hashSync(password, 10), 'parent']);
+  const parentRow = await run('INSERT INTO parents (user_id, first_name, last_name) VALUES ($1,$2,$3) RETURNING id', [userRow.rows[0].id, first_name, last_name]);
+
+  if (student_id) {
+    await run('INSERT INTO student_parent_map (student_id, parent_id) VALUES ($1,$2)', [student_id, parentRow.rows[0].id]);
+  }
+
+  res.status(201).json({ message: `Parent account created for ${first_name} ${last_name}. They can log in with ${email}.` });
 }));
 
 module.exports = router;

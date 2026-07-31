@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { get } = require('../db');
+const { get, run } = require('../db');
 const { authenticate, SECRET } = require('../middleware/auth');
 
 const router = express.Router();
@@ -52,6 +52,30 @@ router.get('/me', authenticate, async (req, res) => {
     const user = await get('SELECT id, email, role FROM users WHERE id = $1', [req.user.id]);
     if (!user) return res.status(404).json({ error: 'User not found.' });
     res.json({ user: { ...user, profile: await profileFor(user) } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error.' });
+  }
+});
+
+router.post('/change-password', authenticate, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are both required.' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters.' });
+    }
+
+    const user = await get('SELECT * FROM users WHERE id = $1', [req.user.id]);
+    if (!user || !bcrypt.compareSync(currentPassword, user.password_hash)) {
+      return res.status(401).json({ error: 'Current password is incorrect.' });
+    }
+
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await run('UPDATE users SET password_hash = $1 WHERE id = $2', [newHash, user.id]);
+    res.json({ message: 'Password changed successfully.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error.' });

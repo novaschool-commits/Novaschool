@@ -227,6 +227,13 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
   <footer><div class="wrap foot-inner">
     <div class="brand" style="font-size:16px;"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:22px;height:22px;">Nova School</div>
+    <div style="display:flex; gap:14px; align-items:center;">
+      <a href="https://www.tiktok.com/@novaschool.pk" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="TikTok">TikTok</a>
+      <a href="https://www.youtube.com/@novaschool_pk" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="YouTube">YouTube</a>
+      <a href="https://www.instagram.com/invites/contact/?igsh=1df4esanqeh9u&utm_content=106242ww" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="Instagram">Instagram</a>
+      <a href="https://www.facebook.com/share/1L7jRTYfys/" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="Facebook">Facebook</a>
+      <a href="https://wa.me/923400377755" target="_blank" rel="noopener" style="color:var(--green); font-weight:600;" aria-label="WhatsApp">WhatsApp</a>
+    </div>
     <span>© 2026 Nova School. Online school, grades 1–12.</span><span>Admissions · <a href="javascript:void(0)" onclick="go('applyTeach')" style="color:var(--ink); font-weight:600;">Careers</a> · Support · Privacy</span>
   </div></footer>
 </section>
@@ -341,6 +348,23 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   </div>
 </section>
 
+<!-- ============================================================ ACCOUNT ============================================================ -->
+<section class="screen" data-screen="account">
+  <div class="wrap" style="max-width:480px; padding:60px 28px 100px;">
+    <a class="back" href="javascript:void(0)" onclick="goBackFromAccount()" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back</a>
+    <h2 style="font-size:26px; margin-bottom:8px;">Account settings</h2>
+    <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Change your password below.</p>
+
+    <div class="card">
+      <div class="field"><label>Current password</label><input type="password" id="currentPassword"></div>
+      <div class="field"><label>New password</label><input type="password" id="newPassword" placeholder="At least 8 characters"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" id="confirmPassword"></div>
+      <button class="btn btn-primary" style="width:100%;" id="changePasswordBtn" onclick="changePassword()">Change password</button>
+      <div id="changePasswordMsg" style="margin-top:14px; font-size:13px;"></div>
+    </div>
+  </div>
+</section>
+
 <!-- ============================================================ STUDENT ============================================================ -->
 
 <section class="screen" data-screen="student">
@@ -353,6 +377,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--indigo);" id="studentAvatar">--</div><div><div class="u-name" id="studentName">—</div><div class="u-role" id="studentSection">—</div></div></div>
         <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
+        <a class="logout-link" onclick="go('account')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">Account</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -422,6 +447,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--amber);" id="parentAvatar">--</div><div><div class="u-name" id="parentName">—</div><div class="u-role">Parent account</div></div></div>
         <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
+        <a class="logout-link" onclick="go('account')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">Account</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -467,6 +493,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--magenta);" id="teacherAvatar">--</div><div><div class="u-name" id="teacherName">—</div><div class="u-role" id="teacherSubject">—</div></div></div>
         <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
+        <a class="logout-link" onclick="go('account')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">Account</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -561,6 +588,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
         <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
+        <a class="logout-link" onclick="go('account')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">Account</span></a>
         <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
       </div>
     </aside>
@@ -573,6 +601,51 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="card kpi"><p class="k-label">Fee collection</p><p class="k-val">—</p></div>
         <div class="card kpi"><p class="k-label">Attendance (avg)</p><p class="k-val">—</p></div>
       </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-head"><h3>Add people</h3></div>
+        <div style="display:flex; gap:8px; margin-bottom:16px;">
+          <button class="btn btn-outline btn-sm" id="peopleTabTeacher" onclick="switchPeopleTab('teacher')">Teacher</button>
+          <button class="btn btn-outline btn-sm" id="peopleTabStudent" onclick="switchPeopleTab('student')">Student</button>
+          <button class="btn btn-outline btn-sm" id="peopleTabParent" onclick="switchPeopleTab('parent')">Parent</button>
+        </div>
+
+        <div id="peopleFormTeacher" style="display:none;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="newTeacherFirst" placeholder="First name">
+            <input class="grade-input" style="width:100%;" id="newTeacherLast" placeholder="Last name">
+            <input class="grade-input" style="width:100%;" id="newTeacherEmail" placeholder="Email">
+            <input class="grade-input" style="width:100%;" id="newTeacherPassword" placeholder="Password (min 8 chars)">
+            <input class="grade-input" style="width:100%;" id="newTeacherSubject" placeholder="Subject">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createTeacherAccount()">Create teacher account</button>
+        </div>
+
+        <div id="peopleFormStudent" style="display:none;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="newStudentFirst" placeholder="First name">
+            <input class="grade-input" style="width:100%;" id="newStudentLast" placeholder="Last name">
+            <input class="grade-input" style="width:100%;" id="newStudentAdmNo" placeholder="Admission number">
+            <input class="grade-input" style="width:100%;" id="newStudentSection" placeholder="Section code (e.g. 8B)">
+            <input class="grade-input" style="width:100%;" id="newStudentEmail" placeholder="Login email (optional)">
+            <input class="grade-input" style="width:100%;" id="newStudentPassword" placeholder="Password (optional, min 8 chars)">
+          </div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">Leave email/password blank to add the student to rosters/timetables without giving them a login yet.</p>
+          <button class="btn btn-primary btn-sm" onclick="createStudentAccount()">Add student</button>
+        </div>
+
+        <div id="peopleFormParent" style="display:none;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="newParentFirst" placeholder="First name">
+            <input class="grade-input" style="width:100%;" id="newParentLast" placeholder="Last name">
+            <input class="grade-input" style="width:100%;" id="newParentEmail" placeholder="Email">
+            <input class="grade-input" style="width:100%;" id="newParentPassword" placeholder="Password (min 8 chars)">
+            <select class="grade-input" style="width:100%;" id="newParentStudent"><option value="">Link to student (optional)</option></select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createParentAccount()">Create parent account</button>
+        </div>
+      </div>
+
       <div class="grid-2" style="margin-bottom:20px;">
         <div class="card"><div class="card-head"><h3>Enrollment by grade</h3></div><div id="adminEnrollBars"><p class="empty">Loading…</p></div></div>
         <div class="card"><div class="card-head"><h3>Pending admission applications</h3></div><div id="adminAdmissions"><p class="empty">Loading…</p></div></div>
@@ -736,6 +809,39 @@ function go(screen){
   window.scrollTo(0,0);
 }
 function logout(){ authToken = null; currentUser = null; localStorage.removeItem('nova_token'); localStorage.removeItem('nova_user'); go('login'); }
+
+function goBackFromAccount(){
+  if (currentUser && currentUser.role) go(currentUser.role);
+  else go('landing');
+}
+
+async function changePassword(){
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('confirmPassword').value;
+  const msgEl = document.getElementById('changePasswordMsg');
+  msgEl.textContent = '';
+
+  if (!currentPassword || !newPassword) { msgEl.textContent = 'Fill in all fields.'; msgEl.style.color = 'var(--brand-dark)'; return; }
+  if (newPassword !== confirmPassword) { msgEl.textContent = 'New passwords do not match.'; msgEl.style.color = 'var(--brand-dark)'; return; }
+  if (newPassword.length < 8) { msgEl.textContent = 'New password must be at least 8 characters.'; msgEl.style.color = 'var(--brand-dark)'; return; }
+
+  const btn = document.getElementById('changePasswordBtn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await api('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) });
+    msgEl.textContent = res.message;
+    msgEl.style.color = 'var(--green)';
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+  } catch (err) {
+    msgEl.textContent = err.message;
+    msgEl.style.color = 'var(--brand-dark)';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Change password';
+  }
+}
 
 /* ============================== login flow ============================== */
 async function doLogin(){
@@ -1951,6 +2057,7 @@ async function loadAdminDashboard(){
     await loadEntranceQuestions();
     await loadAdminMessages();
     await loadSchoolSettings();
+    switchPeopleTab('teacher');
   } catch (err) {
     toast(err.message);
   }
@@ -2115,6 +2222,80 @@ async function loadAdminMessages(){
     document.getElementById('adminMessages').innerHTML = d.messages.length
       ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from} → ${m.to}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
       : '<p class="empty">No messages sent yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function switchPeopleTab(tab){
+  ['teacher','student','parent'].forEach(t => {
+    document.getElementById(`peopleForm${t.charAt(0).toUpperCase()+t.slice(1)}`).style.display = t === tab ? 'block' : 'none';
+    document.getElementById(`peopleTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('btn-ink', t === tab);
+  });
+  if (tab === 'parent') loadStudentsForLinking();
+}
+
+async function loadStudentsForLinking(){
+  try {
+    const d = await api('/admin/students');
+    const sel = document.getElementById('newParentStudent');
+    sel.innerHTML = '<option value="">Link to student (optional)</option>' + d.students.map(s => `<option value="${s.id}">${s.first_name} ${s.last_name} — ${s.admission_no}</option>`).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createTeacherAccount(){
+  const first_name = document.getElementById('newTeacherFirst').value.trim();
+  const last_name = document.getElementById('newTeacherLast').value.trim();
+  const email = document.getElementById('newTeacherEmail').value.trim();
+  const password = document.getElementById('newTeacherPassword').value;
+  const subject = document.getElementById('newTeacherSubject').value.trim();
+
+  if (!first_name || !last_name || !email || !password) { toast('First name, last name, email, and password are required.'); return; }
+
+  try {
+    const res = await api('/admin/teachers', { method: 'POST', body: JSON.stringify({ first_name, last_name, email, password, subject }) });
+    toast(res.message);
+    ['newTeacherFirst','newTeacherLast','newTeacherEmail','newTeacherPassword','newTeacherSubject'].forEach(id => document.getElementById(id).value = '');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createStudentAccount(){
+  const first_name = document.getElementById('newStudentFirst').value.trim();
+  const last_name = document.getElementById('newStudentLast').value.trim();
+  const admission_no = document.getElementById('newStudentAdmNo').value.trim();
+  const section_code = document.getElementById('newStudentSection').value.trim();
+  const email = document.getElementById('newStudentEmail').value.trim();
+  const password = document.getElementById('newStudentPassword').value;
+
+  if (!first_name || !last_name || !admission_no || !section_code) { toast('First name, last name, admission number, and section are required.'); return; }
+
+  try {
+    const res = await api('/admin/students', { method: 'POST', body: JSON.stringify({ first_name, last_name, admission_no, section_code, email: email || undefined, password: password || undefined }) });
+    toast(res.message);
+    ['newStudentFirst','newStudentLast','newStudentAdmNo','newStudentSection','newStudentEmail','newStudentPassword'].forEach(id => document.getElementById(id).value = '');
+    loadAdminDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createParentAccount(){
+  const first_name = document.getElementById('newParentFirst').value.trim();
+  const last_name = document.getElementById('newParentLast').value.trim();
+  const email = document.getElementById('newParentEmail').value.trim();
+  const password = document.getElementById('newParentPassword').value;
+  const student_id = document.getElementById('newParentStudent').value || null;
+
+  if (!first_name || !last_name || !email || !password) { toast('First name, last name, email, and password are required.'); return; }
+
+  try {
+    const res = await api('/admin/parents', { method: 'POST', body: JSON.stringify({ first_name, last_name, email, password, student_id }) });
+    toast(res.message);
+    ['newParentFirst','newParentLast','newParentEmail','newParentPassword'].forEach(id => document.getElementById(id).value = '');
   } catch (err) {
     toast(err.message);
   }
