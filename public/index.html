@@ -22,6 +22,8 @@ p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit;
 .mono{font-family:var(--mono);}
 .screen{display:none;} .screen.active{display:block;}
 .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+.narrow-page{padding-top:60px; padding-bottom:100px;}
+@media (max-width: 620px){ .narrow-page{padding-top:36px; padding-bottom:60px;} }
 @media (min-width: 900px){ .wrap{padding:0 48px;} }
 .eyebrow{font-family:var(--mono); font-size:12.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
 .eyebrow::before{content:''; width:14px; height:1.5px; background:currentColor; display:inline-block;}
@@ -162,6 +164,9 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   .msg-grid > div:first-child{border-right:none !important; border-bottom:1px solid var(--paper-alt); padding-right:0 !important; padding-bottom:8px; margin-bottom:8px; max-height:120px !important;}
 }
 </style>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 </head>
 <body>
 
@@ -276,7 +281,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
 <!-- ============================================================ ADMISSION APPLICATION ============================================================ -->
 <section class="screen" data-screen="apply">
-  <div class="wrap" style="max-width:640px; padding:60px 28px 100px;">
+  <div class="wrap narrow-page" style="max-width:640px;">
     <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Nova School</a>
     <h2 style="font-size:28px; margin-bottom:8px;">Admission application</h2>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Grades 1–12 · rolling applications · decisions within 5 business days.</p>
@@ -326,7 +331,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
 <!-- ============================================================ TEACHER RECRUITMENT APPLICATION ============================================================ -->
 <section class="screen" data-screen="applyTeach">
-  <div class="wrap" style="max-width:640px; padding:60px 28px 100px;">
+  <div class="wrap narrow-page" style="max-width:640px;">
     <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Nova School</a>
     <h2 style="font-size:28px; margin-bottom:8px;">Apply to teach at Nova School</h2>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Tell us about yourself — we review every application personally.</p>
@@ -352,7 +357,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
 <!-- ============================================================ ACCOUNT ============================================================ -->
 <section class="screen" data-screen="account">
-  <div class="wrap" style="max-width:480px; padding:60px 28px 100px;">
+  <div class="wrap narrow-page" style="max-width:480px;">
     <a class="back" href="javascript:void(0)" onclick="goBackFromAccount()" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back</a>
     <h2 style="font-size:26px; margin-bottom:8px;">Account settings</h2>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Change your password below.</p>
@@ -412,12 +417,12 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div class="stack">
           <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
-          <div class="card"><div class="card-head"><h3>Messages</h3></div>
+          <div class="card"><div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('student')">Group</button></div>
             <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
               <div id="msgContacts-student" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
               <div>
                 <div id="msgThread-student" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-                <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-student" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
+                <div id="msgToolbar-student"></div><div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-student" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
               </div>
             </div>
           </div>
@@ -470,12 +475,12 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="stack"><div class="card"><div class="card-head"><h3>Recent grades</h3></div>
           <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div>
         <div class="stack">
-          <div class="card"><div class="card-head"><h3>Messages</h3></div>
+          <div class="card"><div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('parent')">Group</button></div>
             <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
               <div id="msgContacts-parent" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
               <div>
                 <div id="msgThread-parent" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-                <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-parent" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('parent')">Send</button></div>
+                <div id="msgToolbar-parent"></div><div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-parent" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('parent')">Send</button></div>
               </div>
             </div>
           </div>
@@ -508,12 +513,12 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
       <div class="grid-2">
         <div class="card"><div class="card-head"><h3 id="teacherRosterTitle">Roster</h3></div><div id="teacherRoster"><p class="empty">Loading…</p></div></div>
-        <div class="stack"><div class="card"><div class="card-head"><h3>Messages</h3></div>
+        <div class="stack"><div class="card"><div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('teacher')">Group</button></div>
           <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
             <div id="msgContacts-teacher" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
             <div>
               <div id="msgThread-teacher" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-              <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-teacher" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('teacher')">Send</button></div>
+              <div id="msgToolbar-teacher"></div><div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-teacher" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('teacher')">Send</button></div>
             </div>
           </div>
         </div></div>
@@ -1016,9 +1021,29 @@ async function submitEntranceTest(kind){
 }
 
 /* ============================== Messaging (shared: student/parent/teacher) ============================== */
-const chatState = {}; // scope -> active partner userId
+const chatState = {}; // scope -> { partnerId, groupMode, selected: Set<userId> }
+
+function ensureChatState(scope){
+  if (!chatState[scope]) chatState[scope] = { partnerId: null, groupMode: false, selected: new Set() };
+  return chatState[scope];
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+function renderMathIn(el){
+  if (window.renderMathInElement) {
+    try { renderMathInElement(el, { delimiters: [{ left: '$', right: '$', display: false }], throwOnError: false }); } catch (e) { /* ignore malformed formulas */ }
+  }
+}
 
 async function loadMessageContacts(scope){
+  const state = ensureChatState(scope);
+  const toolbarEl = document.getElementById(`msgToolbar-${scope}`);
+  if (toolbarEl && !toolbarEl.dataset.built) { toolbarEl.innerHTML = chatToolbarHtml(scope); toolbarEl.dataset.built = '1'; }
   try {
     const [contactsRes, threadsRes] = await Promise.all([api('/messages/contacts'), api('/messages/threads')]);
     const threadsByUser = {};
@@ -1034,21 +1059,43 @@ async function loadMessageContacts(scope){
 
     const container = document.getElementById(`msgContacts-${scope}`);
     container.innerHTML = merged.length
-      ? merged.map(c => `
-        <div onclick="openChatThread('${scope}', ${c.userId})" style="cursor:pointer; padding:8px 6px; border-radius:8px; margin-bottom:2px; ${chatState[scope]===c.userId ? 'background:var(--paper-alt);' : ''}">
-          <div style="font-size:12.5px; font-weight:600; display:flex; justify-content:space-between; align-items:center;">
-            <span>${c.name}</span>${c.thread && c.thread.unread ? `<span class="tag" style="background:var(--brand); font-size:10px; padding:2px 6px;">${c.thread.unread}</span>` : ''}
-          </div>
-          <div style="font-size:11px; color:var(--ink-soft); text-transform:capitalize;">${c.role}</div>
-        </div>`).join('')
+      ? merged.map(c => state.groupMode
+        ? `<label style="display:flex; align-items:center; gap:6px; padding:6px; border-radius:8px; cursor:pointer;">
+            <input type="checkbox" ${state.selected.has(c.userId) ? 'checked' : ''} onchange="toggleContactSelection('${scope}', ${c.userId})">
+            <span style="font-size:12px;">${escapeHtml(c.name)} <span style="color:var(--ink-soft); text-transform:capitalize;">(${c.role})</span></span>
+          </label>`
+        : `<div onclick="openChatThread('${scope}', ${c.userId})" style="cursor:pointer; padding:8px 6px; border-radius:8px; margin-bottom:2px; ${state.partnerId===c.userId ? 'background:var(--paper-alt);' : ''}">
+            <div style="font-size:12.5px; font-weight:600; display:flex; justify-content:space-between; align-items:center;">
+              <span>${escapeHtml(c.name)}</span>${c.thread && c.thread.unread ? `<span class="tag" style="background:var(--brand); font-size:10px; padding:2px 6px;">${c.thread.unread}</span>` : ''}
+            </div>
+            <div style="font-size:11px; color:var(--ink-soft); text-transform:capitalize;">${c.role}</div>
+          </div>`
+      ).join('')
       : '<p class="empty" style="font-size:12px;">No contacts yet.</p>';
   } catch (err) {
     toast(err.message);
   }
 }
 
+function toggleGroupMode(scope){
+  const state = ensureChatState(scope);
+  state.groupMode = !state.groupMode;
+  state.selected.clear();
+  const threadEl = document.getElementById(`msgThread-${scope}`);
+  threadEl.innerHTML = state.groupMode
+    ? '<p class="empty">Select students on the left, then write a message and hit Send — it goes to everyone selected.</p>'
+    : '<p class="empty">Select a contact.</p>';
+  loadMessageContacts(scope);
+}
+
+function toggleContactSelection(scope, userId){
+  const state = ensureChatState(scope);
+  if (state.selected.has(userId)) state.selected.delete(userId); else state.selected.add(userId);
+}
+
 async function openChatThread(scope, userId){
-  chatState[scope] = userId;
+  const state = ensureChatState(scope);
+  state.partnerId = userId;
   loadMessageContacts(scope); // refresh highlight + unread badges
   const threadEl = document.getElementById(`msgThread-${scope}`);
   threadEl.innerHTML = '<p class="empty">Loading…</p>';
@@ -1056,28 +1103,73 @@ async function openChatThread(scope, userId){
     const d = await api(`/messages/thread/${userId}`);
     threadEl.innerHTML = d.messages.length
       ? d.messages.map(m => `<div style="margin-bottom:8px; text-align:${m.outgoing ? 'right' : 'left'};">
-          <span style="display:inline-block; max-width:80%; padding:7px 11px; border-radius:12px; font-size:13px; background:${m.outgoing ? 'var(--brand)' : 'var(--paper-alt)'}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${m.body}</span>
+          <span style="display:inline-block; max-width:80%; padding:7px 11px; border-radius:12px; font-size:13px; background:${m.outgoing ? 'var(--brand)' : 'var(--paper-alt)'}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${escapeHtml(m.body)}</span>
         </div>`).join('')
       : '<p class="empty">No messages yet — say hello.</p>';
     threadEl.scrollTop = threadEl.scrollHeight;
+    renderMathIn(threadEl);
   } catch (err) {
     toast(err.message);
   }
 }
 
 async function sendChatMessage(scope){
-  const partnerId = chatState[scope];
-  if (!partnerId) { toast('Pick a contact first.'); return; }
+  const state = ensureChatState(scope);
   const input = document.getElementById(`msgInput-${scope}`);
   const body = input.value.trim();
   if (!body) return;
+
+  if (state.groupMode) {
+    if (!state.selected.size) { toast('Select at least one contact first.'); return; }
+    try {
+      const res = await api('/messages/group', { method: 'POST', body: JSON.stringify({ recipient_ids: [...state.selected], body }) });
+      toast(res.message);
+      input.value = '';
+    } catch (err) {
+      toast(err.message);
+    }
+    return;
+  }
+
+  if (!state.partnerId) { toast('Pick a contact first.'); return; }
   try {
-    await api('/messages', { method: 'POST', body: JSON.stringify({ recipient_id: partnerId, body }) });
+    await api('/messages', { method: 'POST', body: JSON.stringify({ recipient_id: state.partnerId, body }) });
     input.value = '';
-    openChatThread(scope, partnerId);
+    openChatThread(scope, state.partnerId);
   } catch (err) {
     toast(err.message);
   }
+}
+
+const CHAT_SYMBOLS = ['x²','x³','√','÷','×','π','Σ','Δ','∞','≤','≥','→','°','½','¼'];
+const CHAT_STICKERS = ['🧮','📐','⚗️','🧪','🔬','⚛️','💻','📊','🧬','📏'];
+
+function insertAtCursor(scope, text){
+  const input = document.getElementById(`msgInput-${scope}`);
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  input.value = input.value.slice(0, start) + text + input.value.slice(end);
+  input.focus();
+  const pos = start + text.length;
+  input.setSelectionRange(pos, pos);
+}
+
+function insertSymbol(scope, sym){
+  // Formula symbols wrap-friendly for KaTeX rendering: superscripts get $...$ treatment.
+  const map = { 'x²':'x^2', 'x³':'x^3', '√':'\\sqrt{}', '÷':'÷', '×':'×', 'π':'\\pi', 'Σ':'\\sum', 'Δ':'\\Delta', '∞':'\\infty', '≤':'≤', '≥':'≥', '→':'→', '°':'°', '½':'\\frac{1}{2}', '¼':'\\frac{1}{4}' };
+  const latex = map[sym];
+  if (latex && /\\/.test(latex)) {
+    insertAtCursor(scope, `$${latex}$`);
+  } else {
+    insertAtCursor(scope, sym);
+  }
+}
+
+function chatToolbarHtml(scope){
+  return `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px;">
+    ${CHAT_SYMBOLS.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px;" onclick="insertSymbol('${scope}','${s}')">${s}</button>`).join('')}
+    ${CHAT_STICKERS.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:13px;" onclick="insertAtCursor('${scope}','${s}')">${s}</button>`).join('')}
+  </div>`;
 }
 
 /* ============================== STUDENT ============================== */
@@ -2231,7 +2323,7 @@ async function loadAdminMessages(){
   try {
     const d = await api('/admin/messages');
     document.getElementById('adminMessages').innerHTML = d.messages.length
-      ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from} → ${m.to}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
+      ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${escapeHtml(m.from)} → ${escapeHtml(m.to)}</div><div class="l-sub">${escapeHtml(m.body)}</div></div></div></div>`).join('')
       : '<p class="empty">No messages sent yet.</p>';
   } catch (err) {
     toast(err.message);

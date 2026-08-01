@@ -265,4 +265,24 @@ router.post('/messages', authenticate, asyncHandler(async (req, res) => {
   res.status(201).json({ message: 'Sent.' });
 }));
 
+// Group message: same underlying messages table (one row per recipient), so
+// it shows up in admin oversight exactly like any other message — there's no
+// separate "group conversation" object to hide anything in.
+router.post('/messages/group', authenticate, asyncHandler(async (req, res) => {
+  const { recipient_ids, body } = req.body || {};
+  if (!Array.isArray(recipient_ids) || !recipient_ids.length || !body || !body.trim()) {
+    return res.status(400).json({ error: 'recipient_ids (array) and a message body are required.' });
+  }
+
+  const allowed = new Set(await getAllowedContacts(req.user));
+  const validIds = recipient_ids.map(Number).filter(id => allowed.has(id));
+  if (!validIds.length) return res.status(403).json({ error: 'None of the selected recipients are allowed contacts.' });
+
+  const sentAt = new Date().toISOString();
+  for (const id of validIds) {
+    await run('INSERT INTO messages (sender_id, recipient_id, body, sent_at) VALUES ($1,$2,$3,$4)', [req.user.id, id, body.trim(), sentAt]);
+  }
+  res.status(201).json({ message: `Sent to ${validIds.length} recipient${validIds.length === 1 ? '' : 's'}.` });
+}));
+
 module.exports = router;
