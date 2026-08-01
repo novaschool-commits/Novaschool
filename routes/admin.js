@@ -82,6 +82,7 @@ router.get('/sections', asyncHandler(async (req, res) => {
   );
 
   const sections = rows.map(r => ({
+    sectionCode: r.section_code,
     grade: r.grade,
     sectionName: r.name,
     studentCount: Number(r.student_count),
@@ -302,6 +303,35 @@ router.post('/parents', asyncHandler(async (req, res) => {
   }
 
   res.status(201).json({ message: `Parent account created for ${first_name} ${last_name}. They can log in with ${email}.` });
+}));
+
+// ---------- Sections / classes ----------
+
+router.post('/sections', asyncHandler(async (req, res) => {
+  const { section_code, grade, name, capacity, class_teacher_id } = req.body || {};
+  if (!section_code || !grade || !name) {
+    return res.status(400).json({ error: 'Section code, grade, and section name are required.' });
+  }
+
+  const existing = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
+  if (existing) return res.status(409).json({ error: `Section "${section_code}" already exists.` });
+
+  await run(
+    'INSERT INTO sections (section_code, grade, name, capacity, class_teacher_id) VALUES ($1,$2,$3,$4,$5)',
+    [section_code, grade, name, Number(capacity) || 30, class_teacher_id || null]
+  );
+  res.status(201).json({ message: `Section ${section_code} created.` });
+}));
+
+router.delete('/sections/:code', asyncHandler(async (req, res) => {
+  const code = req.params.code;
+  const studentCount = await get('SELECT COUNT(*) AS c FROM students WHERE section_code = $1', [code]);
+  if (Number(studentCount.c) > 0) {
+    return res.status(409).json({ error: `Can't delete — ${studentCount.c} student(s) are still assigned to this section. Move them first.` });
+  }
+  await run('DELETE FROM timetable WHERE section_code = $1', [code]);
+  await run('DELETE FROM sections WHERE section_code = $1', [code]);
+  res.json({ message: `Section ${code} deleted.` });
 }));
 
 module.exports = router;

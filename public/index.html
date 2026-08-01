@@ -158,6 +158,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   .app-main{padding:24px 22px 50px;}
   .login-main{padding:32px 24px;}
   .wrap{padding:0 30px;}
+  .msg-grid{grid-template-columns:1fr !important;}
+  .msg-grid > div:first-child{border-right:none !important; border-bottom:1px solid var(--paper-alt); padding-right:0 !important; padding-bottom:8px; margin-bottom:8px; max-height:120px !important;}
 }
 </style>
 </head>
@@ -411,7 +413,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="stack">
           <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
           <div class="card"><div class="card-head"><h3>Messages</h3></div>
-            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;">
+            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
               <div id="msgContacts-student" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
               <div>
                 <div id="msgThread-student" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
@@ -469,7 +471,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div>
         <div class="stack">
           <div class="card"><div class="card-head"><h3>Messages</h3></div>
-            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;">
+            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
               <div id="msgContacts-parent" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
               <div>
                 <div id="msgThread-parent" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
@@ -507,7 +509,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="grid-2">
         <div class="card"><div class="card-head"><h3 id="teacherRosterTitle">Roster</h3></div><div id="teacherRoster"><p class="empty">Loading…</p></div></div>
         <div class="stack"><div class="card"><div class="card-head"><h3>Messages</h3></div>
-          <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;">
+          <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
             <div id="msgContacts-teacher" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
             <div>
               <div id="msgThread-teacher" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
@@ -651,7 +653,15 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="card"><div class="card-head"><h3>Pending admission applications</h3></div><div id="adminAdmissions"><p class="empty">Loading…</p></div></div>
       </div>
       <div class="card"><div class="card-head"><h3>Sections at a glance</h3></div>
-        <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Class teacher</th><th>Capacity</th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+          <input class="grade-input" style="width:100%;" id="newSectionCode" placeholder="Section code (e.g. 8B)">
+          <input class="grade-input" style="width:100%;" id="newSectionGrade" placeholder="Grade (e.g. Grade 8, O Level)">
+          <input class="grade-input" style="width:100%;" id="newSectionName" placeholder="Section name (e.g. B)">
+          <input class="grade-input" style="width:100%;" type="number" id="newSectionCapacity" placeholder="Capacity" value="30">
+          <select class="grade-input" style="width:100%; grid-column:1 / -1;" id="newSectionTeacher"><option value="">Class teacher (optional)</option></select>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="createSection()">Create section</button>
+        <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -1500,8 +1510,8 @@ async function loadTeacherDashboard(){
 
     document.getElementById('teacherClasses').innerHTML = d.todaysClasses.length
       ? d.todaysClasses.map(c => `<div class="list-row"><div class="l-main"><span class="tag mono" style="background:var(--indigo);">${c.start_time}</span><div><div class="l-title">${c.subject}</div><div class="l-sub">Section ${c.section_code} · ${c.room||''}</div></div></div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <input class="grade-input" style="width:130px;" id="link-${c.id}" placeholder="Meeting link" value="${(c.meeting_link || '').replace(/"/g, '&quot;')}">
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <input class="grade-input" style="width:110px; min-width:0; flex:1 1 110px;" id="link-${c.id}" placeholder="Meeting link" value="${(c.meeting_link || '').replace(/"/g, '&quot;')}">
             <button class="btn btn-outline btn-sm" onclick="saveClassLink(${c.id})">Save</button>
             ${c.meeting_link ? `<a class="btn btn-primary btn-sm" href="${c.meeting_link}" target="_blank" rel="noopener">Open</a>` : ''}
           </div></div>`).join('')
@@ -2049,8 +2059,9 @@ async function loadAdminDashboard(){
 
     const s = await api('/admin/sections');
     document.getElementById('adminSectionsTable').innerHTML = s.sections.map(sec =>
-      `<tr><td>${sec.grade}</td><td class="mono">${sec.sectionName}</td><td>${sec.studentCount}</td><td>${sec.classTeacher}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td></tr>`
+      `<tr><td>${sec.grade}</td><td class="mono">${sec.sectionName}</td><td>${sec.studentCount}</td><td>${sec.classTeacher}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td><td><button class="btn btn-outline btn-sm" onclick="deleteSection('${sec.sectionCode}')">Delete</button></td></tr>`
     ).join('');
+    populateSectionTeacherOptions();
 
     await loadTeacherApps();
     await loadAdminAnnouncementsList();
@@ -2222,6 +2233,43 @@ async function loadAdminMessages(){
     document.getElementById('adminMessages').innerHTML = d.messages.length
       ? d.messages.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from} → ${m.to}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
       : '<p class="empty">No messages sent yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function populateSectionTeacherOptions(){
+  try {
+    const d = await api('/admin/teachers');
+    document.getElementById('newSectionTeacher').innerHTML = '<option value="">Class teacher (optional)</option>' +
+      d.teachers.map(t => `<option value="${t.id}">${t.first_name} ${t.last_name}${t.subject ? ' — ' + t.subject : ''}</option>`).join('');
+  } catch (err) { /* non-critical */ }
+}
+
+async function createSection(){
+  const section_code = document.getElementById('newSectionCode').value.trim();
+  const grade = document.getElementById('newSectionGrade').value.trim();
+  const name = document.getElementById('newSectionName').value.trim();
+  const capacity = document.getElementById('newSectionCapacity').value;
+  const class_teacher_id = document.getElementById('newSectionTeacher').value || null;
+
+  if (!section_code || !grade || !name) { toast('Section code, grade, and section name are required.'); return; }
+
+  try {
+    const res = await api('/admin/sections', { method: 'POST', body: JSON.stringify({ section_code, grade, name, capacity, class_teacher_id }) });
+    toast(res.message);
+    ['newSectionCode','newSectionGrade','newSectionName'].forEach(id => document.getElementById(id).value = '');
+    loadAdminDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteSection(code){
+  try {
+    const res = await api(`/admin/sections/${code}`, { method: 'DELETE' });
+    toast(res.message);
+    loadAdminDashboard();
   } catch (err) {
     toast(err.message);
   }
