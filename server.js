@@ -8,7 +8,7 @@ const { seed } = require('./db/seed');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '6mb' }));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/student', require('./routes/student'));
@@ -36,6 +36,9 @@ app.get('*', (req, res) => {
 // Central error handler — catches anything asyncHandler forwards.
 app.use((err, req, res, next) => {
   console.error(err);
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'That file is too large. Please use a photo/document under about 4MB.' });
+  }
   res.status(500).json({ error: 'Something went wrong on the server.' });
 });
 

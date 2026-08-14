@@ -8,7 +8,7 @@ const router = express.Router();
 // Basic guard so someone can't stuff a giant file into the database — this
 // stores uploads inline (base64) since there's no cloud storage wired up yet.
 // Fine for a small school; swap for real object storage (S3/GCS) once volume grows.
-const MAX_BASE64_LEN = 2_000_000; // roughly ~1.5MB decoded
+const MAX_BASE64_LEN = 5_000_000; // roughly ~3.7MB decoded, safely under the 6MB request body limit
 
 function tooLarge(str) {
   return typeof str === 'string' && str.length > MAX_BASE64_LEN;
@@ -33,6 +33,58 @@ router.get('/public/announcements', asyncHandler(async (req, res) => {
     `SELECT title, body, created_at FROM announcements WHERE audience = 'all' ORDER BY created_at DESC LIMIT 12`
   );
   res.json({ announcements: rows });
+}));
+
+// ---------- Public platform stats (no login required) ----------
+// Real counts for the homepage stats band — no invented numbers.
+router.get('/public/stats', asyncHandler(async (req, res) => {
+  const [students, teachers, courses, attempts] = await Promise.all([
+    get(`SELECT COUNT(*)::int AS c FROM students`),
+    get(`SELECT COUNT(*)::int AS c FROM teachers`),
+    get(`SELECT COUNT(*)::int AS c FROM courses`),
+    get(`SELECT COUNT(*)::int AS total,
+                COUNT(*) FILTER (WHERE total_score > 0 AND auto_score / total_score >= 0.5)::int AS passing
+         FROM exam_attempts WHERE status = 'graded' AND total_score > 0`)
+  ]);
+  const successRate = attempts && attempts.total > 0 ? Math.round((attempts.passing / attempts.total) * 100) : null;
+  res.json({
+    students: students ? students.c : 0,
+    teachers: teachers ? teachers.c : 0,
+    courses: courses ? courses.c : 0,
+    successRate
+  });
+}));
+
+// ---------- Public course catalog (no login required) ----------
+// Same courses table the student dashboard reads from — just without
+// per-student progress, since there's no logged-in student to attach it to.
+router.get('/public/courses', asyncHandler(async (req, res) => {
+  const { subject, curriculum, level } = req.query;
+  const conditions = [];
+  const params = [];
+  let idx = 1;
+  if (subject) { conditions.push(`c.subject = $${idx++}`); params.push(subject); }
+  if (curriculum) { conditions.push(`c.curriculum = $${idx++}`); params.push(curriculum); }
+  if (level) { conditions.push(`c.level = $${idx++}`); params.push(level); }
+  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+
+  const courses = await all(
+    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.description,
+            t.first_name AS teacher_first_name, t.last_name AS teacher_last_name,
+            (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count
+     FROM courses c LEFT JOIN teachers t ON t.id = c.owner_teacher_id
+     ${where}
+     ORDER BY c.subject, c.curriculum, c.level
+     LIMIT 24`,
+    params
+  );
+
+  res.json({ courses: courses.map(c => ({
+    id: c.id, subject: c.subject, curriculum: c.curriculum, level: c.level,
+    title: c.title, description: c.description,
+    teacher: c.teacher_first_name ? `${c.teacher_first_name} ${c.teacher_last_name}` : null,
+    lessonCount: Number(c.lesson_count)
+  })) });
 }));
 
 // ---------- Public entrance/screening test (no login required) ----------
@@ -62,20 +114,20 @@ function computeMonthlyFee(curriculum, gradeApplied) {
 }
 
 router.post('/admissions/apply', asyncHandler(async (req, res) => {
-  const { applicant_name, grade_applied, parent_email, curriculum, photo_base64, document_base64, document_filename } = req.body || {};
-  if (!applicant_name || !grade_applied || !parent_email) {
-    return res.status(400).json({ error: 'Student name, grade applying for, and a parent email are required.' });
+  const { applicant_name, grade_applied, parent_email, contact_phone, guardian_id, curriculum, photo_base64, document_base64, document_filename } = req.body || {};
+  if (!applicant_name || !grade_applied || !parent_email || !contact_phone) {
+    return res.status(400).json({ error: 'Student name, grade, parent email, and a contact phone number are required.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email)) return res.status(400).json({ error: 'Enter a valid email address.' });
-  if (tooLarge(photo_base64) || tooLarge(document_base64)) return res.status(413).json({ error: 'Photo or document is too large. Please use a smaller file (under ~1.5MB).' });
+  if (tooLarge(photo_base64) || tooLarge(document_base64)) return res.status(413).json({ error: 'Photo or document is too large. Please use a smaller file (under ~4MB).' });
 
   const fee = computeMonthlyFee(curriculum, grade_applied);
 
   const r = await run(
     `INSERT INTO admission_applications
-       (applicant_name, grade_applied, parent_email, status, photo_base64, document_base64, document_filename, curriculum, monthly_fee, fee_currency)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-    [applicant_name, grade_applied, parent_email, 'pending', photo_base64 || null, document_base64 || null, document_filename || null, curriculum || 'Pakistani', fee.amount, fee.currency]
+       (applicant_name, grade_applied, parent_email, status, photo_base64, document_base64, document_filename, curriculum, monthly_fee, fee_currency, contact_phone, guardian_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+    [applicant_name, grade_applied, parent_email, 'pending', photo_base64 || null, document_base64 || null, document_filename || null, curriculum || 'Pakistani', fee.amount, fee.currency, contact_phone, guardian_id || null]
   );
   res.status(201).json({
     message: `Application received for ${applicant_name}. The school will reach out to ${parent_email} within 5 business days.`,
@@ -98,16 +150,18 @@ router.post('/admissions/:id/entrance-test', asyncHandler(async (req, res) => {
 
 // ---------- Teacher recruitment application (no login required) ----------
 router.post('/teacher-applications/apply', asyncHandler(async (req, res) => {
-  const { applicant_name, subject_applied, email, phone, photo_base64, document_base64, document_filename } = req.body || {};
-  if (!applicant_name || !subject_applied || !email) {
-    return res.status(400).json({ error: 'Name, subject applying to teach, and email are required.' });
+  const { applicant_name, subject_applied, email, phone, photo_base64, document_base64, document_filename, co_curricular } = req.body || {};
+  if (!applicant_name || !subject_applied || !email || !phone) {
+    return res.status(400).json({ error: 'Name, subject, email, and phone are all required.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
-  if (tooLarge(photo_base64) || tooLarge(document_base64)) return res.status(413).json({ error: 'Photo or document is too large. Please use a smaller file (under ~1.5MB).' });
+  if (!photo_base64) return res.status(400).json({ error: 'A photo is required.' });
+  if (!document_base64) return res.status(400).json({ error: 'A CV (PDF preferred) is required.' });
+  if (tooLarge(photo_base64) || tooLarge(document_base64)) return res.status(413).json({ error: 'Photo or document is too large. Please use a smaller file (under ~4MB).' });
 
   const r = await run(
-    'INSERT INTO teacher_applications (applicant_name, subject_applied, email, phone, status, photo_base64, document_base64, document_filename) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id',
-    [applicant_name, subject_applied, email, phone || null, 'pending', photo_base64 || null, document_base64 || null, document_filename || null]
+    'INSERT INTO teacher_applications (applicant_name, subject_applied, email, phone, status, photo_base64, document_base64, document_filename, co_curricular) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
+    [applicant_name, subject_applied, email, phone, 'pending', photo_base64, document_base64, document_filename || null, co_curricular || null]
   );
   res.status(201).json({
     message: `Application received for ${applicant_name}. The school will be in touch at ${email}.`,
@@ -252,6 +306,22 @@ router.get('/messages/thread/:userId', authenticate, asyncHandler(async (req, re
   res.json({ partner, messages: rows.map(r => ({ id: r.id, body: r.body, sentAt: r.sent_at, outgoing: r.sender_id === req.user.id })) });
 }));
 
+// If the sender is a student and the recipient is a teacher currently running
+// a live class for that student's section, block the message — teacher can
+// still send freely, and admin is never blocked.
+async function isChatLockedForSender(senderUser, recipientId) {
+  if (senderUser.role !== 'student') return false;
+  const student = await get('SELECT section_code FROM students WHERE user_id = $1', [senderUser.id]);
+  if (!student) return false;
+  const recipientTeacher = await get('SELECT id FROM teachers WHERE user_id = $1', [recipientId]);
+  if (!recipientTeacher) return false;
+  const active = await get(
+    'SELECT id FROM class_sessions WHERE teacher_id = $1 AND section_code = $2 AND ended_at IS NULL AND is_locked = TRUE',
+    [recipientTeacher.id, student.section_code]
+  );
+  return !!active;
+}
+
 router.post('/messages', authenticate, asyncHandler(async (req, res) => {
   const { recipient_id, body } = req.body || {};
   if (!recipient_id || !body || !body.trim()) return res.status(400).json({ error: 'recipient_id and a message body are required.' });
@@ -259,6 +329,9 @@ router.post('/messages', authenticate, asyncHandler(async (req, res) => {
   const allowed = await getAllowedContacts(req.user);
   if (!allowed.includes(Number(recipient_id))) {
     return res.status(403).json({ error: 'You can only message teachers, admin, or (for teachers) your own students and their parents.' });
+  }
+  if (await isChatLockedForSender(req.user, Number(recipient_id))) {
+    return res.status(423).json({ error: 'This teacher has a live class in session — chat is locked until they end it.' });
   }
 
   await run('INSERT INTO messages (sender_id, recipient_id, body, sent_at) VALUES ($1,$2,$3,$4)', [req.user.id, recipient_id, body.trim(), new Date().toISOString()]);
@@ -278,11 +351,17 @@ router.post('/messages/group', authenticate, asyncHandler(async (req, res) => {
   const validIds = recipient_ids.map(Number).filter(id => allowed.has(id));
   if (!validIds.length) return res.status(403).json({ error: 'None of the selected recipients are allowed contacts.' });
 
-  const sentAt = new Date().toISOString();
+  const sendable = [];
   for (const id of validIds) {
+    if (!(await isChatLockedForSender(req.user, id))) sendable.push(id);
+  }
+  if (!sendable.length) return res.status(423).json({ error: 'All selected recipients have a live class in session — chat is locked.' });
+
+  const sentAt = new Date().toISOString();
+  for (const id of sendable) {
     await run('INSERT INTO messages (sender_id, recipient_id, body, sent_at) VALUES ($1,$2,$3,$4)', [req.user.id, id, body.trim(), sentAt]);
   }
-  res.status(201).json({ message: `Sent to ${validIds.length} recipient${validIds.length === 1 ? '' : 's'}.` });
+  res.status(201).json({ message: `Sent to ${sendable.length} recipient${sendable.length === 1 ? '' : 's'}.${sendable.length < validIds.length ? ' (some were skipped — live class in session)' : ''}` });
 }));
 
 module.exports = router;

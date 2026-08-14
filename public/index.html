@@ -3,20 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nova School — Online School, Grades 1–12</title>
+<title>Novaschool.pk — Online School, Grades 1–12</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Fraunces:ital,wght@0,500;0,600;0,700;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#16283B; --ink-soft:#4A5768; --paper:#FAFCFB; --paper-alt:#EAF3EE; --card:#FFFFFF; --line:#D7E6DD;
-  --brand:#146C43; --brand-dark:#0F5233; --indigo:#3B4CCA; --green:#0F9D6C; --magenta:#C2408A; --amber:#C9A227; --teal:#1B8AA0;
-  --radius:14px; --shadow: 0 1px 2px rgba(22,40,59,.06), 0 8px 24px -12px rgba(22,40,59,.16);
-  --display:'Inter',sans-serif; --body:'Inter',sans-serif; --mono:'IBM Plex Mono',monospace;
+  /* Novaschool.pk brand system — deep emerald + antique gold */
+  --ink:#032E20; --ink-soft:#66756E; --paper:#FAFAF6; --paper-alt:#F1F6F2; --card:#FFFFFF; --line:#E3E8E4;
+  --brand:#06452F; --brand-dark:#032E20; --indigo:#A87824; --green:#247A4D; --magenta:#B78325; --amber:#C9A24A; --teal:#356B80;
+  --gold:#C9A24A; --gold-hi:#E2C46B; --gold-deep:#A87824; --text:#17231E; --gold-bg:#FBF6E8;
+  --radius:16px; --shadow: 0 1px 2px rgba(3,46,32,.06), 0 8px 24px -12px rgba(3,46,32,.18);
+  --display:'Fraunces',serif; --body:'Inter',sans-serif; --mono:'IBM Plex Mono',monospace;
 }
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth; overflow-x:hidden;}
 body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--body); line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden;}
-h1,h2,h3,h4{font-family:var(--display); margin:0; font-weight:600; letter-spacing:-.01em;}
+h1,h2,h3,h4{font-family:var(--display); margin:0; font-weight:600; letter-spacing:-.005em;}
+.hero h1, .cta-band h2, .login-side .quote{font-weight:500;}
 p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit; cursor:pointer;} img,svg{display:block;}
 :focus-visible{outline:2.5px solid var(--indigo); outline-offset:2px; border-radius:4px;}
 .mono{font-family:var(--mono);}
@@ -30,7 +33,8 @@ p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit;
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 22px; border-radius:999px; border:1.5px solid transparent; font-weight:600; font-size:15px; transition:transform .15s ease, background .15s ease, border-color .15s ease;}
 .btn:active{transform:scale(.97);} .btn:disabled{opacity:.55; cursor:default;}
 .btn-primary{background:var(--brand); color:#fff;} .btn-primary:hover{background:var(--brand-dark);}
-.btn-ink{background:var(--ink); color:#fff;} .btn-ink:hover{background:#0f1c29;}
+.btn-ink{background:var(--ink); color:#fff;} .btn-ink:hover{background:#021b12;}
+.btn-premium{background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep)); color:var(--ink);} .btn-premium:hover{filter:brightness(1.04);}
 .btn-outline{background:transparent; border-color:var(--line); color:var(--ink);} .btn-outline:hover{border-color:var(--ink);}
 .btn-sm{padding:8px 14px; font-size:13.5px; border-radius:999px;}
 .icon{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
@@ -63,6 +67,26 @@ p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit;
 .section{padding:88px 0;} .section-head{max-width:640px; margin-bottom:44px;} .section-head h2{font-size:clamp(26px,3vw,38px); margin-top:12px;}
 .section-head p{margin-top:14px; color:var(--ink-soft); font-size:16px; line-height:1.6;}
 .feature-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden;}
+.stats-band{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-top:52px;}
+.stat-card{background:var(--card); padding:26px 22px; text-align:center;}
+.stat-card .s-val{font-family:var(--display); font-size:clamp(26px,3.4vw,36px); font-weight:600; color:var(--gold-deep);}
+.stat-card .s-label{margin-top:6px; font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft);}
+.flow-strip{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+.flow-step{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px 20px; flex:1; min-width:150px; text-align:center; position:relative;}
+.flow-step .fs-n{width:30px; height:30px; border-radius:50%; background:var(--gold-bg); color:var(--gold-deep); font-family:var(--mono); font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; margin:0 auto 12px;}
+.flow-step h4{font-size:14.5px; font-weight:700; font-family:var(--body);} .flow-step p{margin-top:6px; font-size:12.5px; color:var(--ink-soft); line-height:1.5;}
+.flow-arrow{color:var(--line); font-size:20px; flex-shrink:0;}
+@media (max-width: 900px){ .stats-band{grid-template-columns:1fr 1fr;} .flow-strip{flex-direction:column;} .flow-arrow{transform:rotate(90deg);} }
+.programs-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+.program-card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px;}
+.program-card .p-tags{display:flex; gap:6px; flex-wrap:wrap;}
+.program-card .p-tag{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; background:var(--paper-alt); color:var(--brand); border-radius:6px; padding:3px 8px;}
+.program-card h3{font-size:16.5px; font-family:var(--body); font-weight:700;}
+.program-card p.p-desc{font-size:13px; color:var(--ink-soft); line-height:1.5; flex-grow:1;}
+.program-card .p-meta{display:flex; justify-content:space-between; align-items:center; font-size:12.5px; color:var(--ink-soft); border-top:1px solid var(--line); padding-top:12px;}
+.program-card .p-meta b{color:var(--ink);}
+@media (max-width: 900px){ .programs-grid{grid-template-columns:1fr 1fr;} }
+@media (max-width: 640px){ .programs-grid{grid-template-columns:1fr;} }
 .feature{background:var(--card); padding:30px 26px;} .feature .fi{width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:18px;}
 .feature h3{font-size:17px; font-weight:600; font-family:var(--body);} .feature p{margin-top:8px; font-size:14px; color:var(--ink-soft); line-height:1.55;}
 .week{background:var(--card); border:1px solid var(--line); border-radius:16px; overflow:auto; box-shadow:var(--shadow);}
@@ -77,7 +101,7 @@ p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit;
 .role-card h3{font-size:17px; font-family:var(--body); font-weight:700;} .role-card p{margin-top:8px; font-size:13.5px; color:var(--ink-soft); line-height:1.55; min-height:64px;}
 .role-card .go{margin-top:14px; font-size:13px; font-weight:600; color:var(--role-c); display:flex; align-items:center; gap:6px;}
 .cta-band{background:var(--ink); border-radius:20px; padding:56px 48px; display:flex; align-items:center; justify-content:space-between; gap:24px; color:#fff; flex-wrap:wrap;}
-.cta-band h2{color:#fff; font-size:clamp(24px,3vw,32px); max-width:20ch;} .cta-band p{color:#B9C2CE; margin-top:10px; font-size:15px;}
+.cta-band h2{color:#fff; font-size:clamp(24px,3vw,32px); max-width:20ch;} .cta-band p{color:#CFE0D6; margin-top:10px; font-size:15px;}
 footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .foot-inner{display:flex; justify-content:space-between; align-items:center; font-size:13.5px; color:var(--ink-soft); flex-wrap:wrap; gap:12px;}
 
@@ -101,7 +125,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .apply-link{margin-top:24px; text-align:center; font-size:13.5px; color:var(--ink-soft);} .apply-link a{color:var(--indigo); font-weight:600;}
 
 /* APP SHELL */
-.app-shell{display:grid; grid-template-columns:236px 1fr; min-height:100vh;}
+.app-shell{display:grid; grid-template-columns:236px minmax(0,1fr); min-height:100vh;}
 .app-sidebar{background:var(--ink); color:#fff; padding:22px 16px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh;}
 .app-brand{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:18px; padding:6px 8px 26px;}
 .side-nav{display:flex; flex-direction:column; gap:2px; flex:1;}
@@ -112,7 +136,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .avatar{width:34px; height:34px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0; font-family:var(--body);}
 .side-user .u-name{font-size:13.5px; font-weight:600;} .side-user .u-role{font-size:11.5px; color:#B9C2CE;}
 .logout-link{display:flex; align-items:center; gap:9px; font-size:13px; color:#B9C2CE; padding:10px 8px; margin-top:4px;} .logout-link:hover{color:#fff;}
-.app-main{padding:30px 36px 60px; max-width:1180px;}
+.app-main{padding:30px 36px 60px; max-width:1180px; min-width:0;}
 .app-topbar{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; gap:20px; flex-wrap:wrap;}
 .app-topbar h1{font-size:26px;} .app-topbar .sub{color:var(--ink-soft); font-size:14.5px; margin-top:6px;}
 .top-actions{display:flex; gap:10px; align-items:center;}
@@ -151,8 +175,12 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   .hero-grid{grid-template-columns:1fr;} .feature-grid{grid-template-columns:1fr 1fr;} .roles-grid{grid-template-columns:1fr 1fr;}
   .grid-2{grid-template-columns:1fr;} .grid-3, .grid-4{grid-template-columns:1fr 1fr;}
   .login-shell{grid-template-columns:1fr;} .login-side{display:none;}
-  .app-shell{grid-template-columns:76px 1fr;} .app-brand span.txt, .side-link .txt, .side-user, .logout-link .txt{display:none;}
-  .app-sidebar{align-items:center;} .side-link{justify-content:center;} .app-main{padding:24px 18px 50px;}
+  .app-shell{grid-template-columns:64px minmax(0,1fr);} .app-brand span.txt, .side-link .txt, .side-user, .logout-link .txt{display:none;}
+  .app-main{min-width:0;}
+  .app-sidebar{align-items:center; padding:18px 8px;} .side-link{justify-content:center; width:44px; height:44px; padding:0;} .app-main{padding:24px 18px 50px;}
+  .app-brand{padding:4px 0 20px; justify-content:center;}
+  .side-foot{width:100%; display:flex; flex-direction:column; align-items:center; gap:2px;}
+  .logout-link{justify-content:center; width:44px; height:40px; padding:0;}
 }
 @media (max-width: 620px){
   .feature-grid{grid-template-columns:1fr;} .roles-grid{grid-template-columns:1fr;} .grid-3, .grid-4{grid-template-columns:1fr;}
@@ -174,8 +202,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen active" data-screen="landing">
   <div class="nav">
     <div class="wrap nav-inner">
-      <div class="brand"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:30px;height:30px;">Nova School</div>
-      <nav class="nav-links"><a href="#features">Platform</a><a href="#day">A day at Nova School</a><a href="#roles">For your role</a><a href="#news">News</a></nav>
+      <div class="brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:30px;height:30px;">Novaschool.pk</div>
+      <nav class="nav-links"><a href="#features">Platform</a><a href="#programs">Programs</a><a href="#day">A day at Novaschool.pk</a><a href="#journey">Learning journey</a><a href="#roles">For your role</a><a href="#news">News</a></nav>
       <div class="nav-cta">
         <button class="btn btn-outline btn-sm" onclick="go('login')">Log in</button>
         <button class="btn btn-primary btn-sm" onclick="go('apply')">Apply for admission</button>
@@ -200,18 +228,39 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="rail" id="heroRail"></div>
       </div>
     </div>
+    <div class="stats-band" id="statsBand"></div>
   </div>
 
   <div class="wrap section" id="features">
-    <div class="section-head"><p class="eyebrow">The platform</p><h2>Everything a school day needs, none of it scattered.</h2>
+    <div class="section-head"><p class="eyebrow">Why Novaschool.pk</p><h2>Everything a school day needs, none of it scattered.</h2>
       <p>Six systems, one login. Built so a Grade 8 parent and a Math teacher get exactly the view they need.</p></div>
     <div class="feature-grid" id="featureGrid"></div>
   </div>
 
+  <div class="wrap section" id="programs">
+    <div class="section-head"><p class="eyebrow">Programs</p><h2>Courses running right now, by subject and level.</h2>
+      <p>The same catalog students browse after logging in — pulled live from the school's course list.</p></div>
+    <div class="programs-grid" id="programsGrid"><p class="empty">Loading…</p></div>
+  </div>
+
   <div class="wrap section" id="day">
-    <div class="section-head"><p class="eyebrow">A day at Nova School</p><h2>The same timetable, from bell to grade book.</h2>
+    <div class="section-head"><p class="eyebrow">A day at Novaschool.pk</p><h2>The same timetable, from bell to grade book.</h2>
       <p>This is Grade 8, Section B's real weekly schedule, kept up to date automatically.</p></div>
     <div class="week"><table><thead><tr><th>Time</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th></tr></thead><tbody id="weekBody"></tbody></table></div>
+  </div>
+
+  <div class="wrap section" id="journey">
+    <div class="section-head"><p class="eyebrow">The learning journey</p><h2>From timetable to report card, one connected path.</h2>
+      <p>Every step below is a real, working part of the platform — not a mockup.</p></div>
+    <div class="flow-strip">
+      <div class="flow-step"><div class="fs-n">1</div><h4>Discover</h4><p>Log in and see today's timetable, subjects and rooms at a glance.</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="fs-n">2</div><h4>Learn</h4><p>Join live classes or catch up with recorded lessons and study materials.</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="fs-n">3</div><h4>Practice</h4><p>Submit homework and sit exams — graded and returned in the same dashboard.</p></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="fs-n">4</div><h4>Track progress</h4><p>Attendance, grades and fees roll up automatically for students and parents.</p></div>
+    </div>
   </div>
 
   <div class="wrap section" id="roles">
@@ -221,7 +270,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   </div>
 
   <div class="wrap section" id="news" style="padding-top:0;">
-    <div class="section-head"><p class="eyebrow">News & announcements</p><h2>What's happening at Nova School.</h2></div>
+    <div class="section-head"><p class="eyebrow">News & announcements</p><h2>What's happening at Novaschool.pk.</h2></div>
     <div id="publicNews"><p class="empty">Loading…</p></div>
   </div>
 
@@ -233,7 +282,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   </div>
 
   <footer><div class="wrap foot-inner">
-    <div class="brand" style="font-size:16px;"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:22px;height:22px;">Nova School</div>
+    <div class="brand" style="font-size:16px;"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:22px;height:22px;">Novaschool.pk</div>
     <div style="display:flex; gap:14px; align-items:center;">
       <a href="https://www.tiktok.com/@novaschool.pk" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="TikTok">TikTok</a>
       <a href="https://www.youtube.com/@novaschool_pk" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="YouTube">YouTube</a>
@@ -241,7 +290,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <a href="https://www.facebook.com/share/1L7jRTYfys/" target="_blank" rel="noopener" style="color:var(--ink-soft);" aria-label="Facebook">Facebook</a>
       <a href="https://wa.me/923400377755" target="_blank" rel="noopener" style="color:var(--green); font-weight:600;" aria-label="WhatsApp">WhatsApp</a>
     </div>
-    <span>© 2026 Nova School. Online school, grades 1–12.</span><span>Admissions · <a href="javascript:void(0)" onclick="go('applyTeach')" style="color:var(--ink); font-weight:600;">Careers</a> · Support · Privacy</span>
+    <span>© 2026 Novaschool.pk. Online school, grades 1–12.</span><span>Admissions · <a href="javascript:void(0)" onclick="go('applyTeach')" style="color:var(--ink); font-weight:600;">Careers</a> · Support · Privacy</span>
   </div></footer>
 </section>
 
@@ -249,9 +298,9 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="login">
   <div class="login-shell">
     <div class="login-side">
-      <a class="back" href="javascript:void(0)" onclick="go('landing')">← Back to Nova School</a>
+      <a class="back" href="javascript:void(0)" onclick="go('landing')">← Back to Novaschool.pk</a>
       <div>
-        <img src="assets/logo-full.jpg" alt="Nova School logo" class="brand-logo-img" style="width:88px;height:auto;margin-bottom:22px;">
+        <img src="assets/logo-full.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:88px;height:auto;margin-bottom:22px;">
         <p class="quote">“Attendance, homework and the timetable finally live in <span>one place</span> — backed by a database, not a spreadsheet.”</p>
         <p style="margin-top:16px; color:#B9C2CE; font-size:13.5px;">— a parent of a Grade 8 student</p>
       </div>
@@ -282,7 +331,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <!-- ============================================================ ADMISSION APPLICATION ============================================================ -->
 <section class="screen" data-screen="apply">
   <div class="wrap narrow-page" style="max-width:640px;">
-    <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Nova School</a>
+    <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Novaschool.pk</a>
     <h2 style="font-size:28px; margin-bottom:8px;">Admission application</h2>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Grades 1–12 · rolling applications · decisions within 5 business days.</p>
 
@@ -296,6 +345,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </select>
       </div>
       <div class="field"><label>Parent/guardian email</label><input type="email" id="applyEmail" placeholder="you@example.com"></div>
+      <div class="field"><label>Contact phone number</label><input type="tel" id="applyPhone" placeholder="+92…"></div>
+      <div class="field"><label>Father/guardian ID (CNIC/passport number, optional)</label><input id="applyGuardianId" placeholder="e.g. 42101-1234567-1"></div>
       <div class="field"><label>Student photo (optional)</label><input type="file" id="applyPhoto" accept="image/*"></div>
       <div class="field"><label>Supporting document — birth certificate, previous school record, etc. (optional)</label><input type="file" id="applyDocument"></div>
       <button class="btn btn-primary" style="width:100%;" id="applySubmitBtn" onclick="submitAdmissionApplication()">Submit application</button>
@@ -308,7 +359,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <img src="assets/logo-icon.jpg" alt="" style="position:absolute; top:50%; left:50%; width:220px; height:auto; transform:translate(-50%,-50%); opacity:0.08; pointer-events:none;">
         <div style="position:relative;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <img src="assets/logo-icon.jpg" alt="Nova School" style="width:40px;height:40px;border-radius:6px;">
+            <img src="assets/logo-icon.jpg" alt="Novaschool.pk" style="width:40px;height:40px;border-radius:6px;">
             <span class="mono" style="font-size:12px; color:var(--ink-soft);">Provisional Fee Voucher</span>
           </div>
           <p style="font-size:13px; color:var(--ink-soft); margin-bottom:4px;">Applicant</p>
@@ -332,17 +383,18 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <!-- ============================================================ TEACHER RECRUITMENT APPLICATION ============================================================ -->
 <section class="screen" data-screen="applyTeach">
   <div class="wrap narrow-page" style="max-width:640px;">
-    <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Nova School</a>
-    <h2 style="font-size:28px; margin-bottom:8px;">Apply to teach at Nova School</h2>
+    <a class="back" href="javascript:void(0)" onclick="go('landing')" style="color:var(--ink-soft); font-size:14px; display:inline-flex; gap:6px; align-items:center; margin-bottom:24px;">← Back to Novaschool.pk</a>
+    <h2 style="font-size:28px; margin-bottom:8px;">Apply to teach at Novaschool.pk</h2>
     <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:28px;">Tell us about yourself — we review every application personally.</p>
 
     <div id="teachFormSection" class="card">
       <div class="field"><label>Full name</label><input id="teachName" placeholder="e.g. Elena Whitfield"></div>
       <div class="field"><label>Subject you'd like to teach</label><input id="teachSubject" placeholder="e.g. Physics, Chinese, Islamiat"></div>
       <div class="field"><label>Email</label><input type="email" id="teachEmail" placeholder="you@example.com"></div>
-      <div class="field"><label>Phone (optional)</label><input id="teachPhone" placeholder="+92…"></div>
-      <div class="field"><label>Photo (optional)</label><input type="file" id="teachPhoto" accept="image/*"></div>
-      <div class="field"><label>CV / certificates (optional)</label><input type="file" id="teachDocument"></div>
+      <div class="field"><label>Phone</label><input id="teachPhone" placeholder="+92…"></div>
+      <div class="field"><label>Photo</label><input type="file" id="teachPhoto" accept="image/*"></div>
+      <div class="field"><label>CV (PDF preferred)</label><input type="file" id="teachDocument" accept="application/pdf,.pdf"></div>
+      <div class="field"><label>Co-curricular activities / experience (optional)</label><textarea id="teachCoCurricular" placeholder="Sports, debate club, clubs you've run, etc." style="width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:14.5px; min-height:70px; resize:vertical;"></textarea></div>
       <button class="btn btn-primary" style="width:100%;" id="teachSubmitBtn" onclick="submitTeacherApplication()">Submit application</button>
     </div>
 
@@ -377,7 +429,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="student">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Nova School</span></div>
+      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
       <nav class="side-nav">
         <a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
       </nav>
@@ -422,7 +474,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
               <div id="msgContacts-student" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
               <div>
                 <div id="msgThread-student" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-                <div id="msgToolbar-student"></div><div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-student" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
+                <div id="msgToolbar-student"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-student" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'student')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
               </div>
             </div>
           </div>
@@ -441,6 +493,11 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div id="studentCourses"><p class="empty">Loading…</p></div>
       </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Study materials library</h3></div>
+        <select class="grade-input" style="width:100%; margin-bottom:14px;" id="matSubjectFilter" onchange="loadStudentMaterials()"><option value="">All subjects</option></select>
+        <div id="studentMaterials"><p class="empty">Loading…</p></div>
+      </div>
     </main>
   </div>
 </section>
@@ -449,7 +506,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="parent">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Nova School</span></div>
+      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--amber);" id="parentAvatar">--</div><div><div class="u-name" id="parentName">—</div><div class="u-role">Parent account</div></div></div>
@@ -480,7 +537,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
               <div id="msgContacts-parent" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
               <div>
                 <div id="msgThread-parent" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-                <div id="msgToolbar-parent"></div><div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-parent" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('parent')">Send</button></div>
+                <div id="msgToolbar-parent"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-parent" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'parent')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('parent')">Send</button></div>
               </div>
             </div>
           </div>
@@ -495,7 +552,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="teacher">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Nova School</span></div>
+      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--magenta);" id="teacherAvatar">--</div><div><div class="u-name" id="teacherName">—</div><div class="u-role" id="teacherSubject">—</div></div></div>
@@ -518,7 +575,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <div id="msgContacts-teacher" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
             <div>
               <div id="msgThread-teacher" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-              <div id="msgToolbar-teacher"></div><div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="msgInput-teacher" placeholder="Type a message…"><button class="btn btn-ink btn-sm" onclick="sendChatMessage('teacher')">Send</button></div>
+              <div id="msgToolbar-teacher"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-teacher" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'teacher')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('teacher')">Send</button></div>
             </div>
           </div>
         </div></div>
@@ -530,6 +587,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <input class="grade-input" style="width:100%;" id="lessonSubject" placeholder="Subject (e.g. Math)">
           <select class="grade-input" style="width:100%;" id="lessonSection"></select>
           <input class="grade-input" style="width:100%;" id="lessonUrl" placeholder="YouTube/Vimeo URL">
+          <div style="grid-column:1/-1;">
+            <label style="font-size:12px; color:var(--ink-soft); display:block; margin-bottom:4px;">Recording of a specific missed class? (optional — lets absent students confirm watching to update their attendance)</label>
+            <input class="grade-input" style="width:100%;" type="date" id="lessonLectureDate">
+          </div>
         </div>
         <textarea id="lessonDescription" placeholder="Short description (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
         <button class="btn btn-ink btn-sm" onclick="addLesson()">Add lesson</button>
@@ -537,8 +598,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
       <div class="card" style="margin-top:20px;">
         <div class="card-head"><h3>Manage timetable</h3></div>
-        <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
-          <select class="grade-input" id="ttSection" onchange="loadTimetableManager()"></select>
+        <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
+          <select class="grade-input" id="ttSection" onchange="loadTimetableManager(); refreshLiveClassButton();"></select>
+          <button class="btn btn-primary btn-sm" id="liveClassBtn" onclick="toggleLiveClass()">Start live class</button>
+          <span id="liveClassStatus" style="font-size:12px; color:var(--ink-soft);"></span>
         </div>
         <div id="teacherTimetable"><p class="empty">Loading…</p></div>
         <div class="divider" style="height:1px; background:var(--line); margin:16px 0;"></div>
@@ -582,6 +645,24 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div id="teacherCourses"><p class="empty">Loading…</p></div>
       </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Study materials library</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <input class="grade-input" style="width:100%;" id="matSubject" placeholder="Subject (e.g. Chemistry)">
+          <input class="grade-input" style="width:100%;" id="matGrade" placeholder="Grade (e.g. Grade 8)">
+          <input class="grade-input" style="width:100%; grid-column:1/-1;" id="matTitle" placeholder="Title">
+          <select class="grade-input" style="width:100%;" id="matType" onchange="toggleMaterialTypeFields()">
+            <option value="document">Document (PDF, Word, txt, PPT, Excel)</option>
+            <option value="image">Image</option>
+            <option value="video">Video (link)</option>
+          </select>
+          <div id="matFileWrap" style="width:100%;"><input class="grade-input" style="width:100%;" type="file" id="matFile" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,image/*"></div>
+          <input class="grade-input" style="width:100%; display:none;" id="matVideoUrl" placeholder="Video URL (YouTube/Vimeo)">
+        </div>
+        <textarea id="matDescription" placeholder="Short description (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+        <button class="btn btn-primary btn-sm" onclick="uploadMaterial()">Add to library</button>
+        <div id="teacherMaterials" style="margin-top:16px;"><p class="empty">Loading…</p></div>
+      </div>
     </main>
   </div>
 </section>
@@ -590,7 +671,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="admin">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Nova School logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Nova School</span></div>
+      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
@@ -663,10 +744,32 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <input class="grade-input" style="width:100%;" id="newSectionGrade" placeholder="Grade (e.g. Grade 8, O Level)">
           <input class="grade-input" style="width:100%;" id="newSectionName" placeholder="Section name (e.g. B)">
           <input class="grade-input" style="width:100%;" type="number" id="newSectionCapacity" placeholder="Capacity" value="30">
+          <select class="grade-input" style="width:100%;" id="newSectionCurriculum">
+            <option value="Pakistani">Pakistani curriculum</option>
+            <option value="International">International — UK/O-Level/A-Level</option>
+          </select>
           <select class="grade-input" style="width:100%; grid-column:1 / -1;" id="newSectionTeacher"><option value="">Class teacher (optional)</option></select>
         </div>
         <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="createSection()">Create section</button>
-        <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
+        <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Curriculum</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Build weekly timetable</h3></div>
+        <select class="grade-input" style="width:100%; margin-bottom:14px;" id="atSection" onchange="loadAdminTimetable()"></select>
+        <div id="adminTimetableList"><p class="empty">Pick a section.</p></div>
+        <div class="divider" style="height:1px; background:var(--line); margin:16px 0;"></div>
+        <p style="font-size:13px; font-weight:600; margin-bottom:10px;">Add a period</p>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <select class="grade-input" id="atDay">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option>
+          </select>
+          <input class="grade-input" style="width:100%;" id="atTime" placeholder="Start time (e.g. 09:00)">
+          <input class="grade-input" style="width:100%;" id="atSubject" placeholder="Subject">
+          <input class="grade-input" style="width:100%;" id="atRoom" placeholder="Room (optional)">
+          <select class="grade-input" style="width:100%; grid-column:1/-1;" id="atTeacher"><option value="">Teacher (optional)</option></select>
+        </div>
+        <button class="btn btn-ink btn-sm" onclick="addAdminTimetablePeriod()">Add period</button>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -676,7 +779,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <select class="grade-input" style="width:100%;" id="settingsStatus">
             <option value="not_registered">Not registered — results arranged manually via boards</option>
             <option value="pending">Registration pending</option>
-            <option value="registered">Registered — Nova School issues official results</option>
+            <option value="registered">Registered — Novaschool.pk issues official results</option>
           </select>
           <input class="grade-input" style="width:100%;" id="settingsAuthorityName" placeholder="Board/authority name (optional)">
         </div>
@@ -686,6 +789,11 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="card" style="margin-top:20px;">
         <div class="card-head"><h3>Teacher applications</h3></div>
         <div id="adminTeacherApps"><p class="empty">Loading…</p></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Live classes now</h3></div>
+        <div id="adminLiveClasses"><p class="empty">Loading…</p></div>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -891,6 +999,44 @@ function loadDashboard(role){
 
 /* ============================== PUBLIC: News, Admissions, Careers ============================== */
 
+async function loadPublicCourses(){
+  const grid = document.getElementById('programsGrid'); if (!grid) return;
+  try {
+    const d = await api('/public/courses');
+    grid.innerHTML = d.courses.length
+      ? d.courses.map(c => `<div class="program-card">
+          <div class="p-tags"><span class="p-tag">${c.subject}</span><span class="p-tag">${c.level}</span></div>
+          <h3>${c.title}</h3>
+          <p class="p-desc">${c.description || `${c.curriculum} · ${c.subject}`}</p>
+          <div class="p-meta"><span>${c.teacher ? `<b>${c.teacher}</b>` : 'Teacher TBA'}</span><span>${c.lessonCount} lesson${c.lessonCount === 1 ? '' : 's'}</span></div>
+        </div>`).join('')
+      : '<p class="empty">No courses published yet — check back soon.</p>';
+  } catch (err) {
+    grid.innerHTML = '<p class="empty">Courses aren\'t available right now.</p>';
+  }
+}
+
+async function loadPublicStats(){
+  const band = document.getElementById('statsBand'); if (!band) return;
+  const cards = [
+    {key:'students', label:'Students'},
+    {key:'teachers', label:'Teachers'},
+    {key:'courses', label:'Courses'},
+    {key:'successRate', label:'Exam pass rate', suffix:'%'}
+  ];
+  try {
+    const d = await api('/public/stats');
+    band.innerHTML = cards.map(c => {
+      const v = d[c.key];
+      const shown = (v === null || v === undefined) ? '—' : `${v}${c.suffix||''}`;
+      return `<div class="stat-card"><div class="s-val">${shown}</div><div class="s-label">${c.label}</div></div>`;
+    }).join('');
+  } catch (err) {
+    // No fabricated numbers — just hide the band gracefully if the data can't load.
+    band.innerHTML = cards.map(c => `<div class="stat-card"><div class="s-val">—</div><div class="s-label">${c.label}</div></div>`).join('');
+  }
+}
+
 async function loadPublicNews(){
   try {
     const d = await api('/public/announcements');
@@ -917,11 +1063,13 @@ async function submitAdmissionApplication(){
   const applicant_name = document.getElementById('applyName').value.trim();
   const grade_applied = document.getElementById('applyGrade').value.trim();
   const parent_email = document.getElementById('applyEmail').value.trim();
+  const contact_phone = document.getElementById('applyPhone').value.trim();
+  const guardian_id = document.getElementById('applyGuardianId').value.trim();
   const curriculum = document.getElementById('applyCurriculum').value;
   const photoFile = document.getElementById('applyPhoto').files[0];
   const docFile = document.getElementById('applyDocument').files[0];
 
-  if (!applicant_name || !grade_applied || !parent_email) { toast('Name, grade, and email are required.'); return; }
+  if (!applicant_name || !grade_applied || !parent_email || !contact_phone) { toast('Name, grade, email, and contact phone are required.'); return; }
 
   const btn = document.getElementById('applySubmitBtn');
   btn.disabled = true; btn.textContent = 'Submitting…';
@@ -930,7 +1078,7 @@ async function submitAdmissionApplication(){
     const document_base64 = await fileToBase64(docFile);
     const res = await api('/admissions/apply', {
       method: 'POST',
-      body: JSON.stringify({ applicant_name, grade_applied, parent_email, curriculum, photo_base64, document_base64, document_filename: docFile ? docFile.name : null })
+      body: JSON.stringify({ applicant_name, grade_applied, parent_email, contact_phone, guardian_id, curriculum, photo_base64, document_base64, document_filename: docFile ? docFile.name : null })
     });
     lastApplicationId = res.applicationId;
     document.getElementById('applyFormSection').style.display = 'none';
@@ -956,8 +1104,11 @@ async function submitTeacherApplication(){
   const phone = document.getElementById('teachPhone').value.trim();
   const photoFile = document.getElementById('teachPhoto').files[0];
   const docFile = document.getElementById('teachDocument').files[0];
+  const co_curricular = document.getElementById('teachCoCurricular').value.trim();
 
-  if (!applicant_name || !subject_applied || !email) { toast('Name, subject, and email are required.'); return; }
+  if (!applicant_name || !subject_applied || !email || !phone) { toast('Name, subject, email, and phone are all required.'); return; }
+  if (!photoFile) { toast('A photo is required.'); return; }
+  if (!docFile) { toast('A CV is required.'); return; }
 
   const btn = document.getElementById('teachSubmitBtn');
   btn.disabled = true; btn.textContent = 'Submitting…';
@@ -966,7 +1117,7 @@ async function submitTeacherApplication(){
     const document_base64 = await fileToBase64(docFile);
     const res = await api('/teacher-applications/apply', {
       method: 'POST',
-      body: JSON.stringify({ applicant_name, subject_applied, email, phone, photo_base64, document_base64, document_filename: docFile ? docFile.name : null })
+      body: JSON.stringify({ applicant_name, subject_applied, email, phone, photo_base64, document_base64, document_filename: docFile ? docFile.name : null, co_curricular })
     });
     lastTeacherApplicationId = res.applicationId;
     document.getElementById('teachFormSection').style.display = 'none';
@@ -1103,7 +1254,7 @@ async function openChatThread(scope, userId){
     const d = await api(`/messages/thread/${userId}`);
     threadEl.innerHTML = d.messages.length
       ? d.messages.map(m => `<div style="margin-bottom:8px; text-align:${m.outgoing ? 'right' : 'left'};">
-          <span style="display:inline-block; max-width:80%; padding:7px 11px; border-radius:12px; font-size:13px; background:${m.outgoing ? 'var(--brand)' : 'var(--paper-alt)'}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${escapeHtml(m.body)}</span>
+          <span style="display:inline-block; max-width:80%; padding:7px 11px; border-radius:12px; font-size:13px; white-space:pre-wrap; background:${m.outgoing ? 'var(--brand)' : 'var(--paper-alt)'}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${renderChatFormatting(escapeHtml(m.body))}</span>
         </div>`).join('')
       : '<p class="empty">No messages yet — say hello.</p>';
     threadEl.scrollTop = threadEl.scrollHeight;
@@ -1144,6 +1295,13 @@ async function sendChatMessage(scope){
 const CHAT_SYMBOLS = ['x²','x³','√','÷','×','π','Σ','Δ','∞','≤','≥','→','°','½','¼'];
 const CHAT_STICKERS = ['🧮','📐','⚗️','🧪','🔬','⚛️','💻','📊','🧬','📏'];
 
+function handleChatKeydown(event, scope){
+  if (event.key === 'Enter' && !event.shiftKey) {
+    event.preventDefault();
+    sendChatMessage(scope);
+  }
+}
+
 function insertAtCursor(scope, text){
   const input = document.getElementById(`msgInput-${scope}`);
   const start = input.selectionStart ?? input.value.length;
@@ -1152,6 +1310,25 @@ function insertAtCursor(scope, text){
   input.focus();
   const pos = start + text.length;
   input.setSelectionRange(pos, pos);
+}
+
+function wrapSelection(scope, before, after){
+  const input = document.getElementById(`msgInput-${scope}`);
+  const start = input.selectionStart, end = input.selectionEnd;
+  const selected = input.value.slice(start, end) || 'text';
+  input.value = input.value.slice(0, start) + before + selected + after + input.value.slice(end);
+  input.focus();
+  input.setSelectionRange(start + before.length, start + before.length + selected.length);
+}
+
+// Lightweight, SAFE formatting: applied only after escapeHtml() has already
+// neutralized any raw HTML the user typed, so **bold**/*italic*/__underline__
+// are the only things that ever turn into real tags.
+function renderChatFormatting(escapedText){
+  return escapedText
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\*(.+?)\*/g, '<i>$1</i>')
+    .replace(/__(.+?)__/g, '<u>$1</u>');
 }
 
 function insertSymbol(scope, sym){
@@ -1167,6 +1344,9 @@ function insertSymbol(scope, sym){
 
 function chatToolbarHtml(scope){
   return `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px;">
+    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; font-weight:700;" onclick="wrapSelection('${scope}','**','**')">B</button>
+    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; font-style:italic;" onclick="wrapSelection('${scope}','*','*')">I</button>
+    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; text-decoration:underline;" onclick="wrapSelection('${scope}','__','__')">U</button>
     ${CHAT_SYMBOLS.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px;" onclick="insertSymbol('${scope}','${s}')">${s}</button>`).join('')}
     ${CHAT_STICKERS.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:13px;" onclick="insertAtCursor('${scope}','${s}')">${s}</button>`).join('')}
   </div>`;
@@ -1265,15 +1445,23 @@ async function loadStudentDashboard(){
           const player = embed
             ? `<div style="position:relative; padding-top:56.25%; border-radius:10px; overflow:hidden; margin-top:8px;"><iframe src="${embed}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div>`
             : `<a class="btn btn-outline btn-sm" style="margin-top:8px;" href="${l.video_url}" target="_blank" rel="noopener">Watch video</a>`;
+          const dateBadge = l.lecture_date ? `<span class="mono" style="font-size:11px; color:var(--ink-soft); margin-left:6px;">Recording of ${l.lecture_date}</span>` : '';
+          let attendanceAction = '';
+          if (l.lecture_date && l.wasAbsent) {
+            attendanceAction = l.alreadyConfirmed
+              ? `<p style="font-size:12px; color:var(--green); margin-top:8px;">✓ Attendance confirmed for this class</p>`
+              : `<button class="btn btn-primary btn-sm" style="margin-top:8px;" onclick="confirmLessonWatched(${l.id}, this)">I watched this — mark me present</button>`;
+          }
           return `<div style="margin-bottom:18px; padding-bottom:16px; border-bottom:1px solid var(--paper-alt);">
             <div class="l-main"><span class="tag" style="background:${SUBJECT_COLORS[l.subject]||'var(--indigo)'};">${l.subject}</span>
-            <div><div class="l-title">${l.title}</div><div class="l-sub">${teacherLine}${l.description || ''}</div></div></div>
-            ${player}</div>`;
+            <div><div class="l-title">${l.title}${dateBadge}</div><div class="l-sub">${teacherLine}${l.description || ''}</div></div></div>
+            ${player}${attendanceAction}</div>`;
         }).join('')
       : '<p class="empty">No recorded lessons yet.</p>';
 
     await loadStudentExams();
     await loadStudentCourses();
+    await loadStudentMaterials();
     await loadMessageContacts('student');
     await loadReportCard();
   } catch (err) {
@@ -1285,8 +1473,24 @@ async function loadReportCard(){
   try {
     const d = await api('/student/report-card');
     const gradesRows = d.grades.length
-      ? d.grades.map(g => `<tr><td>${g.subject}</td><td>${g.assessment}</td><td class="mono">${g.score}</td></tr>`).join('')
+      ? d.grades.map(g => `<tr><td>${escapeHtml(g.subject)}</td><td>${escapeHtml(g.assessment)}</td><td class="mono">${escapeHtml(g.score)}</td></tr>`).join('')
       : '<tr><td colspan="3" class="empty">No grades recorded yet.</td></tr>';
+
+    const subjectChart = d.subjectAverages && d.subjectAverages.length
+      ? `<div style="margin-top:16px;"><p style="font-size:12.5px; font-weight:700; margin-bottom:8px;">Marks obtained — subject-wise</p>
+          ${d.subjectAverages.map(s => `<div class="bar-row"><span class="b-label">${escapeHtml(s.subject)}</span><div class="bar-track"><div class="bar-fill" style="width:${s.avgPct}%; background:${subjectColor(s.subject)};"></div></div><span class="b-val">${s.avgPct}%</span></div>`).join('')}
+        </div>`
+      : '';
+
+    const historyChart = d.monthlyHistory && d.monthlyHistory.length > 1
+      ? `<div style="margin-top:16px;"><p style="font-size:12.5px; font-weight:700; margin-bottom:8px;">Progress over time — previous terms vs. now</p>
+          ${d.monthlyHistory.map(h => {
+            const monthLabel = new Date(h.month + '-01').toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+            return `<div class="bar-row"><span class="b-label">${monthLabel}</span><div class="bar-track"><div class="bar-fill" style="width:${h.avgPct}%; background:var(--brand);"></div></div><span class="b-val">${h.avgPct}%</span></div>`;
+          }).join('')}
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">${d.monthlyHistory[d.monthlyHistory.length-1].avgPct >= d.monthlyHistory[0].avgPct ? '📈 Trending up compared to earlier terms.' : '📉 Trending down compared to earlier terms — worth a look.'}</p>
+        </div>`
+      : (d.monthlyHistory && d.monthlyHistory.length === 1 ? '<p style="font-size:11.5px; color:var(--ink-soft); margin-top:10px;">Not enough history yet to show a trend — check back next term.</p>' : '');
 
     if (d.officiallyIssued) {
       document.getElementById('reportCardArea').innerHTML = `
@@ -1297,23 +1501,39 @@ async function loadReportCard(){
               <img src="assets/logo-icon.jpg" alt="" style="width:32px;height:32px;border-radius:6px;">
               <span class="mono" style="font-size:11px; color:var(--ink-soft);">Official Report Card</span>
             </div>
-            <p style="font-weight:700; font-size:15px;">${d.student.name}</p>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">${d.student.grade} · Section ${d.student.section} · ${d.student.admissionNo}</p>
+            <p style="font-weight:700; font-size:15px;">${escapeHtml(d.student.name)}</p>
+            <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">${escapeHtml(d.student.grade)} · Section ${escapeHtml(d.student.section)} · ${escapeHtml(d.student.admissionNo)}</p>
             <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">Attendance: ${d.attendancePct !== null ? d.attendancePct + '%' : 'Not yet recorded'}</p>
             <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>
+            ${subjectChart}
+            ${historyChart}
           </div>
         </div>
         <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="window.print()">Print / Save as PDF</button>`;
     } else {
-      const boardNote = d.examAuthorityName ? `through ${d.examAuthorityName}` : 'through the relevant examination board or authority near you';
+      const boardNote = d.examAuthorityName ? `through ${escapeHtml(d.examAuthorityName)}` : 'through the relevant examination board or authority near you';
       document.getElementById('reportCardArea').innerHTML = `
         <div style="padding:12px 14px; background:var(--paper-alt); border-radius:10px; margin-bottom:14px; font-size:12.5px; color:var(--ink-soft);">
-          This grade's official results are issued ${boardNote} — not by Nova School directly. What's below is an internal progress summary for reference only, not an official transcript.
+          This grade's official results are issued ${boardNote} — not by Novaschool.pk directly. What's below is an internal progress summary for reference only, not an official transcript.
         </div>
-        <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>`;
+        <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>
+        ${subjectChart}
+        ${historyChart}`;
     }
   } catch (err) {
     toast(err.message);
+  }
+}
+
+async function confirmLessonWatched(lessonId, btnEl){
+  btnEl.disabled = true; btnEl.textContent = 'Confirming…';
+  try {
+    const res = await api(`/student/lessons/${lessonId}/confirm-watched`, { method: 'POST' });
+    toast(res.message);
+    loadStudentDashboard(); // refresh attendance ring + lesson list
+  } catch (err) {
+    toast(err.message);
+    btnEl.disabled = false; btnEl.textContent = 'I watched this — mark me present';
   }
 }
 
@@ -1519,6 +1739,47 @@ async function toggleLessonComplete(lessonId, courseId, checked){
   }
 }
 
+/* ---------- Study materials library (student) ---------- */
+
+async function loadStudentMaterials(){
+  const filterEl = document.getElementById('matSubjectFilter');
+  if (filterEl.options.length <= 1) {
+    filterEl.innerHTML += COURSE_SUBJECTS.map(s => `<option>${s}</option>`).join('');
+  }
+  const subject = filterEl.value;
+  try {
+    const d = await api(`/student/materials${subject ? '?subject=' + encodeURIComponent(subject) : ''}`);
+    document.getElementById('studentMaterials').innerHTML = d.materials.length
+      ? d.materials.map(m => {
+          const action = m.materialType === 'video'
+            ? (videoEmbedSrc(m.videoUrl || '')
+                ? `<div style="position:relative; padding-top:56.25%; border-radius:8px; overflow:hidden; margin-top:6px;"><iframe src="${videoEmbedSrc(m.videoUrl)}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div>`
+                : `<a class="btn btn-outline btn-sm" href="${m.videoUrl}" target="_blank" rel="noopener">Watch</a>`)
+            : `<button class="btn btn-outline btn-sm" onclick="downloadStudentMaterial(${m.id})">${materialIcon(m.materialType)} ${m.materialType === 'image' ? 'View' : 'Download'}</button>`;
+          return `<div style="margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--paper-alt);">
+            <div class="l-main"><span class="tag" style="background:${subjectColor(m.subject)};">${escapeHtml(m.subject)}</span>
+              <div><div class="l-title">${escapeHtml(m.title)}</div><div class="l-sub">${escapeHtml(m.description || '')}${m.fileName ? ' · ' + escapeHtml(m.fileName) : ''} · by ${escapeHtml(m.uploadedBy)}</div></div></div>
+            <div style="margin-top:6px;">${action}</div>
+          </div>`;
+        }).join('')
+      : '<p class="empty">No materials available yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function downloadStudentMaterial(id){
+  try {
+    const d = await api(`/student/materials/${id}/file`);
+    const link = document.createElement('a');
+    link.href = `data:${d.fileMime || 'application/octet-stream'};base64,${d.fileBase64}`;
+    link.download = d.fileName || 'file';
+    link.click();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 /* ============================== PARENT ============================== */
 let parentChildren = [];
 let activeChildId = null;
@@ -1614,7 +1875,7 @@ async function loadTeacherDashboard(){
     document.getElementById('examSection').innerHTML = sectionSelect.innerHTML;
     document.getElementById('ttSection').innerHTML = sectionSelect.innerHTML;
     window._teacherSections = d.mySections || [];
-    if ((d.mySections || []).length) await loadTimetableManager();
+    if ((d.mySections || []).length) { await loadTimetableManager(); await refreshLiveClassButton(); }
 
     document.getElementById('teacherQueue').innerHTML = d.gradingQueue.length
       ? d.gradingQueue.map(q => `
@@ -1632,6 +1893,7 @@ async function loadTeacherDashboard(){
     await loadTeacherLessons();
     await loadTeacherExams();
     await loadTeacherCourses();
+    await loadTeacherMaterials();
     await loadMessageContacts('teacher');
   } catch (err) {
     toast(err.message);
@@ -1651,6 +1913,38 @@ async function saveClassLink(timetableId){
 }
 
 /* ---------- Timetable management (teacher) ---------- */
+
+let activeLiveSections = [];
+
+async function refreshLiveClassButton(){
+  const section = document.getElementById('ttSection').value;
+  const btn = document.getElementById('liveClassBtn');
+  const statusEl = document.getElementById('liveClassStatus');
+  if (!section) { btn.disabled = true; return; }
+  btn.disabled = false;
+  try {
+    const d = await api('/teacher/live-sessions');
+    activeLiveSections = d.activeSections;
+    const isLive = activeLiveSections.includes(section);
+    btn.textContent = isLive ? 'End live class' : 'Start live class';
+    btn.classList.toggle('btn-primary', !isLive);
+    btn.classList.toggle('btn-outline', isLive);
+    statusEl.textContent = isLive ? '🔴 Live — student chat is locked for this section' : '';
+  } catch (err) { /* non-critical */ }
+}
+
+async function toggleLiveClass(){
+  const section = document.getElementById('ttSection').value;
+  if (!section) return;
+  const isLive = activeLiveSections.includes(section);
+  try {
+    const res = await api(`/teacher/live-session/${isLive ? 'end' : 'start'}`, { method: 'POST', body: JSON.stringify({ section_code: section }) });
+    toast(res.message);
+    refreshLiveClassButton();
+  } catch (err) {
+    toast(err.message);
+  }
+}
 
 async function loadTimetableManager(){
   const section = document.getElementById('ttSection').value;
@@ -1742,6 +2036,7 @@ async function addLesson(){
   const section_code = document.getElementById('lessonSection').value;
   const video_url = document.getElementById('lessonUrl').value.trim();
   const description = document.getElementById('lessonDescription').value.trim();
+  const lecture_date = document.getElementById('lessonLectureDate').value || null;
 
   if (!title || !subject || !section_code || !video_url) {
     toast('Title, subject, section, and video URL are all required.');
@@ -1749,12 +2044,13 @@ async function addLesson(){
   }
 
   try {
-    const res = await api('/teacher/lessons', { method: 'POST', body: JSON.stringify({ title, subject, section_code, video_url, description }) });
+    const res = await api('/teacher/lessons', { method: 'POST', body: JSON.stringify({ title, subject, section_code, video_url, description, lecture_date }) });
     toast(res.message);
     document.getElementById('lessonTitle').value = '';
     document.getElementById('lessonSubject').value = '';
     document.getElementById('lessonUrl').value = '';
     document.getElementById('lessonDescription').value = '';
+    document.getElementById('lessonLectureDate').value = '';
     loadTeacherLessons();
   } catch (err) {
     toast(err.message);
@@ -2092,6 +2388,72 @@ async function deleteCourseLesson(lessonId, courseId){
   }
 }
 
+/* ---------- Study materials library (teacher) ---------- */
+
+function toggleMaterialTypeFields(){
+  const isVideo = document.getElementById('matType').value === 'video';
+  document.getElementById('matFileWrap').style.display = isVideo ? 'none' : 'block';
+  document.getElementById('matVideoUrl').style.display = isVideo ? 'block' : 'none';
+}
+
+async function uploadMaterial(){
+  const subject = document.getElementById('matSubject').value.trim();
+  const grade = document.getElementById('matGrade').value.trim();
+  const title = document.getElementById('matTitle').value.trim();
+  const description = document.getElementById('matDescription').value.trim();
+  const material_type = document.getElementById('matType').value;
+  const video_url = document.getElementById('matVideoUrl').value.trim();
+  const file = document.getElementById('matFile').files[0];
+
+  if (!subject || !grade || !title) { toast('Subject, grade, and title are required.'); return; }
+  if (material_type === 'video' && !video_url) { toast('Enter a video URL.'); return; }
+  if (material_type !== 'video' && !file) { toast('Choose a file to upload.'); return; }
+
+  try {
+    const file_base64 = file ? await fileToBase64(file) : null;
+    const res = await api('/teacher/materials', {
+      method: 'POST',
+      body: JSON.stringify({
+        subject, grade, title, description, material_type,
+        file_base64, file_name: file ? file.name : null, file_mime: file ? file.type : null, video_url
+      })
+    });
+    toast(res.message);
+    ['matSubject','matGrade','matTitle','matDescription','matVideoUrl'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('matFile').value = '';
+    loadTeacherMaterials();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function materialIcon(type){
+  return type === 'video' ? '🎬' : type === 'image' ? '🖼️' : '📄';
+}
+
+async function loadTeacherMaterials(){
+  try {
+    const d = await api('/teacher/materials');
+    document.getElementById('teacherMaterials').innerHTML = d.materials.length
+      ? d.materials.map(m => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(m.subject)};">${escapeHtml(m.subject)}</span>
+          <div><div class="l-title">${materialIcon(m.materialType)} ${escapeHtml(m.title)}</div><div class="l-sub">${escapeHtml(m.grade)} · by ${escapeHtml(m.uploadedBy)}${m.fileName ? ' · ' + escapeHtml(m.fileName) : ''}</div></div></div>
+          ${m.isMine ? `<button class="btn btn-outline btn-sm" onclick="deleteMaterial(${m.id})">Delete</button>` : ''}</div>`).join('')
+      : '<p class="empty">No materials uploaded yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteMaterial(id){
+  try {
+    const res = await api(`/teacher/materials/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    loadTeacherMaterials();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 async function toggleQueue(assignmentId){
   const el = document.getElementById(`queue-${assignmentId}`);
   const isOpen = el.classList.contains('open');
@@ -2151,14 +2513,23 @@ async function loadAdminDashboard(){
 
     const s = await api('/admin/sections');
     document.getElementById('adminSectionsTable').innerHTML = s.sections.map(sec =>
-      `<tr><td>${sec.grade}</td><td class="mono">${sec.sectionName}</td><td>${sec.studentCount}</td><td>${sec.classTeacher}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td><td><button class="btn btn-outline btn-sm" onclick="deleteSection('${sec.sectionCode}')">Delete</button></td></tr>`
+      `<tr><td>${sec.grade}</td><td class="mono">${sec.sectionName}</td><td>${sec.curriculum}</td><td>${sec.studentCount}</td><td>${sec.classTeacher}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td><td><button class="btn btn-outline btn-sm" onclick="deleteSection('${sec.sectionCode}')">Delete</button></td></tr>`
     ).join('');
     populateSectionTeacherOptions();
+
+    const atSectionEl = document.getElementById('atSection');
+    if (atSectionEl) {
+      const prevValue = atSectionEl.value;
+      atSectionEl.innerHTML = s.sections.map(sec => `<option value="${sec.sectionCode}">${sec.sectionCode} — ${sec.grade}</option>`).join('') || '<option value="">No sections yet</option>';
+      if (prevValue && s.sections.some(sec => sec.sectionCode === prevValue)) atSectionEl.value = prevValue;
+      else await loadAdminTimetable();
+    }
 
     await loadTeacherApps();
     await loadAdminAnnouncementsList();
     await loadEntranceQuestions();
     await loadAdminMessages();
+    await loadAdminLiveClasses();
     await loadSchoolSettings();
     switchPeopleTab('teacher');
   } catch (err) {
@@ -2170,8 +2541,8 @@ async function loadAdmissions(){
   const a = await api('/admin/admissions');
   document.getElementById('adminAdmissions').innerHTML = a.applications.length
     ? a.applications.map(app => `<div class="list-row"><div class="l-main">
-        ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--indigo);">${app.applicantName[0]}</div>`}
-        <div><div class="l-title">${app.applicantName}</div><div class="l-sub">Applying — ${app.gradeApplied}${app.entranceScore ? ' · Entrance test: ' + app.entranceScore : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadAdmissionDoc(${app.id})" style="color:var(--indigo);">${app.documentFilename}</a>` : ''}</div></div></div>
+        ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--indigo);">${escapeHtml(app.applicantName[0])}</div>`}
+        <div><div class="l-title">${escapeHtml(app.applicantName)}</div><div class="l-sub">Applying — ${escapeHtml(app.gradeApplied)} · ${escapeHtml(app.contactPhone || 'no phone')}${app.guardianId ? ' · Guardian ID: ' + escapeHtml(app.guardianId) : ''}${app.entranceScore ? ' · Entrance test: ' + escapeHtml(app.entranceScore) : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadAdmissionDoc(${app.id})" style="color:var(--indigo);">${escapeHtml(app.documentFilename)}</a>` : ''}</div></div></div>
         <div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="decideAdmission(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="decideAdmission(${app.id},'approved')">Approve</button></div></div>`).join('')
     : '<p class="empty">No pending applications.</p>';
 }
@@ -2204,8 +2575,8 @@ async function loadTeacherApps(){
     const d = await api('/admin/teacher-applications');
     document.getElementById('adminTeacherApps').innerHTML = d.applications.length
       ? d.applications.map(app => `<div class="list-row"><div class="l-main">
-          ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--magenta);">${app.applicantName[0]}</div>`}
-          <div><div class="l-title">${app.applicantName}</div><div class="l-sub">${app.subjectApplied} · ${app.email}${app.entranceScore ? ' · Score: ' + app.entranceScore : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadTeacherAppDoc(${app.id})" style="color:var(--indigo);">${app.documentFilename}</a>` : ''}</div></div></div>
+          ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--magenta);">${escapeHtml(app.applicantName[0])}</div>`}
+          <div><div class="l-title">${escapeHtml(app.applicantName)}</div><div class="l-sub">${escapeHtml(app.subjectApplied)} · ${escapeHtml(app.email)} · ${escapeHtml(app.phone || '')}${app.entranceScore ? ' · Score: ' + escapeHtml(app.entranceScore) : ''}${app.coCurricular ? ' · Co-curricular: ' + escapeHtml(app.coCurricular) : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadTeacherAppDoc(${app.id})" style="color:var(--indigo);">${escapeHtml(app.documentFilename)}</a>` : ''}</div></div></div>
           <div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="decideTeacherApp(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="decideTeacherApp(${app.id},'approved')">Approve</button></div></div>`).join('')
       : '<p class="empty">No pending teacher applications.</p>';
   } catch (err) {
@@ -2319,6 +2690,41 @@ async function deleteEntranceQuestion(id){
   }
 }
 
+async function loadAdminLiveClasses(){
+  try {
+    const d = await api('/admin/live-classes');
+    document.getElementById('adminLiveClasses').innerHTML = d.sessions.length
+      ? d.sessions.map(s => `<div style="border-bottom:1px solid var(--paper-alt); padding:10px 0;">
+          <div class="list-row" style="border:none; padding:0;">
+            <div class="l-main"><span class="tag" style="background:var(--brand);">🔴 Live</span>
+              <div><div class="l-title">${s.teacherName} — Section ${s.sectionCode}</div><div class="l-sub">Started ${new Date(s.startedAt).toLocaleTimeString()}</div></div></div>
+            <button class="btn btn-outline btn-sm" onclick="viewLiveClassChat('${s.teacherName.replace(/'/g,"\\'")}', ${s.id})">View chat</button>
+          </div>
+          <div class="queue-detail" id="liveclass-${s.id}"></div>
+        </div>`).join('')
+      : '<p class="empty">No live classes running right now.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function viewLiveClassChat(teacherName, sessionId){
+  const el = document.getElementById(`liveclass-${sessionId}`);
+  const isOpen = el.classList.contains('open');
+  document.querySelectorAll('.queue-detail.open').forEach(d => d.classList.remove('open'));
+  if (isOpen) return;
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  el.classList.add('open');
+  try {
+    const d = await api('/admin/messages');
+    const filtered = d.messages.filter(m => m.from.startsWith(teacherName) || m.to.startsWith(teacherName));
+    el.innerHTML = filtered.length
+      ? filtered.map(m => `<div class="list-row"><div class="l-main"><div><div class="l-title">${m.from} → ${m.to}</div><div class="l-sub">${m.body}</div></div></div></div>`).join('')
+      : '<p class="empty">No recent messages from this teacher.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
 async function loadAdminMessages(){
   try {
     const d = await api('/admin/messages');
@@ -2335,6 +2741,11 @@ async function populateSectionTeacherOptions(){
     const d = await api('/admin/teachers');
     document.getElementById('newSectionTeacher').innerHTML = '<option value="">Class teacher (optional)</option>' +
       d.teachers.map(t => `<option value="${t.id}">${t.first_name} ${t.last_name}${t.subject ? ' — ' + t.subject : ''}</option>`).join('');
+    const atTeacherEl = document.getElementById('atTeacher');
+    if (atTeacherEl) {
+      atTeacherEl.innerHTML = '<option value="">Teacher (optional)</option>' +
+        d.teachers.map(t => `<option value="${t.id}">${t.first_name} ${t.last_name}${t.subject ? ' — ' + t.subject : ''}</option>`).join('');
+    }
   } catch (err) { /* non-critical */ }
 }
 
@@ -2344,11 +2755,12 @@ async function createSection(){
   const name = document.getElementById('newSectionName').value.trim();
   const capacity = document.getElementById('newSectionCapacity').value;
   const class_teacher_id = document.getElementById('newSectionTeacher').value || null;
+  const curriculum = document.getElementById('newSectionCurriculum').value;
 
   if (!section_code || !grade || !name) { toast('Section code, grade, and section name are required.'); return; }
 
   try {
-    const res = await api('/admin/sections', { method: 'POST', body: JSON.stringify({ section_code, grade, name, capacity, class_teacher_id }) });
+    const res = await api('/admin/sections', { method: 'POST', body: JSON.stringify({ section_code, grade, name, capacity, class_teacher_id, curriculum }) });
     toast(res.message);
     ['newSectionCode','newSectionGrade','newSectionName'].forEach(id => document.getElementById(id).value = '');
     loadAdminDashboard();
@@ -2362,6 +2774,85 @@ async function deleteSection(code){
     const res = await api(`/admin/sections/${code}`, { method: 'DELETE' });
     toast(res.message);
     loadAdminDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ---------- Timetable (admin) ---------- */
+
+async function loadAdminTimetable(){
+  const section = document.getElementById('atSection').value;
+  if (!section) { document.getElementById('adminTimetableList').innerHTML = '<p class="empty">Pick a section.</p>'; return; }
+  try {
+    const d = await api(`/admin/timetable?section=${encodeURIComponent(section)}`);
+    document.getElementById('adminTimetableList').innerHTML = d.periods.length
+      ? d.periods.map(p => `
+        <div class="list-row" id="atrow-${p.id}">
+          <div class="l-main"><span class="tag mono" style="background:${subjectColor(p.subject)};">${p.day.slice(0,3)} ${p.startTime}</span>
+            <div><div class="l-title">${p.subject}${p.room ? ' · ' + p.room : ''}</div><div class="l-sub">${p.teacherName}</div></div></div>
+          <div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="editAdminPeriod(${p.id})">Edit</button><button class="btn btn-outline btn-sm" onclick="deleteAdminPeriod(${p.id})">Delete</button></div>
+        </div>`).join('')
+      : '<p class="empty">No periods scheduled for this section yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function editAdminPeriod(id){
+  const row = document.getElementById(`atrow-${id}`);
+  const currentSubject = row.querySelector('.l-title').textContent.split(' · ')[0];
+  row.innerHTML = `
+    <div style="display:flex; gap:8px; align-items:center; width:100%; flex-wrap:wrap;">
+      <input class="grade-input" style="width:140px;" id="atEditSubject-${id}" value="${currentSubject.replace(/"/g,'&quot;')}" placeholder="Subject">
+      <input class="grade-input" style="width:90px;" id="atEditRoom-${id}" placeholder="Room">
+      <select class="grade-input" style="width:160px;" id="atEditTeacher-${id}"><option value="">Teacher</option></select>
+      <button class="btn btn-ink btn-sm" onclick="saveAdminPeriodEdit(${id})">Save</button>
+      <button class="btn btn-outline btn-sm" onclick="loadAdminTimetable()">Cancel</button>
+    </div>`;
+  document.getElementById(`atEditTeacher-${id}`).innerHTML = document.getElementById('atTeacher').innerHTML;
+}
+
+async function saveAdminPeriodEdit(id){
+  const subject = document.getElementById(`atEditSubject-${id}`).value.trim();
+  const room = document.getElementById(`atEditRoom-${id}`).value.trim();
+  const teacher_id = document.getElementById(`atEditTeacher-${id}`).value || null;
+  try {
+    const res = await api(`/admin/timetable/${id}`, { method: 'PATCH', body: JSON.stringify({ subject, room, teacher_id }) });
+    toast(res.message);
+    loadAdminTimetable();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteAdminPeriod(id){
+  try {
+    const res = await api(`/admin/timetable/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    loadAdminTimetable();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function addAdminTimetablePeriod(){
+  const section_code = document.getElementById('atSection').value;
+  const day_of_week = document.getElementById('atDay').value;
+  const start_time = document.getElementById('atTime').value.trim();
+  const subject = document.getElementById('atSubject').value.trim();
+  const room = document.getElementById('atRoom').value.trim();
+  const teacher_id = document.getElementById('atTeacher').value || null;
+
+  if (!section_code || !start_time || !subject) { toast('Section, start time, and subject are required.'); return; }
+
+  try {
+    const res = await api('/admin/timetable', { method: 'POST', body: JSON.stringify({ section_code, day_of_week, start_time, subject, room, teacher_id }) });
+    toast(res.message);
+    document.getElementById('atTime').value = '';
+    document.getElementById('atSubject').value = '';
+    document.getElementById('atRoom').value = '';
+    loadAdminTimetable();
   } catch (err) {
     toast(err.message);
   }
@@ -2470,6 +2961,8 @@ renderFeatures();
 renderRoles();
 renderRoleTabs();
 loadPublicNews();
+loadPublicStats();
+loadPublicCourses();
 selectRole('student');
 
 // If a saved session exists (e.g. after a page refresh), jump straight back
