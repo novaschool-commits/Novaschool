@@ -38,13 +38,14 @@ router.get('/overview', asyncHandler(async (req, res) => {
 router.get('/admissions', asyncHandler(async (req, res) => {
   const status = req.query.status || 'pending';
   const rows = await all(
-    `SELECT id, applicant_name, grade_applied, parent_email, status, submitted_at,
+    `SELECT id, applicant_name, grade_applied, parent_email, contact_phone, guardian_id, status, submitted_at,
             photo_base64, document_filename, entrance_score
      FROM admission_applications WHERE status = $1 ORDER BY submitted_at DESC`,
     [status]
   );
   res.json({ applications: rows.map(r => ({
     id: r.id, applicantName: r.applicant_name, gradeApplied: r.grade_applied, parentEmail: r.parent_email,
+    contactPhone: r.contact_phone, guardianId: r.guardian_id,
     status: r.status, submittedAt: r.submitted_at, hasPhoto: !!r.photo_base64, photoBase64: r.photo_base64,
     documentFilename: r.document_filename, entranceScore: r.entrance_score
   })) });
@@ -72,7 +73,7 @@ router.post('/admissions/:id/decision', asyncHandler(async (req, res) => {
 
 router.get('/sections', asyncHandler(async (req, res) => {
   const rows = await all(
-    `SELECT se.section_code, se.grade, se.name, se.capacity,
+    `SELECT se.section_code, se.grade, se.name, se.capacity, se.curriculum,
             t.first_name AS teacher_first, t.last_name AS teacher_last,
             COUNT(st.id) AS student_count
      FROM sections se
@@ -85,6 +86,7 @@ router.get('/sections', asyncHandler(async (req, res) => {
     sectionCode: r.section_code,
     grade: r.grade,
     sectionName: r.name,
+    curriculum: r.curriculum || 'Pakistani',
     studentCount: Number(r.student_count),
     capacity: r.capacity,
     classTeacher: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned'
@@ -99,14 +101,14 @@ router.get('/teacher-applications', asyncHandler(async (req, res) => {
   const status = req.query.status || 'pending';
   const rows = await all(
     `SELECT id, applicant_name, subject_applied, email, phone, status, submitted_at,
-            photo_base64, document_filename, entrance_score
+            photo_base64, document_filename, entrance_score, co_curricular
      FROM teacher_applications WHERE status = $1 ORDER BY submitted_at DESC`,
     [status]
   );
   res.json({ applications: rows.map(r => ({
     id: r.id, applicantName: r.applicant_name, subjectApplied: r.subject_applied, email: r.email, phone: r.phone,
     status: r.status, submittedAt: r.submitted_at, photoBase64: r.photo_base64,
-    documentFilename: r.document_filename, entranceScore: r.entrance_score
+    documentFilename: r.document_filename, entranceScore: r.entrance_score, coCurricular: r.co_curricular
   })) });
 }));
 
@@ -308,7 +310,7 @@ router.post('/parents', asyncHandler(async (req, res) => {
 // ---------- Sections / classes ----------
 
 router.post('/sections', asyncHandler(async (req, res) => {
-  const { section_code, grade, name, capacity, class_teacher_id } = req.body || {};
+  const { section_code, grade, name, capacity, class_teacher_id, curriculum } = req.body || {};
   if (!section_code || !grade || !name) {
     return res.status(400).json({ error: 'Section code, grade, and section name are required.' });
   }
@@ -317,8 +319,8 @@ router.post('/sections', asyncHandler(async (req, res) => {
   if (existing) return res.status(409).json({ error: `Section "${section_code}" already exists.` });
 
   await run(
-    'INSERT INTO sections (section_code, grade, name, capacity, class_teacher_id) VALUES ($1,$2,$3,$4,$5)',
-    [section_code, grade, name, Number(capacity) || 30, class_teacher_id || null]
+    'INSERT INTO sections (section_code, grade, name, capacity, class_teacher_id, curriculum) VALUES ($1,$2,$3,$4,$5,$6)',
+    [section_code, grade, name, Number(capacity) || 30, class_teacher_id || null, curriculum || 'Pakistani']
   );
   res.status(201).json({ message: `Section ${section_code} created.` });
 }));
@@ -332,6 +334,82 @@ router.delete('/sections/:code', asyncHandler(async (req, res) => {
   await run('DELETE FROM timetable WHERE section_code = $1', [code]);
   await run('DELETE FROM sections WHERE section_code = $1', [code]);
   res.json({ message: `Section ${code} deleted.` });
+}));
+
+router.get('/live-classes', asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT cs.id, cs.section_code, cs.started_at, t.first_name, t.last_name
+     FROM class_sessions cs JOIN teachers t ON t.id = cs.teacher_id
+     WHERE cs.ended_at IS NULL ORDER BY cs.started_at DESC`
+  );
+  res.json({ sessions: rows.map(r => ({
+    id: r.id, sectionCode: r.section_code, startedAt: r.started_at, teacherName: `${r.first_name} ${r.last_name}`
+  })) });
+}));
+
+// ---------- Timetable (admin — full authority, any section/teacher) ----------
+
+router.get('/timetable', asyncHandler(async (req, res) => {
+  const sectionCode = req.query.section;
+  if (!sectionCode) return res.status(400).json({ error: 'section query parameter is required.' });
+
+  const rows = await all(
+    `SELECT t.id, t.day_of_week, t.start_time, t.subject, t.room, t.teacher_id,
+            tc.first_name AS teacher_first, tc.last_name AS teacher_last
+     FROM timetable t LEFT JOIN teachers tc ON tc.id = t.teacher_id
+     WHERE t.section_code = $1 ORDER BY
+       CASE t.day_of_week WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 ELSE 6 END,
+       t.start_time`,
+    [sectionCode]
+  );
+
+  res.json({ periods: rows.map(r => ({
+    id: r.id, day: r.day_of_week, startTime: r.start_time, subject: r.subject, room: r.room,
+    teacherId: r.teacher_id, teacherName: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned'
+  })) });
+}));
+
+router.post('/timetable', asyncHandler(async (req, res) => {
+  const { section_code, day_of_week, start_time, subject, room, teacher_id } = req.body || {};
+  if (!section_code || !day_of_week || !start_time || !subject) {
+    return res.status(400).json({ error: 'section_code, day_of_week, start_time, and subject are required.' });
+  }
+  const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  if (!validDays.includes(day_of_week)) return res.status(400).json({ error: 'day_of_week must be Monday–Friday.' });
+
+  const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
+  if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist yet — create it first.` });
+
+  const clash = await get('SELECT 1 FROM timetable WHERE section_code = $1 AND day_of_week = $2 AND start_time = $3', [section_code, day_of_week, start_time]);
+  if (clash) return res.status(409).json({ error: 'This section already has a period at that day and time.' });
+
+  await run(
+    'INSERT INTO timetable (section_code, day_of_week, start_time, subject, room, teacher_id) VALUES ($1,$2,$3,$4,$5,$6)',
+    [section_code, day_of_week, start_time, subject, room || null, teacher_id || null]
+  );
+  res.status(201).json({ message: 'Period added.' });
+}));
+
+router.patch('/timetable/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const slot = await get('SELECT * FROM timetable WHERE id = $1', [id]);
+  if (!slot) return res.status(404).json({ error: 'Period not found.' });
+
+  const { subject, room, start_time, day_of_week, teacher_id } = req.body || {};
+  await run(
+    'UPDATE timetable SET subject = COALESCE($1, subject), room = $2, start_time = COALESCE($3, start_time), day_of_week = COALESCE($4, day_of_week), teacher_id = $5 WHERE id = $6',
+    [subject || null, room !== undefined ? room : slot.room, start_time || null, day_of_week || null, teacher_id !== undefined ? (teacher_id || null) : slot.teacher_id, id]
+  );
+  res.json({ message: 'Period updated.' });
+}));
+
+router.delete('/timetable/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const slot = await get('SELECT * FROM timetable WHERE id = $1', [id]);
+  if (!slot) return res.status(404).json({ error: 'Period not found.' });
+
+  await run('DELETE FROM timetable WHERE id = $1', [id]);
+  res.json({ message: 'Period removed.' });
 }));
 
 module.exports = router;

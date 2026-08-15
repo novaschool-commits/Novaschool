@@ -80,6 +80,17 @@ CREATE TABLE IF NOT EXISTS lessons (
   description TEXT,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+-- When set, this recording stands in for a specific missed class date —
+-- confirming you watched it can update that day's attendance.
+ALTER TABLE lessons ADD COLUMN IF NOT EXISTS lecture_date DATE;
+
+CREATE TABLE IF NOT EXISTS lesson_watch_confirmations (
+  id SERIAL PRIMARY KEY,
+  student_id INTEGER REFERENCES students(id),
+  lesson_id INTEGER REFERENCES lessons(id),
+  confirmed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(student_id, lesson_id)
+);
 
 CREATE TABLE IF NOT EXISTS attendance (
   id SERIAL PRIMARY KEY,
@@ -151,6 +162,36 @@ CREATE TABLE IF NOT EXISTS admission_applications (
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','declined')),
   submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+-- Live class chat lock: while a teacher has an active session for a section,
+-- students in that section can't send messages to that teacher until it ends.
+-- Subject-wise study materials library, shared by grade (all sections within
+-- a grade see the same library). Documents/images stored inline as base64
+-- (fine at small-school scale; move to real object storage like S3/GCS if
+-- this grows large) — videos use an external link (YouTube/Vimeo) instead,
+-- since video files are too large to store this way.
+CREATE TABLE IF NOT EXISTS study_materials (
+  id SERIAL PRIMARY KEY,
+  subject TEXT NOT NULL,
+  grade TEXT NOT NULL,               -- e.g. 'Grade 8' — matches sections.grade
+  title TEXT NOT NULL,
+  description TEXT,
+  material_type TEXT NOT NULL CHECK(material_type IN ('document','image','video')),
+  file_base64 TEXT,
+  file_name TEXT,
+  file_mime TEXT,
+  video_url TEXT,
+  teacher_id INTEGER REFERENCES teachers(id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS class_sessions (
+  id SERIAL PRIMARY KEY,
+  teacher_id INTEGER REFERENCES teachers(id),
+  section_code TEXT REFERENCES sections(section_code),
+  is_locked BOOLEAN NOT NULL DEFAULT TRUE,
+  started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  ended_at TIMESTAMPTZ
+);
 -- Idempotent additions for photo/document/entrance-test support on a database
 -- that already has this table from before these features existed.
 ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS photo_base64 TEXT;
@@ -160,6 +201,12 @@ ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS entrance_score TEXT;
 ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS curriculum TEXT;
 ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS monthly_fee NUMERIC;
 ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS fee_currency TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS guardian_id TEXT;
+
+ALTER TABLE teacher_applications ADD COLUMN IF NOT EXISTS co_curricular TEXT;
+
+ALTER TABLE sections ADD COLUMN IF NOT EXISTS curriculum TEXT DEFAULT 'Pakistani';
 
 -- Single-row settings table. Tracks whether Nova School has become an
 -- examination-authority in its own right (registered with a board), which

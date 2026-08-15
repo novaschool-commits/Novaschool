@@ -89,14 +89,45 @@ router.get('/lessons', asyncHandler(async (req, res) => {
   if (!student) return res.status(404).json({ error: 'Student profile not found.' });
 
   const lessons = await all(
-    `SELECT l.id, l.title, l.subject, l.video_url, l.description, l.created_at,
-            t.first_name AS teacher_first, t.last_name AS teacher_last
+    `SELECT l.id, l.title, l.subject, l.video_url, l.description, l.created_at, l.lecture_date,
+            t.first_name AS teacher_first, t.last_name AS teacher_last,
+            a.status AS attendance_status,
+            lwc.id AS confirmation_id
      FROM lessons l LEFT JOIN teachers t ON t.id = l.teacher_id
+     LEFT JOIN attendance a ON a.student_id = $2 AND a.date = l.lecture_date
+     LEFT JOIN lesson_watch_confirmations lwc ON lwc.lesson_id = l.id AND lwc.student_id = $2
      WHERE l.section_code = $1 ORDER BY l.created_at DESC`,
-    [student.section_code]
+    [student.section_code, student.id]
   );
 
-  res.json({ lessons });
+  res.json({ lessons: lessons.map(l => ({
+    ...l,
+    wasAbsent: l.attendance_status === 'absent',
+    alreadyConfirmed: !!l.confirmation_id
+  })) });
+}));
+
+router.post('/lessons/:id/confirm-watched', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const lessonId = Number(req.params.id);
+  const lesson = await get('SELECT * FROM lessons WHERE id = $1 AND section_code = $2', [lessonId, student.section_code]);
+  if (!lesson) return res.status(404).json({ error: 'Lesson not found for your section.' });
+  if (!lesson.lecture_date) return res.status(400).json({ error: 'This recording is not tied to a specific class date.' });
+
+  const existing = await get('SELECT id FROM lesson_watch_confirmations WHERE student_id = $1 AND lesson_id = $2', [student.id, lessonId]);
+  if (existing) return res.json({ message: 'Already confirmed — nothing more to do.' });
+
+  await run('INSERT INTO lesson_watch_confirmations (student_id, lesson_id) VALUES ($1,$2)', [student.id, lessonId]);
+
+  const attendanceRow = await get('SELECT * FROM attendance WHERE student_id = $1 AND date = $2', [student.id, lesson.lecture_date]);
+  if (attendanceRow && attendanceRow.status === 'absent') {
+    await run("UPDATE attendance SET status = 'present' WHERE id = $1", [attendanceRow.id]);
+    return res.json({ message: `Thanks for watching — your attendance for ${lesson.lecture_date} has been updated to present.` });
+  }
+
+  res.json({ message: 'Confirmed — thanks for watching.' });
 }));
 
 // ---------- Tests & Quizzes ----------
@@ -368,14 +399,87 @@ router.get('/report-card', asyncHandler(async (req, res) => {
   const settings = await get('SELECT exam_authority_status, exam_authority_name FROM school_settings WHERE id = 1');
   const schoolIsAuthority = settings && settings.exam_authority_status === 'registered';
 
+  // Only numeric "x/y" scores can feed the charts — letter grades (A-, etc.) are shown in the table but skipped here.
+  const numericGrades = grades
+    .map(g => {
+      const m = /(\d+)\s*\/\s*(\d+)/.exec(g.score);
+      return m ? { subject: g.subject, pct: (Number(m[1]) / Number(m[2])) * 100, recordedAt: g.recorded_at } : null;
+    })
+    .filter(Boolean);
+
+  const bySubject = {};
+  numericGrades.forEach(g => {
+    if (!bySubject[g.subject]) bySubject[g.subject] = [];
+    bySubject[g.subject].push(g.pct);
+  });
+  const subjectAverages = Object.entries(bySubject).map(([subject, pcts]) => ({
+    subject, avgPct: Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length)
+  }));
+
+  const byMonth = {};
+  numericGrades.forEach(g => {
+    const month = new Date(g.recordedAt).toISOString().slice(0, 7); // YYYY-MM
+    if (!byMonth[month]) byMonth[month] = [];
+    byMonth[month].push(g.pct);
+  });
+  const monthlyHistory = Object.entries(byMonth)
+    .map(([month, pcts]) => ({ month, avgPct: Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) }))
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .slice(-6);
+
   res.json({
     student: { name: `${student.first_name} ${student.last_name}`, admissionNo: student.admission_no, section: student.section_code, grade: section ? section.grade : '' },
     officiallyIssued: lower || schoolIsAuthority,
     examAuthorityStatus: settings ? settings.exam_authority_status : 'not_registered',
     examAuthorityName: settings ? settings.exam_authority_name : null,
     grades,
-    attendancePct
+    attendancePct,
+    subjectAverages,
+    monthlyHistory
   });
+}));
+
+// ---------- Study materials library (student view) ----------
+
+router.get('/materials', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const section = await get('SELECT grade FROM sections WHERE section_code = $1', [student.section_code]);
+  const grade = section ? section.grade : null;
+  if (!grade) return res.json({ grade: null, materials: [] });
+
+  const subject = req.query.subject;
+  const params = [grade];
+  let subjectClause = '';
+  if (subject) { params.push(subject); subjectClause = 'AND subject = $2'; }
+
+  const rows = await all(
+    `SELECT sm.id, sm.subject, sm.title, sm.description, sm.material_type, sm.file_name, sm.video_url, sm.created_at,
+            t.first_name, t.last_name
+     FROM study_materials sm JOIN teachers t ON t.id = sm.teacher_id
+     WHERE sm.grade = $1 ${subjectClause}
+     ORDER BY sm.subject, sm.created_at DESC`,
+    params
+  );
+
+  res.json({ grade, materials: rows.map(r => ({
+    id: r.id, subject: r.subject, title: r.title, description: r.description,
+    materialType: r.material_type, fileName: r.file_name, videoUrl: r.video_url, createdAt: r.created_at,
+    uploadedBy: `${r.first_name} ${r.last_name}`
+  })) });
+}));
+
+router.get('/materials/:id/file', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const section = await get('SELECT grade FROM sections WHERE section_code = $1', [student.section_code]);
+  const material = await get('SELECT file_base64, file_name, file_mime, grade FROM study_materials WHERE id = $1', [Number(req.params.id)]);
+  if (!material || !material.file_base64) return res.status(404).json({ error: 'No file on this material.' });
+  if (!section || material.grade !== section.grade) return res.status(403).json({ error: 'This material is not available to your grade.' });
+
+  res.json({ fileBase64: material.file_base64, fileName: material.file_name, fileMime: material.file_mime });
 }));
 
 module.exports = router;

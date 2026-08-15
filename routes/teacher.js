@@ -149,7 +149,7 @@ router.post('/lessons', asyncHandler(async (req, res) => {
   const teacher = await getTeacher(req);
   if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
 
-  const { title, subject, section_code, video_url, description } = req.body || {};
+  const { title, subject, section_code, video_url, description, lecture_date } = req.body || {};
   if (!title || !subject || !section_code || !video_url) {
     return res.status(400).json({ error: 'title, subject, section_code, and video_url are required.' });
   }
@@ -163,10 +163,10 @@ router.post('/lessons', asyncHandler(async (req, res) => {
   }
 
   await run(
-    'INSERT INTO lessons (title, subject, section_code, teacher_id, video_url, description) VALUES ($1,$2,$3,$4,$5,$6)',
-    [title, subject, section_code, teacher.id, video_url, description || null]
+    'INSERT INTO lessons (title, subject, section_code, teacher_id, video_url, description, lecture_date) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [title, subject, section_code, teacher.id, video_url, description || null, lecture_date || null]
   );
-  res.status(201).json({ message: 'Lesson added.' });
+  res.status(201).json({ message: lecture_date ? `Lesson added, tagged as the recording for ${lecture_date}.` : 'Lesson added.' });
 }));
 
 router.delete('/lessons/:id', asyncHandler(async (req, res) => {
@@ -565,6 +565,103 @@ router.delete('/courses/lessons/:id', asyncHandler(async (req, res) => {
   await run('DELETE FROM course_progress WHERE lesson_id = $1', [id]);
   await run('DELETE FROM course_lessons WHERE id = $1', [id]);
   res.json({ message: 'Lesson deleted.' });
+}));
+
+// ---------- Live class chat lock ----------
+
+router.post('/live-session/start', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { section_code } = req.body || {};
+  if (!section_code) return res.status(400).json({ error: 'section_code is required.' });
+
+  const existing = await get('SELECT id FROM class_sessions WHERE teacher_id = $1 AND section_code = $2 AND ended_at IS NULL', [teacher.id, section_code]);
+  if (existing) return res.status(409).json({ error: 'A live session for this section is already running.' });
+
+  await run('INSERT INTO class_sessions (teacher_id, section_code, is_locked) VALUES ($1,$2,TRUE)', [teacher.id, section_code]);
+  res.status(201).json({ message: `Live class started for ${section_code} — student chat is locked until you end it.` });
+}));
+
+router.post('/live-session/end', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { section_code } = req.body || {};
+  const existing = await get('SELECT id FROM class_sessions WHERE teacher_id = $1 AND section_code = $2 AND ended_at IS NULL', [teacher.id, section_code]);
+  if (!existing) return res.status(404).json({ error: 'No live session is running for this section.' });
+
+  await run('UPDATE class_sessions SET ended_at = $1, is_locked = FALSE WHERE id = $2', [new Date().toISOString(), existing.id]);
+  res.json({ message: `Live class ended for ${section_code} — student chat is unlocked.` });
+}));
+
+router.get('/live-sessions', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const rows = await all('SELECT section_code, started_at FROM class_sessions WHERE teacher_id = $1 AND ended_at IS NULL', [teacher.id]);
+  res.json({ activeSections: rows.map(r => r.section_code) });
+}));
+
+// ---------- Study materials library ----------
+
+const MAX_MATERIAL_BASE64 = 5_000_000; // ~3.7MB decoded, safely under the 6MB request body limit
+
+router.post('/materials', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { subject, grade, title, description, material_type, file_base64, file_name, file_mime, video_url } = req.body || {};
+  if (!subject || !grade || !title || !material_type) {
+    return res.status(400).json({ error: 'subject, grade, title, and material_type are required.' });
+  }
+  if (!['document', 'image', 'video'].includes(material_type)) {
+    return res.status(400).json({ error: 'material_type must be document, image, or video.' });
+  }
+  if (material_type === 'video' && !video_url) return res.status(400).json({ error: 'video_url is required for video materials.' });
+  if (material_type !== 'video' && !file_base64) return res.status(400).json({ error: 'A file is required for document/image materials.' });
+  if (file_base64 && file_base64.length > MAX_MATERIAL_BASE64) return res.status(413).json({ error: 'File is too large (limit ~3.7MB). Please use a smaller file or a hosted link for large videos.' });
+
+  await run(
+    `INSERT INTO study_materials (subject, grade, title, description, material_type, file_base64, file_name, file_mime, video_url, teacher_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [subject, grade, title, description || null, material_type, file_base64 || null, file_name || null, file_mime || null, video_url || null, teacher.id]
+  );
+  res.status(201).json({ message: 'Material added to the library.' });
+}));
+
+router.get('/materials', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const rows = await all(
+    `SELECT sm.id, sm.subject, sm.grade, sm.title, sm.description, sm.material_type, sm.file_name, sm.video_url, sm.created_at, sm.teacher_id,
+            t.first_name, t.last_name
+     FROM study_materials sm JOIN teachers t ON t.id = sm.teacher_id
+     ORDER BY sm.created_at DESC`
+  );
+  res.json({ materials: rows.map(r => ({
+    id: r.id, subject: r.subject, grade: r.grade, title: r.title, description: r.description,
+    materialType: r.material_type, fileName: r.file_name, videoUrl: r.video_url, createdAt: r.created_at,
+    uploadedBy: `${r.first_name} ${r.last_name}`, isMine: r.teacher_id === teacher.id
+  })) });
+}));
+
+router.get('/materials/:id/file', asyncHandler(async (req, res) => {
+  const material = await get('SELECT file_base64, file_name, file_mime FROM study_materials WHERE id = $1', [Number(req.params.id)]);
+  if (!material || !material.file_base64) return res.status(404).json({ error: 'No file on this material.' });
+  res.json({ fileBase64: material.file_base64, fileName: material.file_name, fileMime: material.file_mime });
+}));
+
+router.delete('/materials/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const material = await get('SELECT * FROM study_materials WHERE id = $1 AND teacher_id = $2', [Number(req.params.id), teacher.id]);
+  if (!material) return res.status(404).json({ error: 'Material not found, or it belongs to another teacher.' });
+
+  await run('DELETE FROM study_materials WHERE id = $1', [material.id]);
+  res.json({ message: 'Material removed.' });
 }));
 
 module.exports = router;
