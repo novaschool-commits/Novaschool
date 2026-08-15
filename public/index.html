@@ -171,6 +171,32 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .queue-detail.open{display:block;}
 .queue-detail .qrow{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:6px 0; gap:8px;}
 
+/* ---- Student "Learning" course view ---- */
+.course-row{border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:12px; background:var(--card); transition:box-shadow .15s;}
+.course-row:hover{box-shadow:var(--shadow);}
+.course-row-top{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:12px;}
+.course-tags{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;}
+.course-tags .curr-pill{font-family:var(--mono); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; background:var(--gold-bg); color:var(--gold-deep); border-radius:6px; padding:3px 8px;}
+.course-title-lg{font-size:15.5px; font-weight:700;}
+.course-desc{font-size:12.5px; color:var(--ink-soft); margin-top:3px; max-width:52ch;}
+.course-progress-wrap{margin-top:12px;}
+.course-progress-track{height:6px; border-radius:99px; background:var(--paper-alt); overflow:hidden;}
+.course-progress-fill{height:100%; border-radius:99px; background:linear-gradient(90deg,var(--gold-deep),var(--gold-hi));}
+.course-progress-label{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft); margin-top:5px;}
+.unit-block{margin-top:14px; padding-top:14px; border-top:1px solid var(--line);}
+.unit-block:first-child{margin-top:0; padding-top:0; border-top:none;}
+.unit-head{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+.unit-num{width:24px; height:24px; border-radius:50%; background:var(--paper-alt); color:var(--brand); font-family:var(--mono); font-size:11.5px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.unit-title{font-size:13.5px; font-weight:700;}
+.lesson-row{display:flex; align-items:center; gap:10px; padding:8px 0 8px 34px;}
+.lesson-icon{width:26px; height:26px; border-radius:8px; background:var(--paper-alt); color:var(--brand); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+.lesson-row .lesson-title{flex-grow:1; font-size:13px;}
+.lesson-done-toggle{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-soft); cursor:pointer; user-select:none;}
+.lesson-done-toggle input{accent-color:var(--gold-deep); width:15px; height:15px;}
+.lesson-row.is-done .lesson-title{color:var(--ink-soft); text-decoration:line-through; text-decoration-color:var(--line);}
+.lesson-row.is-done .lesson-icon{background:var(--gold-bg); color:var(--gold-deep);}
+.lesson-player{margin:6px 0 6px 34px;}
+
 @media (max-width: 980px){
   .hero-grid{grid-template-columns:1fr;} .feature-grid{grid-template-columns:1fr 1fr;} .roles-grid{grid-template-columns:1fr 1fr;}
   .grid-2{grid-template-columns:1fr;} .grid-3, .grid-4{grid-template-columns:1fr 1fr;}
@@ -1687,11 +1713,18 @@ async function loadStudentCourses(){
     document.getElementById('studentCourses').innerHTML = d.courses.length
       ? d.courses.map(c => {
           const pct = c.lessonCount ? Math.round((c.completedCount / c.lessonCount) * 100) : 0;
-          return `<div style="border-bottom:1px solid var(--paper-alt); padding:12px 0;">
-            <div class="list-row" style="border:none; padding:0;">
-              <div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${c.subject}</span>
-                <div><div class="l-title">${c.title}</div><div class="l-sub">${c.curriculum} · ${c.level} · ${c.lessonCount} lesson${c.lessonCount===1?'':'s'}</div></div></div>
-              <button class="btn btn-outline btn-sm" onclick="toggleCourseDetail(${c.id})">${pct}% done</button>
+          return `<div class="course-row">
+            <div class="course-row-top">
+              <div style="min-width:0;">
+                <div class="course-tags"><span class="tag" style="background:${subjectColor(c.subject)};">${c.subject}</span><span class="curr-pill">${c.curriculum}</span><span class="curr-pill">${c.level}</span></div>
+                <div class="course-title-lg">${c.title}</div>
+                ${c.description ? `<div class="course-desc">${c.description}</div>` : ''}
+              </div>
+              <button class="btn btn-outline btn-sm" onclick="toggleCourseDetail(${c.id})" style="flex-shrink:0;">${pct === 100 ? 'Review course' : pct > 0 ? 'Continue' : 'Start course'}</button>
+            </div>
+            <div class="course-progress-wrap">
+              <div class="course-progress-track"><div class="course-progress-fill" style="width:${pct}%;"></div></div>
+              <div class="course-progress-label"><span>${pct}% complete</span><span>${c.completedCount}/${c.lessonCount} lesson${c.lessonCount===1?'':'s'}</span></div>
             </div>
             <div class="queue-detail" id="course-${c.id}"></div>
           </div>`;
@@ -1712,18 +1745,24 @@ async function toggleCourseDetail(courseId){
   try {
     const d = await api(`/student/courses/${courseId}`);
     el.innerHTML = d.topics.length
-      ? d.topics.map(t => `
-        <p style="font-weight:700; font-size:13px; margin:10px 0 6px;">${t.title}</p>
-        ${t.lessons.map(l => {
-          const embed = videoEmbedSrc(l.videoUrl || '');
-          const player = l.contentType === 'video' && embed
-            ? `<div style="position:relative; padding-top:56.25%; border-radius:8px; overflow:hidden; margin:6px 0;"><iframe src="${embed}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div>`
-            : l.contentType === 'text' ? `<p style="font-size:13px; margin:6px 0; padding:8px; background:var(--paper-alt); border-radius:8px;">${l.bodyText || ''}</p>` : '';
-          return `<div class="qrow"><span>${l.title}</span>
-            <label style="display:flex; align-items:center; gap:6px; font-size:12.5px;">
-              <input type="checkbox" ${l.completed ? 'checked' : ''} onchange="toggleLessonComplete(${l.id}, ${courseId}, this.checked)"> Done
-            </label></div>${player}`;
-        }).join('')}`).join('')
+      ? d.topics.map((t, ti) => `
+        <div class="unit-block">
+          <div class="unit-head"><div class="unit-num">${ti + 1}</div><div class="unit-title">${t.title}</div></div>
+          ${t.lessons.map(l => {
+            const embed = videoEmbedSrc(l.videoUrl || '');
+            const player = l.contentType === 'video' && embed
+              ? `<div class="lesson-player"><div style="position:relative; padding-top:56.25%; border-radius:8px; overflow:hidden;"><iframe src="${embed}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div></div>`
+              : l.contentType === 'text' ? `<div class="lesson-player"><p style="font-size:13px; padding:8px; background:var(--paper-alt); border-radius:8px;">${l.bodyText || ''}</p></div>` : '';
+            const icon = l.contentType === 'video'
+              ? '<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
+              : '<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg>';
+            return `<div class="lesson-row ${l.completed ? 'is-done' : ''}">
+              <div class="lesson-icon">${icon}</div>
+              <span class="lesson-title">${l.title}</span>
+              <label class="lesson-done-toggle"><input type="checkbox" ${l.completed ? 'checked' : ''} onchange="toggleLessonComplete(${l.id}, ${courseId}, this.checked)"> Done</label>
+            </div>${player}`;
+          }).join('')}
+        </div>`).join('')
       : '<p class="empty">No topics added yet.</p>';
   } catch (err) {
     toast(err.message);

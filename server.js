@@ -5,6 +5,7 @@ const path = require('path');
 
 const { pool, migrate } = require('./db');
 const { seed } = require('./db/seed');
+const { seedPermissions } = require('./db/seed-permissions');
 
 const app = express();
 app.use(cors());
@@ -15,6 +16,7 @@ app.use('/api/student', require('./routes/student'));
 app.use('/api/parent', require('./routes/parent'));
 app.use('/api/teacher', require('./routes/teacher'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/management', require('./routes/management'));
 app.use('/api', require('./routes/common'));
 
 app.get('/api/health', async (req, res) => {
@@ -46,6 +48,7 @@ const PORT = process.env.PORT || 3000;
 
 async function start() {
   await migrate();
+  await seedPermissions();
 
   const { rows } = await pool.query('SELECT COUNT(*) AS c FROM students');
   if (Number(rows[0].c) === 0) {

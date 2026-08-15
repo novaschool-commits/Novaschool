@@ -332,3 +332,113 @@ CREATE TABLE IF NOT EXISTS course_progress (
   completed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(student_id, lesson_id)
 );
+
+-- ============================================================
+-- MANAGEMENT TEAM, ROLES & PERMISSIONS (Super Admin -> Management Team)
+-- Additive only — existing 'admin' role/table is untouched and keeps
+-- full unrestricted access. This introduces a separate 'staff' user
+-- role for scoped management-team members.
+-- ============================================================
+
+-- Allow 'staff' as a user role alongside the existing four, without
+-- touching any existing rows. Looks up whatever the role CHECK
+-- constraint is actually named (rather than assuming the default
+-- Postgres-generated name) so this works regardless of how it was
+-- originally created.
+DO $$
+DECLARE
+  con_name TEXT;
+BEGIN
+  SELECT conname INTO con_name
+  FROM pg_constraint
+  WHERE conrelid = 'users'::regclass AND contype = 'c'
+    AND pg_get_constraintdef(oid) ILIKE '%role%';
+  IF con_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE users DROP CONSTRAINT %I', con_name);
+  END IF;
+END $$;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('student','parent','teacher','admin','staff'));
+
+-- Full permission catalog. Keys match the ones in the product spec
+-- (e.g. 'students.view', 'courses.publish'). Enforced server-side in
+-- middleware/permissions.js — never trust a hidden frontend button alone.
+CREATE TABLE IF NOT EXISTS permissions (
+  permission_key TEXT PRIMARY KEY,
+  category TEXT NOT NULL,   -- e.g. 'Students', 'Courses', 'Results'
+  label TEXT NOT NULL       -- human-readable, e.g. 'Edit student records'
+);
+
+-- Configurable management-team roles. 'is_system' roles ship with the
+-- product (Academic Manager, etc.) and can't be deleted, only have
+-- their permissions adjusted. Admins can also create fully custom roles.
+CREATE TABLE IF NOT EXISTS staff_roles (
+  id SERIAL PRIMARY KEY,
+  role_key TEXT UNIQUE NOT NULL,   -- slug, e.g. 'academic_manager'
+  name TEXT NOT NULL,              -- display name, e.g. 'Academic Manager'
+  is_system BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS staff_role_permissions (
+  staff_role_id INTEGER REFERENCES staff_roles(id) ON DELETE CASCADE,
+  permission_key TEXT REFERENCES permissions(permission_key) ON DELETE CASCADE,
+  PRIMARY KEY (staff_role_id, permission_key)
+);
+
+-- One row per management-team member. Deactivate/suspend rather than
+-- delete, per the "no destructive deletion" rule — history is kept.
+CREATE TABLE IF NOT EXISTS staff (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER UNIQUE REFERENCES users(id),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  staff_role_id INTEGER REFERENCES staff_roles(id),
+  status TEXT NOT NULL DEFAULT 'invited' CHECK(status IN ('invited','active','suspended','removed')),
+  invited_by INTEGER REFERENCES users(id),
+  activation_token TEXT,
+  activation_expires TIMESTAMPTZ,
+  invited_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  activated_at TIMESTAMPTZ
+);
+
+-- Append-only audit trail. Never exposes credentials — 'details' should
+-- only ever hold non-sensitive context (e.g. { "changedFields": [...] }).
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id SERIAL PRIMARY KEY,
+  actor_user_id INTEGER REFERENCES users(id),
+  actor_role TEXT,
+  action TEXT NOT NULL,          -- e.g. 'staff.invited', 'result.published'
+  target_type TEXT,              -- e.g. 'student', 'course'
+  target_id TEXT,
+  details JSONB,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================
+-- ACADEMIC ARCHITECTURE — curriculum/board/level catalog
+-- Additive reference tables only. courses.curriculum / courses.level
+-- and sections.curriculum remain free-text and untouched, so nothing
+-- existing breaks. These catalogs let Academic Management curate the
+-- dropdown options instead of admins typing free text — course/section
+-- forms can be wired to read from these in a later (frontend) pass.
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS curriculums (
+  id SERIAL PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL       -- e.g. 'Pakistani SNC', 'Cambridge O Level'
+);
+
+CREATE TABLE IF NOT EXISTS boards (
+  id SERIAL PRIMARY KEY,
+  curriculum_id INTEGER REFERENCES curriculums(id),
+  name TEXT NOT NULL,             -- e.g. 'Federal Board', 'Cambridge CAIE'
+  UNIQUE(curriculum_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS academic_levels (
+  id SERIAL PRIMARY KEY,
+  curriculum_id INTEGER REFERENCES curriculums(id),
+  name TEXT NOT NULL,             -- e.g. 'Matric / SSC', 'A Level'
+  position INTEGER DEFAULT 0,
+  UNIQUE(curriculum_id, name)
+);
