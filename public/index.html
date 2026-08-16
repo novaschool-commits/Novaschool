@@ -36,6 +36,17 @@ p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit;
 .btn-ink{background:var(--ink); color:#fff;} .btn-ink:hover{background:#021b12;}
 .btn-premium{background:linear-gradient(135deg,var(--gold-hi),var(--gold-deep)); color:var(--ink);} .btn-premium:hover{filter:brightness(1.04);}
 .btn-outline{background:transparent; border-color:var(--line); color:var(--ink);} .btn-outline:hover{border-color:var(--ink);}
+.chat-cat-tab.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+.draw-modal-backdrop{display:none; position:fixed; inset:0; background:rgba(3,46,32,.6); z-index:200; align-items:center; justify-content:center; padding:14px;}
+.draw-modal-backdrop.open{display:flex;}
+.draw-modal{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; width:100%; max-width:420px; max-height:92vh; overflow-y:auto;}
+.draw-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; align-items:center;}
+.draw-tool-btn{width:34px; height:34px; border-radius:8px; border:1px solid var(--line); background:var(--paper); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;}
+.draw-tool-btn.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+.draw-tool-btn .icon{width:16px; height:16px;}
+.draw-color-swatch{width:24px; height:24px; border-radius:50%; border:2px solid var(--line); cursor:pointer; padding:0;}
+.draw-color-swatch.active{box-shadow:0 0 0 2px var(--gold-deep);}
+#drawCanvas{border:1px solid var(--line); border-radius:8px; touch-action:none; width:100%; background:#fff; display:block; cursor:crosshair;}
 .btn-sm{padding:8px 14px; font-size:13.5px; border-radius:999px;}
 .icon{width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
 
@@ -152,8 +163,9 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .card-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;} .card-head h3{font-size:15.5px; font-family:var(--body); font-weight:700;} .card-head a{font-size:12.5px; font-weight:600; color:var(--indigo);}
 .kpi{padding:20px;} .kpi .k-label{font-family:var(--mono); font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft);}
 .kpi .k-val{font-family:var(--display); font-size:30px; font-weight:700; margin-top:8px;}
-.list-row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--paper-alt); gap:10px;}
+.list-row{display:flex; flex-wrap:nowrap; align-items:center; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--paper-alt); gap:10px;}
 .list-row:last-child{border-bottom:none;} .list-row .l-main{display:flex; align-items:center; gap:11px; min-width:0;}
+.list-row .l-main > div{min-width:0;} .list-row > *:last-child{flex-shrink:0;} .list-row .tag{flex-shrink:0;}
 .list-row .l-title{font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;} .list-row .l-sub{font-size:12px; color:var(--ink-soft); margin-top:2px;}
 .tag{padding:4px 9px; border-radius:999px; font-size:11px; font-weight:700; color:#fff; white-space:nowrap;}
 .ring-wrap{display:flex; align-items:center; gap:18px;}
@@ -935,6 +947,40 @@ function fmtDate(dateStr){
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+// Lightweight inline SVG line chart — no external chart library, matching
+// this app's zero-dependency approach. Takes [{label, pct}] points.
+function renderLineChart(points, opts){
+  opts = opts || {};
+  const W = 300, H = 96, padX = 14, padTop = 18, padBottom = 20;
+  const chartW = W - padX * 2, chartH = H - padTop - padBottom;
+  const n = points.length;
+  const xAt = i => n <= 1 ? padX : padX + (i * chartW) / (n - 1);
+  const yAt = pct => padTop + chartH - (Math.max(0, Math.min(100, pct)) / 100) * chartH;
+
+  const coords = points.map((p, i) => ({ x: xAt(i), y: yAt(p.pct), ...p }));
+  const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'}${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L${coords[coords.length-1].x.toFixed(1)},${padTop+chartH} L${coords[0].x.toFixed(1)},${padTop+chartH} Z`;
+
+  const gridLines = [0, 50, 100].map(pct => {
+    const y = yAt(pct);
+    return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${W-padX}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1" stroke-dasharray="3,3"/>`;
+  }).join('');
+
+  const dots = coords.map(c => `
+    <circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3.2" fill="var(--gold-deep)" stroke="#fff" stroke-width="1.4"/>
+    <text x="${c.x.toFixed(1)}" y="${(c.y - 8).toFixed(1)}" font-size="9.5" text-anchor="middle" fill="var(--ink)" font-weight="700">${Math.round(c.pct)}%</text>
+    <text x="${c.x.toFixed(1)}" y="${H - 4}" font-size="9" text-anchor="middle" fill="var(--ink-soft)">${escapeHtml(c.label)}</text>
+  `).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%; height:auto; display:block;" role="img" aria-label="${opts.ariaLabel || 'Progress over time'}">
+    ${gridLines}
+    <path d="${areaPath}" fill="var(--brand)" opacity="0.08"/>
+    <path d="${linePath}" fill="none" stroke="var(--brand)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}
+  </svg>`;
+}
+
 const ROLES = [
   {key:'student', name:'Student', color:'var(--indigo)', desc:'Join live classes, submit homework, track grades and attendance in one timetable-driven view.', icon:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/>'},
   {key:'parent', name:'Parent', color:'var(--amber)', desc:'Monitor attendance and grades, pay fees, and message teachers for every child.', icon:'<path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.4"/>'},
@@ -1342,10 +1388,22 @@ async function openChatThread(scope, userId){
   threadEl.innerHTML = '<p class="empty">Loading…</p>';
   try {
     const d = await api(`/messages/thread/${userId}`);
+    // Only ever treat a body as an <img src> if it strictly matches a base64
+    // PNG/JPEG/GIF data URL — that charset can never contain a quote or angle
+    // bracket, so this is safe to insert directly. Anything else (including
+    // a malicious string merely starting with "data:image/") falls through
+    // to the normal escaped-text bubble instead.
+    const imageDataUrlPattern = /^data:image\/(png|jpeg|jpg|gif);base64,[A-Za-z0-9+/=]+$/;
     threadEl.innerHTML = d.messages.length
-      ? d.messages.map(m => `<div style="margin-bottom:8px; text-align:${m.outgoing ? 'right' : 'left'};">
-          <span style="display:inline-block; max-width:80%; padding:7px 11px; border-radius:12px; font-size:13px; white-space:pre-wrap; background:${m.outgoing ? 'var(--brand)' : 'var(--paper-alt)'}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${renderChatFormatting(escapeHtml(m.body))}</span>
-        </div>`).join('')
+      ? d.messages.map(m => {
+          const isDrawing = imageDataUrlPattern.test(m.body);
+          const bubbleContent = isDrawing
+            ? `<img src="${m.body}" alt="Drawing" style="max-width:220px; width:100%; border-radius:10px; display:block;">`
+            : renderChatFormatting(escapeHtml(m.body));
+          return `<div style="margin-bottom:8px; text-align:${m.outgoing ? 'right' : 'left'};">
+            <span style="display:inline-block; max-width:80%; padding:${isDrawing?'6px':'7px 11px'}; border-radius:12px; font-size:13px; white-space:pre-wrap; background:${isDrawing ? 'transparent' : (m.outgoing ? 'var(--brand)' : 'var(--paper-alt)')}; color:${m.outgoing ? '#fff' : 'var(--ink)'};">${bubbleContent}</span>
+          </div>`;
+        }).join('')
       : '<p class="empty">No messages yet — say hello.</p>';
     threadEl.scrollTop = threadEl.scrollHeight;
     renderMathIn(threadEl);
@@ -1382,8 +1440,25 @@ async function sendChatMessage(scope){
   }
 }
 
-const CHAT_SYMBOLS = ['x²','x³','√','÷','×','π','Σ','Δ','∞','≤','≥','→','°','½','¼'];
-const CHAT_STICKERS = ['🧮','📐','⚗️','🧪','🔬','⚛️','💻','📊','🧬','📏'];
+const CHAT_SYMBOL_CATEGORIES = {
+  'Math': ['x²','x³','xⁿ','√','∛','÷','×','±','≈','≠','≤','≥','∞','π','Σ','∫','∂','∇','½','¼','→','∈','∉','⊂','∪','∩','∅','∝','∴','∵'],
+  'Greek': ['α','β','γ','δ','θ','λ','μ','ν','ρ','σ','τ','φ','ψ','ω','Δ','Σ','Ω','Φ','Θ','Λ'],
+  'Chemistry': ['H₂O','CO₂','O₂','NaCl','CH₄','C₆H₁₂O₆','⇌','→','₀','₁','₂','₃','₄','₅','₆','⁺','⁻','°C'],
+  'Physics': ['Ω','ℏ','λ','ν','Δ','→','∥','⊥','°','²','³','⁻¹','·','×'],
+  'Biology': ['🧬','🦠','🌱','🍃','🐛','🦋','🔬','♀','♂','×','→'],
+  'Stickers': ['🧮','📐','⚗️','🧪','🔬','⚛️','💻','📊','🧬','📏','✅','❌','🎉','🏆','⭐','🔥','💯','🙌','📚','✏️','💡','❓','❗','👍','👏']
+};
+// Symbols that need KaTeX $...$ wrapping to render as real math instead of
+// plain text (superscripts, roots, sums, fractions, etc). Anything not
+// listed here is a plain Unicode character and gets inserted as-is —
+// including Greek letters and chemistry subscripts, which already display
+// correctly as plain text without needing math mode.
+const CHAT_SYMBOL_LATEX = {
+  'x²':'x^2', 'x³':'x^3', 'xⁿ':'x^n', '√':'\\sqrt{}', '∛':'\\sqrt[3]{}',
+  'π':'\\pi', 'Σ':'\\sum', '∫':'\\int', '∂':'\\partial', '∇':'\\nabla',
+  '∞':'\\infty', '½':'\\frac{1}{2}', '¼':'\\frac{1}{4}',
+  '∝':'\\propto', '∴':'\\therefore', '∵':'\\because', 'ℏ':'\\hbar'
+};
 
 function handleChatKeydown(event, scope){
   if (event.key === 'Enter' && !event.shiftKey) {
@@ -1422,24 +1497,225 @@ function renderChatFormatting(escapedText){
 }
 
 function insertSymbol(scope, sym){
-  // Formula symbols wrap-friendly for KaTeX rendering: superscripts get $...$ treatment.
-  const map = { 'x²':'x^2', 'x³':'x^3', '√':'\\sqrt{}', '÷':'÷', '×':'×', 'π':'\\pi', 'Σ':'\\sum', 'Δ':'\\Delta', '∞':'\\infty', '≤':'≤', '≥':'≥', '→':'→', '°':'°', '½':'\\frac{1}{2}', '¼':'\\frac{1}{4}' };
-  const latex = map[sym];
-  if (latex && /\\/.test(latex)) {
+  const latex = CHAT_SYMBOL_LATEX[sym];
+  if (latex) {
     insertAtCursor(scope, `$${latex}$`);
   } else {
     insertAtCursor(scope, sym);
   }
 }
 
+function switchChatCategory(scope, category){
+  const state = ensureChatState(scope);
+  state.symbolCategory = category;
+  const row = document.getElementById(`msgSymbolRow-${scope}`);
+  if (row) row.innerHTML = chatSymbolRowHtml(scope, category);
+  document.querySelectorAll(`#msgToolbar-${scope} .chat-cat-tab`).forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === category);
+  });
+}
+
+function chatSymbolRowHtml(scope, category){
+  const symbols = CHAT_SYMBOL_CATEGORIES[category] || [];
+  return symbols.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:${category==='Stickers'?'13px':'11.5px'};" onclick="insertSymbol('${scope}','${s.replace(/'/g,"\\'")}')">${s}</button>`).join('');
+}
+
 function chatToolbarHtml(scope){
-  return `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px;">
-    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; font-weight:700;" onclick="wrapSelection('${scope}','**','**')">B</button>
-    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; font-style:italic;" onclick="wrapSelection('${scope}','*','*')">I</button>
-    <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; text-decoration:underline;" onclick="wrapSelection('${scope}','__','__')">U</button>
-    ${CHAT_SYMBOLS.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px;" onclick="insertSymbol('${scope}','${s}')">${s}</button>`).join('')}
-    ${CHAT_STICKERS.map(s => `<button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:13px;" onclick="insertAtCursor('${scope}','${s}')">${s}</button>`).join('')}
+  const categories = Object.keys(CHAT_SYMBOL_CATEGORIES);
+  const first = categories[0];
+  return `<div style="margin-bottom:6px;">
+    <div style="display:flex; gap:4px; margin-bottom:6px;">
+      <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; font-weight:700;" onclick="wrapSelection('${scope}','**','**')">B</button>
+      <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; font-style:italic;" onclick="wrapSelection('${scope}','*','*')">I</button>
+      <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px; text-decoration:underline;" onclick="wrapSelection('${scope}','__','__')">U</button>
+      <button type="button" class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11.5px;" onclick="openDrawModal('${scope}')">🎨 Draw</button>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; border-bottom:1px solid var(--line); padding-bottom:6px;">
+      ${categories.map(c => `<button type="button" class="btn btn-outline btn-sm chat-cat-tab ${c===first?'active':''}" data-cat="${c}" style="padding:3px 9px; font-size:11px; font-weight:600;" onclick="switchChatCategory('${scope}','${c}')">${c}</button>`).join('')}
+    </div>
+    <div id="msgSymbolRow-${scope}" style="display:flex; flex-wrap:wrap; gap:4px;">${chatSymbolRowHtml(scope, first)}</div>
   </div>`;
+}
+
+/* ============================== Chat drawing tool ============================== */
+
+const DRAW_COLORS = ['#06452F','#032E20','#A87824','#B94A48','#356B80','#000000'];
+const DRAW_SIZES  = [2, 4, 7];
+const DRAW_TOOL_ICONS = {
+  pen:    '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  line:   '<path d="M4 20L20 4"/>',
+  rect:   '<rect x="4" y="6" width="16" height="12" rx="1"/>',
+  circle: '<circle cx="12" cy="12" r="8"/>',
+  eraser: '<path d="M20 20H9L4 15a1.5 1.5 0 0 1 0-2.1L13.4 3.5a1.5 1.5 0 0 1 2.1 0l5 5a1.5 1.5 0 0 1 0 2.1L12 19"/>'
+};
+
+let drawState = {
+  scope: null, tool: 'pen', color: DRAW_COLORS[0], size: DRAW_SIZES[1],
+  drawing: false, startX: 0, startY: 0, snapshot: null, history: []
+};
+
+function openDrawModal(scope){
+  drawState.scope = scope;
+  drawState.tool = 'pen';
+  drawState.color = DRAW_COLORS[0];
+  drawState.size = DRAW_SIZES[1];
+  drawState.history = [];
+
+  document.getElementById('drawToolButtons').innerHTML = Object.keys(DRAW_TOOL_ICONS).map(t =>
+    `<button type="button" class="draw-tool-btn ${t==='pen'?'active':''}" data-tool="${t}" onclick="setDrawTool('${t}')" title="${t}">
+      <svg class="icon" viewBox="0 0 24 24">${DRAW_TOOL_ICONS[t]}</svg>
+    </button>`
+  ).join('');
+  document.getElementById('drawColorSwatches').innerHTML = DRAW_COLORS.map((c, i) =>
+    `<button type="button" class="draw-color-swatch ${i===0?'active':''}" data-color="${c}" style="background:${c};" onclick="setDrawColor('${c}')" title="${c}"></button>`
+  ).join('');
+  document.getElementById('drawSizeButtons').innerHTML = DRAW_SIZES.map((s, i) =>
+    `<button type="button" class="draw-tool-btn ${i===1?'active':''}" data-size="${s}" onclick="setDrawSize(${s})" title="${s}px">
+      <span style="display:block; width:${s+2}px; height:${s+2}px; border-radius:50%; background:currentColor;"></span>
+    </button>`
+  ).join('');
+
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  canvas.onpointerdown = drawPointerDown;
+  canvas.onpointermove = drawPointerMove;
+  canvas.onpointerup = drawPointerUp;
+  canvas.onpointerleave = drawPointerUp;
+
+  document.getElementById('drawModalBackdrop').classList.add('open');
+}
+
+function closeDrawModal(){
+  document.getElementById('drawModalBackdrop').classList.remove('open');
+}
+
+function setDrawTool(tool){
+  drawState.tool = tool;
+  document.querySelectorAll('#drawToolButtons .draw-tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+}
+function setDrawColor(color){
+  drawState.color = color;
+  document.querySelectorAll('#drawColorSwatches .draw-color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color === color));
+}
+function setDrawSize(size){
+  drawState.size = size;
+  document.querySelectorAll('#drawSizeButtons .draw-tool-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.size) === size));
+}
+
+function canvasPoint(evt){
+  const canvas = document.getElementById('drawCanvas');
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+    y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+  };
+}
+
+function pushDrawHistory(){
+  const canvas = document.getElementById('drawCanvas');
+  drawState.history.push(canvas.toDataURL());
+  if (drawState.history.length > 15) drawState.history.shift(); // cap memory use
+}
+
+function drawPointerDown(evt){
+  evt.preventDefault();
+  pushDrawHistory();
+  const p = canvasPoint(evt);
+  drawState.drawing = true;
+  drawState.startX = p.x; drawState.startY = p.y;
+  const ctx = document.getElementById('drawCanvas').getContext('2d');
+  ctx.strokeStyle = drawState.tool === 'eraser' ? '#ffffff' : drawState.color;
+  ctx.lineWidth = drawState.tool === 'eraser' ? drawState.size * 3 : drawState.size;
+  if (drawState.tool === 'pen' || drawState.tool === 'eraser') {
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  } else {
+    drawState.snapshot = new Image();
+    drawState.snapshot.src = document.getElementById('drawCanvas').toDataURL();
+  }
+}
+
+function drawPointerMove(evt){
+  if (!drawState.drawing) return;
+  evt.preventDefault();
+  const p = canvasPoint(evt);
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+
+  if (drawState.tool === 'pen' || drawState.tool === 'eraser') {
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    return;
+  }
+
+  // Shape tools: restore the pre-drag snapshot, then preview the shape live.
+  if (!drawState.snapshot || !drawState.snapshot.complete) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(drawState.snapshot, 0, 0);
+  ctx.strokeStyle = drawState.color;
+  ctx.lineWidth = drawState.size;
+  ctx.beginPath();
+  if (drawState.tool === 'line') {
+    ctx.moveTo(drawState.startX, drawState.startY);
+    ctx.lineTo(p.x, p.y);
+  } else if (drawState.tool === 'rect') {
+    ctx.strokeRect(drawState.startX, drawState.startY, p.x - drawState.startX, p.y - drawState.startY);
+  } else if (drawState.tool === 'circle') {
+    const r = Math.hypot(p.x - drawState.startX, p.y - drawState.startY);
+    ctx.arc(drawState.startX, drawState.startY, r, 0, Math.PI * 2);
+  }
+  ctx.stroke();
+}
+
+function drawPointerUp(){
+  drawState.drawing = false;
+  drawState.snapshot = null;
+}
+
+function clearDrawCanvas(){
+  pushDrawHistory();
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function undoDrawCanvas(){
+  if (!drawState.history.length) return;
+  const last = drawState.history.pop();
+  const canvas = document.getElementById('drawCanvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); };
+  img.src = last;
+}
+
+async function sendDrawing(){
+  const scope = drawState.scope;
+  const state = ensureChatState(scope);
+  const dataUrl = document.getElementById('drawCanvas').toDataURL('image/png');
+
+  if (state.groupMode) {
+    if (!state.selected.size) { toast('Select at least one contact first.'); return; }
+    try {
+      const res = await api('/messages/group', { method: 'POST', body: JSON.stringify({ recipient_ids: [...state.selected], body: dataUrl }) });
+      toast(res.message);
+      closeDrawModal();
+    } catch (err) { toast(err.message); }
+    return;
+  }
+
+  if (!state.partnerId) { toast('Pick a contact first.'); return; }
+  try {
+    await api('/messages', { method: 'POST', body: JSON.stringify({ recipient_id: state.partnerId, body: dataUrl }) });
+    closeDrawModal();
+    openChatThread(scope, state.partnerId);
+  } catch (err) { toast(err.message); }
 }
 
 /* ============================== STUDENT ============================== */
@@ -1582,11 +1858,8 @@ async function loadReportCard(){
 
     const historyChart = d.monthlyHistory && d.monthlyHistory.length > 1
       ? `<div style="margin-top:16px;"><p style="font-size:12.5px; font-weight:700; margin-bottom:8px;">Progress over time — previous terms vs. now</p>
-          ${d.monthlyHistory.map(h => {
-            const monthLabel = new Date(h.month + '-01').toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
-            return `<div class="bar-row"><span class="b-label">${monthLabel}</span><div class="bar-track"><div class="bar-fill" style="width:${h.avgPct}%; background:var(--brand);"></div></div><span class="b-val">${h.avgPct}%</span></div>`;
-          }).join('')}
-          <p style="font-size:11.5px; color:var(--ink-soft); margin-top:4px;">${d.monthlyHistory[d.monthlyHistory.length-1].avgPct >= d.monthlyHistory[0].avgPct ? '📈 Trending up compared to earlier terms.' : '📉 Trending down compared to earlier terms — worth a look.'}</p>
+          ${renderLineChart(d.monthlyHistory.map(h => ({ label: new Date(h.month + '-01').toLocaleDateString(undefined, { month: 'short', year: '2-digit' }), pct: h.avgPct })), { ariaLabel: 'Average score by term' })}
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-top:8px;">${d.monthlyHistory[d.monthlyHistory.length-1].avgPct >= d.monthlyHistory[0].avgPct ? '📈 Trending up compared to earlier terms.' : '📉 Trending down compared to earlier terms — worth a look.'}</p>
         </div>`
       : (d.monthlyHistory && d.monthlyHistory.length === 1 ? '<p style="font-size:11.5px; color:var(--ink-soft); margin-top:10px;">Not enough history yet to show a trend — check back next term.</p>' : '');
 
@@ -3083,5 +3356,22 @@ if (authToken && currentUser && currentUser.role) {
   loadDashboard(currentUser.role);
 }
 </script>
+<div class="draw-modal-backdrop" id="drawModalBackdrop">
+  <div class="draw-modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-size:15px;">Draw a diagram</h3>
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeDrawModal()">Close</button>
+    </div>
+    <div class="draw-row" id="drawToolButtons"></div>
+    <div class="draw-row" id="drawColorSwatches"></div>
+    <div class="draw-row" id="drawSizeButtons"></div>
+    <canvas id="drawCanvas" width="360" height="260"></canvas>
+    <div class="draw-row" style="margin-top:10px; margin-bottom:0;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="clearDrawCanvas()">Clear</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="undoDrawCanvas()">Undo</button>
+      <button type="button" class="btn btn-ink btn-sm" style="margin-left:auto;" onclick="sendDrawing()">Send drawing</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
