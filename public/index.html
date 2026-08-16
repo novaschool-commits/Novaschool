@@ -207,12 +207,24 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   .hero-grid{grid-template-columns:1fr;} .feature-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);} .roles-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
   .grid-2{grid-template-columns:minmax(0,1fr);} .grid-3, .grid-4{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
   .login-shell{grid-template-columns:1fr;} .login-side{display:none;}
-  .app-shell{grid-template-columns:64px minmax(0,1fr);} .app-brand span.txt, .side-link .txt, .side-user, .logout-link .txt{display:none;}
-  .app-main{min-width:0;}
-  .app-sidebar{align-items:center; padding:18px 8px;} .side-link{justify-content:center; width:44px; height:44px; padding:0;} .app-main{padding:24px 18px 50px;}
-  .app-brand{padding:4px 0 20px; justify-content:center;}
-  .side-foot{width:100%; display:flex; flex-direction:column; align-items:center; gap:2px;}
-  .logout-link{justify-content:center; width:44px; height:40px; padding:0;}
+
+  /* In-app dashboards: sidebar becomes a horizontal scrollable top bar
+     instead of a narrow icon column, freeing full width for content. */
+  .app-shell{display:block;}
+  .app-sidebar{
+    flex-direction:row; align-items:center; width:100%; height:auto;
+    padding:6px 8px; gap:0; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    position:sticky; top:0; z-index:30; white-space:nowrap;
+  }
+  .app-brand{display:none;}
+  .side-nav{flex-direction:row; gap:2px; flex:0 0 auto;}
+  .side-link{flex-direction:column; justify-content:center; width:auto; height:auto; padding:7px 11px; gap:3px;}
+  .side-link .txt{display:block; font-size:9.5px; line-height:1;}
+  .side-foot{display:flex; flex-direction:row; align-items:center; gap:0; flex:0 0 auto; border-top:none; border-left:1px solid rgba(255,255,255,.15); margin:0 0 0 4px; padding:0 0 0 4px;}
+  .side-user{display:none;}
+  .logout-link{flex-direction:column; justify-content:center; width:auto; height:auto; padding:7px 11px; gap:3px; margin-top:0;}
+  .logout-link .txt{display:block; font-size:9.5px; line-height:1;}
+  .app-main{padding:20px 16px 50px; min-width:0;}
 }
 @media (max-width: 620px){
   .feature-grid{grid-template-columns:minmax(0,1fr);} .roles-grid{grid-template-columns:minmax(0,1fr);} .grid-3, .grid-4{grid-template-columns:minmax(0,1fr);}
