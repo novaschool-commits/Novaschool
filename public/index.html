@@ -129,7 +129,11 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .app-sidebar{background:var(--ink); color:#fff; padding:22px 16px; display:flex; flex-direction:column; position:sticky; top:0; height:100vh;}
 .app-brand{display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; font-size:18px; padding:6px 8px 26px;}
 .side-nav{display:flex; flex-direction:column; gap:2px; flex:1;}
-.side-link{display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:9px; font-size:14px; font-weight:500; color:#B9C2CE;}
+.side-link{display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:9px; font-size:14px; font-weight:500; color:#B9C2CE; cursor:pointer;}
+.student-page{display:none; animation:fadeIn .18s ease;}
+.student-page.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+@media (prefers-reduced-motion: reduce){ .student-page{animation:none;} }
 .side-link:hover{background:rgba(255,255,255,.06); color:#fff;} .side-link.active{background:rgba(255,255,255,.12); color:#fff;} .side-link .icon{width:17px; height:17px;}
 .side-foot{border-top:1px solid rgba(255,255,255,.12); padding-top:14px; margin-top:10px;}
 .side-user{display:flex; align-items:center; gap:10px; padding:8px;}
@@ -456,8 +460,14 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   <div class="app-shell">
     <aside class="app-sidebar">
       <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
-      <nav class="side-nav">
-        <a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
+      <nav class="side-nav" id="studentSideNav">
+        <a class="side-link active" data-page="dashboard" onclick="showStudentPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
+        <a class="side-link" data-page="courses" onclick="showStudentPage('courses')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">My Courses</span></a>
+        <a class="side-link" data-page="materials" onclick="showStudentPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
+        <a class="side-link" data-page="exams" onclick="showStudentPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
+        <a class="side-link" data-page="results" onclick="showStudentPage('results')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
+        <a class="side-link" data-page="recordings" onclick="showStudentPage('recordings')"><svg class="icon" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="txt">Recordings</span></a>
+        <a class="side-link" data-page="messages" onclick="showStudentPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--indigo);" id="studentAvatar">--</div><div><div class="u-name" id="studentName">—</div><div class="u-role" id="studentSection">—</div></div></div>
@@ -471,58 +481,78 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div><h1 id="studentGreeting">Good morning</h1><p class="sub" id="studentSubline">Live from the database.</p></div>
         <div class="top-actions"><div class="bell"><div class="dot"></div><svg class="icon" viewBox="0 0 24 24"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div></div>
       </div>
-      <div class="grid-2" style="margin-bottom:20px;">
-        <div class="card"><div class="card-head"><h3>Today's timetable</h3></div><div class="rail" id="studentRail"><p class="empty">Loading…</p></div></div>
-        <div class="stack">
-          <div class="card" style="background:var(--ink); color:#fff;" id="studentLiveCard">
-            <p style="font-family:var(--mono); font-size:11.5px; text-transform:uppercase; color:#B9C2CE;">Live classes</p>
-            <h3 style="color:#fff; font-size:18px; margin-top:8px;" id="studentLiveTitle">Loading…</h3>
-            <p style="color:#B9C2CE; font-size:13px; margin-top:6px;" id="studentLiveNote"></p>
-            <button class="btn" style="background:var(--brand); color:#fff; margin-top:16px; width:100%;" id="studentJoinBtn" disabled>Join next class</button>
-          </div>
-          <div class="card"><div class="card-head"><h3>Attendance this term</h3></div>
-            <div class="ring-wrap"><div class="ring" id="studentRing" style="--pct:0;"><span id="studentPct">—</span></div>
-              <div class="progress-note" id="studentAttNote">Loading attendance…</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="grid-2">
-        <div class="stack">
-          <div class="card"><div class="card-head"><h3>Homework due</h3></div><div id="studentHomework"><p class="empty">Loading…</p></div></div>
-          <div class="card"><div class="card-head"><h3>Recent grades</h3></div><div id="studentGrades"><p class="empty">Loading…</p></div></div>
-          <div class="card"><div class="card-head"><h3>Recorded lessons</h3></div><div id="studentLessons"><p class="empty">Loading…</p></div></div>
-          <div class="card" id="studentExamsCard"><div class="card-head"><h3>Tests & quizzes</h3></div><div id="studentExams"><p class="empty">Loading…</p></div></div>
-        </div>
-        <div class="stack">
-          <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
-          <div class="card"><div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('student')">Group</button></div>
-            <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
-              <div id="msgContacts-student" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
-              <div>
-                <div id="msgThread-student" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
-                <div id="msgToolbar-student"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-student" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'student')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
-              </div>
+
+      <div class="student-page active" data-page="dashboard">
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card"><div class="card-head"><h3>Today's timetable</h3></div><div class="rail" id="studentRail"><p class="empty">Loading…</p></div></div>
+          <div class="stack">
+            <div class="card" style="background:var(--ink); color:#fff;" id="studentLiveCard">
+              <p style="font-family:var(--mono); font-size:11.5px; text-transform:uppercase; color:#B9C2CE;">Live classes</p>
+              <h3 style="color:#fff; font-size:18px; margin-top:8px;" id="studentLiveTitle">Loading…</h3>
+              <p style="color:#B9C2CE; font-size:13px; margin-top:6px;" id="studentLiveNote"></p>
+              <button class="btn" style="background:var(--brand); color:#fff; margin-top:16px; width:100%;" id="studentJoinBtn" disabled>Join next class</button>
+            </div>
+            <div class="card"><div class="card-head"><h3>Attendance this term</h3></div>
+              <div class="ring-wrap"><div class="ring" id="studentRing" style="--pct:0;"><span id="studentPct">—</span></div>
+                <div class="progress-note" id="studentAttNote">Loading attendance…</div></div>
             </div>
           </div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><div class="card-head"><h3>Homework due</h3></div><div id="studentHomework"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Announcements</h3></div><div id="studentAnnouncements"><p class="empty">Loading…</p></div></div>
+        </div>
+      </div>
+
+      <div class="student-page" data-page="courses">
+        <div class="card">
+          <div class="card-head"><h3>My Courses</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px;">
+            <select class="grade-input" style="width:100%;" id="courseSubjectFilter" onchange="loadStudentCourses()"><option value="">All subjects</option></select>
+            <select class="grade-input" style="width:100%;" id="courseCurriculumFilter" onchange="loadStudentCourses()">
+              <option value="">All curricula</option><option>Pakistani SNC</option><option>Cambridge O Level</option><option>Cambridge A Level</option>
+            </select>
+            <select class="grade-input" style="width:100%;" id="courseLevelFilter" onchange="loadStudentCourses()"><option value="">All levels</option></select>
+          </div>
+          <div id="studentCourses"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="student-page" data-page="materials">
+        <div class="card">
+          <div class="card-head"><h3>Study materials library</h3></div>
+          <select class="grade-input" style="width:100%; margin-bottom:14px;" id="matSubjectFilter" onchange="loadStudentMaterials()"><option value="">All subjects</option></select>
+          <div id="studentMaterials"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="student-page" data-page="exams">
+        <div class="card" id="studentExamsCard"><div class="card-head"><h3>Quizzes &amp; Exams</h3></div><div id="studentExams"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="student-page" data-page="results">
+        <div class="stack">
+          <div class="card"><div class="card-head"><h3>Recent grades</h3></div><div id="studentGrades"><p class="empty">Loading…</p></div></div>
           <div class="card"><div class="card-head"><h3>Progress by subject</h3></div><div id="studentProgress"><p class="empty">Loading…</p></div></div>
           <div class="card"><div class="card-head"><h3>Report card</h3></div><div id="reportCardArea"><p class="empty">Loading…</p></div></div>
         </div>
       </div>
-      <div class="card" style="margin-top:20px;">
-        <div class="card-head"><h3>Courses — study at your own pace</h3></div>
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px;">
-          <select class="grade-input" style="width:100%;" id="courseSubjectFilter" onchange="loadStudentCourses()"><option value="">All subjects</option></select>
-          <select class="grade-input" style="width:100%;" id="courseCurriculumFilter" onchange="loadStudentCourses()">
-            <option value="">All curricula</option><option>Pakistani SNC</option><option>Cambridge O Level</option><option>Cambridge A Level</option>
-          </select>
-          <select class="grade-input" style="width:100%;" id="courseLevelFilter" onchange="loadStudentCourses()"><option value="">All levels</option></select>
-        </div>
-        <div id="studentCourses"><p class="empty">Loading…</p></div>
+
+      <div class="student-page" data-page="recordings">
+        <div class="card"><div class="card-head"><h3>Recorded lessons</h3></div><div id="studentLessons"><p class="empty">Loading…</p></div></div>
       </div>
-      <div class="card" style="margin-top:20px;">
-        <div class="card-head"><h3>Study materials library</h3></div>
-        <select class="grade-input" style="width:100%; margin-bottom:14px;" id="matSubjectFilter" onchange="loadStudentMaterials()"><option value="">All subjects</option></select>
-        <div id="studentMaterials"><p class="empty">Loading…</p></div>
+
+      <div class="student-page" data-page="messages">
+        <div class="card">
+          <div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('student')">Group</button></div>
+          <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
+            <div id="msgContacts-student" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
+            <div>
+              <div id="msgThread-student" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
+              <div id="msgToolbar-student"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-student" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'student')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('student')">Send</button></div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -1406,7 +1436,15 @@ function videoEmbedSrc(url){
   return null;
 }
 
+function showStudentPage(page){
+  document.querySelectorAll('#studentSideNav .side-link').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  document.querySelectorAll('.app-main .student-page').forEach(p => p.classList.toggle('active', p.dataset.page === page));
+  const main = document.querySelector('[data-screen="student"] .app-main');
+  if (main) main.scrollTop = 0;
+}
+
 async function loadStudentDashboard(){
+  showStudentPage('dashboard');
   const p = currentUser.profile || {};
   document.getElementById('studentAvatar').textContent = initials(p.first_name, p.last_name);
   document.getElementById('studentName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
