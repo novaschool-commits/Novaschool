@@ -164,9 +164,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .bar-track{flex:1; height:9px; background:var(--paper-alt); border-radius:6px; overflow:hidden;} .bar-fill{height:100%; border-radius:6px; background:var(--indigo);}
 .bar-row .b-val{width:34px; text-align:right; font-family:var(--mono); font-size:11.5px; color:var(--ink-soft); flex-shrink:0;}
 .progress-note{font-size:13px; color:var(--ink-soft); line-height:1.5;} .empty{text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13.5px;}
-.table-simple{width:100%; border-collapse:collapse; table-layout:fixed;}
-.table-simple th{text-align:left; font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--ink-soft); padding:8px 10px; border-bottom:1px solid var(--line); overflow-wrap:break-word;}
-.table-simple td{padding:11px 10px; border-bottom:1px solid var(--paper-alt); font-size:13.5px; overflow-wrap:break-word; word-break:break-word;} .table-simple tr:last-child td{border-bottom:none;}
+.table-simple{width:100%; border-collapse:collapse;}
+.table-simple th{text-align:left; font-family:var(--mono); font-size:11px; text-transform:uppercase; color:var(--ink-soft); padding:8px 10px; border-bottom:1px solid var(--line); white-space:nowrap;}
+.table-simple td{padding:11px 10px; border-bottom:1px solid var(--paper-alt); font-size:13.5px; white-space:nowrap;} .table-simple tr:last-child td{border-bottom:none;}
+.table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
 .toast{position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0; background:var(--ink); color:#fff; padding:13px 20px; border-radius:12px; font-size:13.5px; font-weight:500; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:200; transition:all .25s ease; pointer-events:none; max-width:340px;}
 .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 .child-switch{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px;} .child-pill{padding:8px 16px; border-radius:999px; border:1.5px solid var(--line); font-size:13.5px; font-weight:600; color:var(--ink-soft); display:flex; align-items:center; gap:8px;}
@@ -221,6 +222,20 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   .wrap{padding:0 30px;}
   .msg-grid{grid-template-columns:1fr !important;}
   .msg-grid > div:first-child{border-right:none !important; border-bottom:1px solid var(--paper-alt); padding-right:0 !important; padding-bottom:8px; margin-bottom:8px; max-height:120px !important;}
+}
+/* Print: scope window.print() to just the report card, not the whole
+   page it's embedded in — otherwise every other dashboard card prints
+   too, splitting awkwardly across pages. */
+@media print {
+  body *{ visibility:hidden; }
+  #reportCardArea, #reportCardArea *{ visibility:visible; }
+  #reportCardArea{ position:absolute; left:0; top:0; width:100%; margin:0; padding:0; }
+  #reportCardArea button{ display:none; }
+  #reportCardArea table, #reportCardArea .bar-row{ page-break-inside:avoid; }
+  /* On-screen tables scroll horizontally (nowrap) so text stays full-size;
+     a printed page can't be scrolled, so let cells wrap there instead. */
+  #reportCardArea .table-simple th, #reportCardArea .table-simple td{ white-space:normal; }
+  #reportCardArea .table-scroll{ overflow-x:visible; }
 }
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -587,7 +602,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
       <div class="grid-2">
         <div class="stack"><div class="card"><div class="card-head"><h3>Recent grades</h3></div>
-          <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div>
+          <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div></div>
         <div class="stack">
           <div class="card"><div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('parent')">Group</button></div>
             <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
@@ -808,7 +823,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <select class="grade-input" style="width:100%; grid-column:1 / -1;" id="newSectionTeacher"><option value="">Class teacher (optional)</option></select>
         </div>
         <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="createSection()">Create section</button>
-        <table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Curriculum</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table>
+        <div class="table-scroll"><table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Curriculum</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table></div>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -1575,7 +1590,7 @@ async function loadReportCard(){
             <p style="font-weight:700; font-size:15px;">${escapeHtml(d.student.name)}</p>
             <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">${escapeHtml(d.student.grade)} · Section ${escapeHtml(d.student.section)} · ${escapeHtml(d.student.admissionNo)}</p>
             <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">Attendance: ${d.attendancePct !== null ? d.attendancePct + '%' : 'Not yet recorded'}</p>
-            <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>
+            <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table></div>
             ${subjectChart}
             ${historyChart}
           </div>
@@ -1587,7 +1602,7 @@ async function loadReportCard(){
         <div style="padding:12px 14px; background:var(--paper-alt); border-radius:10px; margin-bottom:14px; font-size:12.5px; color:var(--ink-soft);">
           This grade's official results are issued ${boardNote} — not by Novaschool.pk directly. What's below is an internal progress summary for reference only, not an official transcript.
         </div>
-        <table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table>
+        <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table></div>
         ${subjectChart}
         ${historyChart}`;
     }
