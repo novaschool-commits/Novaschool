@@ -76,7 +76,13 @@ function attachWhiteboardWS(server) {
         room.allowStudentDraw = access.wb.allow_student_draw;
 
         const pages = await all('SELECT id, position, snapshot FROM whiteboard_pages WHERE whiteboard_id = $1 ORDER BY position', [msg.whiteboardId]);
-        if (!room.currentPageId && pages.length) room.currentPageId = pages[0].id;
+        if (!room.currentPageId && pages.length) {
+          // Resume exactly where the class left off, not just page 1 —
+          // access.wb.current_page_id survives even when the in-memory
+          // room was freed (everyone disconnected) and rebuilt fresh.
+          const resumeId = access.wb.current_page_id;
+          room.currentPageId = (resumeId && pages.some(p => p.id === resumeId)) ? resumeId : pages[0].id;
+        }
         const currentPage = pages.find(p => p.id === room.currentPageId);
 
         ws.send(JSON.stringify({
@@ -111,11 +117,13 @@ function attachWhiteboardWS(server) {
         const maxPos = await get('SELECT COALESCE(MAX(position), -1) AS m FROM whiteboard_pages WHERE whiteboard_id = $1', [joined.whiteboardId]);
         const newPage = await get('INSERT INTO whiteboard_pages (whiteboard_id, position) VALUES ($1,$2) RETURNING id, position', [joined.whiteboardId, Number(maxPos.m) + 1]);
         room.currentPageId = newPage.id;
+        await run('UPDATE whiteboards SET current_page_id = $1 WHERE id = $2', [newPage.id, joined.whiteboardId]);
         broadcast(joined.whiteboardId, { type: 'pageAdded', pageId: newPage.id, position: newPage.position }, null);
       } else if (msg.type === 'switchPage' && joined.isTeacher) {
         const page = await get('SELECT id, snapshot FROM whiteboard_pages WHERE id = $1 AND whiteboard_id = $2', [msg.pageId, joined.whiteboardId]);
         if (!page) return;
         room.currentPageId = page.id;
+        await run('UPDATE whiteboards SET current_page_id = $1 WHERE id = $2', [page.id, joined.whiteboardId]);
         broadcast(joined.whiteboardId, { type: 'pageSwitched', pageId: page.id, snapshot: page.snapshot || null }, null);
       } else if (msg.type === 'toggleStudentDraw' && joined.isTeacher) {
         room.allowStudentDraw = !!msg.allow;

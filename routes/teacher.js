@@ -668,7 +668,8 @@ router.post('/whiteboard/start', asyncHandler(async (req, res) => {
     'INSERT INTO whiteboards (class_session_id, teacher_id, section_code, subject) VALUES ($1,$2,$3,$4) RETURNING id',
     [class_session_id, teacher.id, session.section_code, subject || null]
   );
-  await run('INSERT INTO whiteboard_pages (whiteboard_id, position) VALUES ($1, 0)', [wb.id]);
+  const firstPage = await get('INSERT INTO whiteboard_pages (whiteboard_id, position) VALUES ($1, 0) RETURNING id', [wb.id]);
+  await run('UPDATE whiteboards SET current_page_id = $1 WHERE id = $2', [firstPage.id, wb.id]);
   res.status(201).json({ message: 'Whiteboard ready.', whiteboardId: wb.id });
 }));
 

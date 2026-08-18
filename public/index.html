@@ -1783,7 +1783,7 @@ function openClassroom(whiteboardId, title, isTeacher){
     tool: 'pen', color: CLASSROOM_COLORS[0], size: CLASSROOM_SIZES[1],
     allowStudentDraw: false, pages: [], currentPageId: null,
     drawing: false, startX: 0, startY: 0, snapshot: null, history: [],
-    snapshotTimer: null, reconnectAttempts: 0
+    snapshotTimer: null, reconnectAttempts: 0, chatPollTimer: null
   };
 
   document.getElementById('classroomTitle').textContent = title || 'Whiteboard';
@@ -1797,12 +1797,22 @@ function openClassroom(whiteboardId, title, isTeacher){
   connectClassroomWS();
 
   window.addEventListener('resize', resizeClassroomCanvas);
+  // The chat panel is the existing REST-based messaging system, which has
+  // no push mechanism — poll the open thread while in the classroom so
+  // a second/third message actually shows up without a manual refresh.
+  classroomState.chatPollTimer = setInterval(() => {
+    const state = ensureChatState('classroom');
+    if (state.partnerId && !document.getElementById('classroomChatPanel').classList.contains('collapsed')) {
+      openChatThread('classroom', state.partnerId);
+    }
+  }, 4000);
 }
 
 function closeClassroom(endClassToo){
   if (classroomState) {
     if (classroomState.isTeacher) sendClassroomSnapshot(); // final save before leaving
     if (classroomState.snapshotTimer) clearInterval(classroomState.snapshotTimer);
+    if (classroomState.chatPollTimer) clearInterval(classroomState.chatPollTimer);
     if (classroomState.ws) classroomState.ws.close();
   }
   document.getElementById('classroomBackdrop').classList.remove('open');

@@ -482,3 +482,7 @@ CREATE TABLE IF NOT EXISTS whiteboard_pages (
   snapshot TEXT,
   updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Tracks which page the class was last on, so a refresh/reconnect resumes
+-- exactly where the teacher left off instead of defaulting back to page 1.
+ALTER TABLE whiteboards ADD COLUMN IF NOT EXISTS current_page_id INTEGER REFERENCES whiteboard_pages(id);
