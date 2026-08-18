@@ -2,10 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const http = require('http');
 
 const { pool, migrate } = require('./db');
 const { seed } = require('./db/seed');
 const { seedPermissions } = require('./db/seed-permissions');
+const { attachWhiteboardWS } = require('./ws/whiteboard');
 
 const app = express();
 app.use(cors());
@@ -56,8 +58,12 @@ async function start() {
     await seed({ force: false });
   }
 
-  app.listen(PORT, () => {
+  const server = http.createServer(app);
+  attachWhiteboardWS(server);
+
+  server.listen(PORT, () => {
     console.log(`\nNova School server running at http://localhost:${PORT}\n`);
+    console.log('Whiteboard WebSocket listening at /ws/whiteboard\n');
   });
 }
 

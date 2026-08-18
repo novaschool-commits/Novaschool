@@ -442,3 +442,43 @@ CREATE TABLE IF NOT EXISTS academic_levels (
   position INTEGER DEFAULT 0,
   UNIQUE(curriculum_id, name)
 );
+
+-- ============================================================
+-- Assignment detail & real submissions (instructions, attachments,
+-- teacher feedback). Additive only — existing columns/behavior untouched.
+-- ============================================================
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS body_text TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS file_base64 TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS file_name TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS file_mime TEXT;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS feedback TEXT;
+
+-- ============================================================
+-- Virtual classroom whiteboard. Attaches to the existing
+-- class_sessions table (already the "live session" concept —
+-- teacher_id/section_code/started_at/ended_at). Persistence is
+-- PNG snapshots per page, not per-stroke rows: live strokes travel
+-- over WebSocket only and are never written to the database — only
+-- a periodic/debounced full-page snapshot is saved, keeping DB load
+-- light regardless of how much a teacher draws.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS whiteboards (
+  id SERIAL PRIMARY KEY,
+  class_session_id INTEGER REFERENCES class_sessions(id),
+  teacher_id INTEGER REFERENCES teachers(id),
+  section_code TEXT REFERENCES sections(section_code),
+  subject TEXT,
+  status TEXT NOT NULL DEFAULT 'live' CHECK(status IN ('live','saved','archived')),
+  allow_student_draw BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS whiteboard_pages (
+  id SERIAL PRIMARY KEY,
+  whiteboard_id INTEGER REFERENCES whiteboards(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL DEFAULT 0,
+  snapshot TEXT,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);

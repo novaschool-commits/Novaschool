@@ -71,6 +71,43 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
   });
 }));
 
+router.get('/assignments', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const rows = await all(
+    `SELECT a.id, a.title, a.subject, a.section_code, a.due_date, a.max_marks,
+            COUNT(s.id) FILTER (WHERE s.status = 'submitted') AS pending_count,
+            COUNT(s.id) FILTER (WHERE s.status = 'graded') AS graded_count
+     FROM assignments a LEFT JOIN submissions s ON s.assignment_id = a.id
+     WHERE a.teacher_id = $1 GROUP BY a.id ORDER BY a.due_date DESC NULLS LAST`,
+    [teacher.id]
+  );
+  res.json({ assignments: rows.map(r => ({
+    id: r.id, title: r.title, subject: r.subject, sectionCode: r.section_code,
+    dueDate: r.due_date, maxMarks: r.max_marks,
+    pendingCount: Number(r.pending_count), gradedCount: Number(r.graded_count)
+  })) });
+}));
+
+router.post('/assignments', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { title, subject, section_code, due_date, max_marks, description } = req.body || {};
+  if (!title || !subject || !section_code) {
+    return res.status(400).json({ error: 'title, subject, and section_code are required.' });
+  }
+  const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
+  if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist.` });
+
+  const r = await run(
+    'INSERT INTO assignments (title, subject, section_code, teacher_id, due_date, max_marks, description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
+    [title, subject, section_code, teacher.id, due_date || null, Number(max_marks) || 100, description || null]
+  );
+  res.status(201).json({ message: 'Assignment created.', assignmentId: r.rows[0].id });
+}));
+
 router.get('/assignments/:id/submissions', asyncHandler(async (req, res) => {
   const teacher = await getTeacher(req);
   if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
@@ -80,7 +117,7 @@ router.get('/assignments/:id/submissions', asyncHandler(async (req, res) => {
   if (!assignment) return res.status(404).json({ error: 'Assignment not found.' });
 
   const submissions = await all(
-    `SELECT s.id, s.status, s.marks, st.first_name, st.last_name
+    `SELECT s.id, s.status, s.marks, s.body_text, s.file_name, s.feedback, s.submitted_at, st.first_name, st.last_name
      FROM submissions s JOIN students st ON st.id = s.student_id
      WHERE s.assignment_id = $1 AND s.status = 'submitted'
      ORDER BY st.last_name`,
@@ -90,12 +127,26 @@ router.get('/assignments/:id/submissions', asyncHandler(async (req, res) => {
   res.json({ assignment: { id: assignment.id, title: assignment.title, maxMarks: assignment.max_marks }, submissions });
 }));
 
+router.get('/submissions/:id/file', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const submission = await get(
+    `SELECT s.file_base64, s.file_name, s.file_mime, a.teacher_id FROM submissions s
+     JOIN assignments a ON a.id = s.assignment_id WHERE s.id = $1`,
+    [Number(req.params.id)]
+  );
+  if (!submission || submission.teacher_id !== teacher.id) return res.status(404).json({ error: 'Submission not found for your assignments.' });
+  if (!submission.file_base64) return res.status(404).json({ error: 'No file on this submission.' });
+  res.json({ fileBase64: submission.file_base64, fileName: submission.file_name, fileMime: submission.file_mime });
+}));
+
 router.post('/submissions/:id/grade', asyncHandler(async (req, res) => {
   const teacher = await getTeacher(req);
   if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
 
   const submissionId = Number(req.params.id);
-  const { marks } = req.body || {};
+  const { marks, feedback } = req.body || {};
 
   const submission = await get(
     `SELECT s.*, a.teacher_id, a.max_marks, a.subject, a.title FROM submissions s
@@ -110,7 +161,7 @@ router.post('/submissions/:id/grade', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: `Marks must be between 0 and ${submission.max_marks}.` });
   }
 
-  await run("UPDATE submissions SET marks = $1, status = 'graded' WHERE id = $2", [marks, submissionId]);
+  await run("UPDATE submissions SET marks = $1, status = 'graded', feedback = $2 WHERE id = $3", [marks, feedback || null, submissionId]);
 
   await run(
     'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1, $2, $3, $4)',
@@ -577,10 +628,10 @@ router.post('/live-session/start', asyncHandler(async (req, res) => {
   if (!section_code) return res.status(400).json({ error: 'section_code is required.' });
 
   const existing = await get('SELECT id FROM class_sessions WHERE teacher_id = $1 AND section_code = $2 AND ended_at IS NULL', [teacher.id, section_code]);
-  if (existing) return res.status(409).json({ error: 'A live session for this section is already running.' });
+  if (existing) return res.status(409).json({ error: 'A live session for this section is already running.', sessionId: existing.id });
 
-  await run('INSERT INTO class_sessions (teacher_id, section_code, is_locked) VALUES ($1,$2,TRUE)', [teacher.id, section_code]);
-  res.status(201).json({ message: `Live class started for ${section_code} — student chat is locked until you end it.` });
+  const session = await get('INSERT INTO class_sessions (teacher_id, section_code, is_locked) VALUES ($1,$2,TRUE) RETURNING id', [teacher.id, section_code]);
+  res.status(201).json({ message: `Live class started for ${section_code} — student chat is locked until you end it.`, sessionId: session.id });
 }));
 
 router.post('/live-session/end', asyncHandler(async (req, res) => {
@@ -592,7 +643,65 @@ router.post('/live-session/end', asyncHandler(async (req, res) => {
   if (!existing) return res.status(404).json({ error: 'No live session is running for this section.' });
 
   await run('UPDATE class_sessions SET ended_at = $1, is_locked = FALSE WHERE id = $2', [new Date().toISOString(), existing.id]);
+  // Whatever whiteboard was attached to this session is now available for review.
+  await run("UPDATE whiteboards SET status = 'saved', updated_at = CURRENT_TIMESTAMP WHERE class_session_id = $1 AND status = 'live'", [existing.id]);
   res.json({ message: `Live class ended for ${section_code} — student chat is unlocked.` });
+}));
+
+// ---------- Virtual classroom whiteboard (teacher side) ----------
+
+router.post('/whiteboard/start', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const { class_session_id, subject } = req.body || {};
+  if (!class_session_id) return res.status(400).json({ error: 'class_session_id is required.' });
+
+  const session = await get('SELECT * FROM class_sessions WHERE id = $1 AND teacher_id = $2', [class_session_id, teacher.id]);
+  if (!session) return res.status(404).json({ error: 'Live session not found.' });
+  if (session.ended_at) return res.status(400).json({ error: 'That live session has already ended.' });
+
+  const existing = await get('SELECT id FROM whiteboards WHERE class_session_id = $1', [class_session_id]);
+  if (existing) return res.json({ message: 'Resuming existing whiteboard.', whiteboardId: existing.id });
+
+  const wb = await get(
+    'INSERT INTO whiteboards (class_session_id, teacher_id, section_code, subject) VALUES ($1,$2,$3,$4) RETURNING id',
+    [class_session_id, teacher.id, session.section_code, subject || null]
+  );
+  await run('INSERT INTO whiteboard_pages (whiteboard_id, position) VALUES ($1, 0)', [wb.id]);
+  res.status(201).json({ message: 'Whiteboard ready.', whiteboardId: wb.id });
+}));
+
+router.get('/whiteboards', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const rows = await all(
+    `SELECT id, section_code, subject, status, created_at, updated_at FROM whiteboards WHERE teacher_id = $1 ORDER BY created_at DESC LIMIT 50`,
+    [teacher.id]
+  );
+  res.json({ whiteboards: rows });
+}));
+
+router.get('/whiteboard/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const wb = await get('SELECT * FROM whiteboards WHERE id = $1 AND teacher_id = $2', [Number(req.params.id), teacher.id]);
+  if (!wb) return res.status(404).json({ error: 'Whiteboard not found.' });
+  const pages = await all('SELECT id, position, snapshot FROM whiteboard_pages WHERE whiteboard_id = $1 ORDER BY position', [wb.id]);
+  res.json({ whiteboard: wb, pages });
+}));
+
+router.delete('/whiteboard/:id', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const wb = await get('SELECT * FROM whiteboards WHERE id = $1 AND teacher_id = $2', [Number(req.params.id), teacher.id]);
+  if (!wb) return res.status(404).json({ error: 'Whiteboard not found.' });
+
+  await run("UPDATE whiteboards SET status = 'archived' WHERE id = $1", [wb.id]);
+  res.json({ message: 'Whiteboard archived.' });
 }));
 
 router.get('/live-sessions', asyncHandler(async (req, res) => {

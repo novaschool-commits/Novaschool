@@ -38,6 +38,24 @@ p{margin:0;} a{color:inherit; text-decoration:none;} button{font-family:inherit;
 .btn-outline{background:transparent; border-color:var(--line); color:var(--ink);} .btn-outline:hover{border-color:var(--ink);}
 .chat-cat-tab.active{background:var(--brand); border-color:var(--brand); color:#fff;}
 .draw-modal-backdrop{display:none; position:fixed; inset:0; background:rgba(3,46,32,.6); z-index:200; align-items:center; justify-content:center; padding:14px;}
+.classroom-backdrop{display:none; position:fixed; inset:0; background:var(--paper); z-index:300; flex-direction:column;}
+.classroom-backdrop.open{display:flex;}
+.classroom-topbar{display:flex; align-items:center; justify-content:space-between; padding:10px 16px; background:var(--ink); color:#fff; flex-shrink:0;}
+.classroom-topbar .cb-status{font-family:var(--mono); font-size:11px; color:#B9C2CE;}
+.classroom-body{flex:1; display:flex; min-height:0;}
+.classroom-toolrail{width:52px; background:var(--ink); display:flex; flex-direction:column; align-items:center; gap:4px; padding:10px 6px; flex-shrink:0; overflow-y:auto;}
+.classroom-tool-btn{width:36px; height:36px; border-radius:9px; border:none; background:transparent; color:#B9C2CE; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+.classroom-tool-btn.active{background:var(--gold-deep); color:#fff;}
+.classroom-tool-btn .icon{width:18px; height:18px;}
+.classroom-canvas-wrap{flex:1; display:flex; flex-direction:column; min-width:0; background:#f4f3ee;}
+.classroom-canvas-area{flex:1; position:relative; overflow:hidden;}
+#classroomCanvas{position:absolute; inset:0; width:100%; height:100%; touch-action:none; background:#fff;}
+.classroom-pages{display:flex; align-items:center; gap:6px; padding:8px 12px; background:var(--card); border-top:1px solid var(--line); overflow-x:auto; flex-shrink:0;}
+.classroom-page-tab{padding:5px 12px; border-radius:7px; font-size:12px; font-weight:600; background:var(--paper-alt); color:var(--ink-soft); cursor:pointer; flex-shrink:0; border:none;}
+.classroom-page-tab.active{background:var(--brand); color:#fff;}
+.classroom-chat-panel{width:280px; flex-shrink:0; border-left:1px solid var(--line); background:var(--card); display:flex; flex-direction:column;}
+.classroom-chat-panel.collapsed{display:none;}
+@media (max-width: 820px){ .classroom-chat-panel{position:fixed; right:0; top:52px; bottom:0; width:88vw; max-width:340px; z-index:10; box-shadow:-4px 0 16px rgba(0,0,0,.15);} }
 .draw-modal-backdrop.open{display:flex;}
 .draw-modal{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; width:100%; max-width:420px; max-height:92vh; overflow-y:auto;}
 .draw-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; align-items:center;}
@@ -504,6 +522,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link active" data-page="dashboard" onclick="showStudentPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
         <a class="side-link" data-page="courses" onclick="showStudentPage('courses')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">My Courses</span></a>
         <a class="side-link" data-page="materials" onclick="showStudentPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
+        <a class="side-link" data-page="assignments" onclick="showStudentPage('assignments')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h1"/><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg><span class="txt">Assignments</span></a>
         <a class="side-link" data-page="exams" onclick="showStudentPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
         <a class="side-link" data-page="results" onclick="showStudentPage('results')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
         <a class="side-link" data-page="recordings" onclick="showStudentPage('recordings')"><svg class="icon" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="txt">Recordings</span></a>
@@ -531,6 +550,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
               <h3 style="color:#fff; font-size:18px; margin-top:8px;" id="studentLiveTitle">Loading…</h3>
               <p style="color:#B9C2CE; font-size:13px; margin-top:6px;" id="studentLiveNote"></p>
               <button class="btn" style="background:var(--brand); color:#fff; margin-top:16px; width:100%;" id="studentJoinBtn" disabled>Join next class</button>
+              <button class="btn btn-premium" style="margin-top:8px; width:100%; display:none;" id="studentClassroomBtn">🖍 Join live whiteboard classroom</button>
             </div>
             <div class="card"><div class="card-head"><h3>Attendance this term</h3></div>
               <div class="ring-wrap"><div class="ring" id="studentRing" style="--pct:0;"><span id="studentPct">—</span></div>
@@ -563,6 +583,19 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <div class="card-head"><h3>Study materials library</h3></div>
           <select class="grade-input" style="width:100%; margin-bottom:14px;" id="matSubjectFilter" onchange="loadStudentMaterials()"><option value="">All subjects</option></select>
           <div id="studentMaterials"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="student-page" data-page="assignments">
+        <div class="card">
+          <div class="card-head"><h3>Assignments</h3></div>
+          <div style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin-bottom:16px;">
+            <select class="grade-input" style="width:100%;" id="assignSubjectFilter" onchange="loadStudentAssignments()"><option value="">All subjects</option></select>
+            <select class="grade-input" style="width:100%;" id="assignStatusFilter" onchange="loadStudentAssignments()">
+              <option value="">All statuses</option><option value="pending">Pending</option><option value="submitted">Submitted</option><option value="graded">Graded</option><option value="overdue">Overdue</option>
+            </select>
+          </div>
+          <div id="studentAssignments"><p class="empty">Loading…</p></div>
         </div>
       </div>
 
@@ -1053,7 +1086,11 @@ async function api(path, opts = {}) {
     logout();
     throw new Error('Your session expired — please log in again.');
   }
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err = new Error(data.error || `Request failed (${res.status})`);
+    Object.assign(err, data); // preserve any extra fields (e.g. sessionId) alongside .message
+    throw err;
+  }
   return data;
 }
 
@@ -1345,6 +1382,7 @@ async function loadMessageContacts(scope){
     });
 
     const container = document.getElementById(`msgContacts-${scope}`);
+    if (!container) return; // some scopes (e.g. the classroom chat panel) have a single fixed contact, no list to render
     container.innerHTML = merged.length
       ? merged.map(c => state.groupMode
         ? `<label style="display:flex; align-items:center; gap:6px; padding:6px; border-radius:8px; cursor:pointer;">
@@ -1718,6 +1756,351 @@ async function sendDrawing(){
   } catch (err) { toast(err.message); }
 }
 
+/* ============================== Virtual classroom whiteboard ============================== */
+
+const CLASSROOM_TOOL_ICONS = {
+  pen:        '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  highlighter:'<path d="M4 20h4l10-10-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>',
+  eraser:     '<path d="M20 20H9L4 15a1.5 1.5 0 0 1 0-2.1L13.4 3.5a1.5 1.5 0 0 1 2.1 0l5 5a1.5 1.5 0 0 1 0 2.1L12 19"/>',
+  line:       '<path d="M4 20L20 4"/>',
+  rect:       '<rect x="4" y="6" width="16" height="12" rx="1"/>',
+  circle:     '<circle cx="12" cy="12" r="8"/>',
+  arrow:      '<path d="M5 19L19 5"/><path d="M9 5h10v10"/>'
+};
+const CLASSROOM_COLORS = ['#032E20','#B94A48','#356B80','#A87824','#000000'];
+const CLASSROOM_SIZES = [2, 4, 8];
+
+let classroomState = null; // set fresh each time openClassroom() runs
+
+function wsBaseUrl(){
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${proto}//${location.host}/ws/whiteboard`;
+}
+
+function openClassroom(whiteboardId, title, isTeacher){
+  classroomState = {
+    whiteboardId, isTeacher, ws: null,
+    tool: 'pen', color: CLASSROOM_COLORS[0], size: CLASSROOM_SIZES[1],
+    allowStudentDraw: false, pages: [], currentPageId: null,
+    drawing: false, startX: 0, startY: 0, snapshot: null, history: [],
+    snapshotTimer: null, reconnectAttempts: 0
+  };
+
+  document.getElementById('classroomTitle').textContent = title || 'Whiteboard';
+  document.getElementById('classroomStatus').textContent = 'Connecting…';
+  document.getElementById('classroomStudentDrawToggle').style.display = isTeacher ? 'inline-flex' : 'none';
+  document.getElementById('classroomBackdrop').classList.add('open');
+
+  buildClassroomToolrail();
+  setupClassroomCanvas();
+  connectClassroomWS();
+
+  window.addEventListener('resize', resizeClassroomCanvas);
+}
+
+function closeClassroom(endClassToo){
+  if (classroomState) {
+    if (classroomState.isTeacher) sendClassroomSnapshot(); // final save before leaving
+    if (classroomState.snapshotTimer) clearInterval(classroomState.snapshotTimer);
+    if (classroomState.ws) classroomState.ws.close();
+  }
+  document.getElementById('classroomBackdrop').classList.remove('open');
+  window.removeEventListener('resize', resizeClassroomCanvas);
+
+  if (endClassToo && classroomState && classroomState.isTeacher && classroomState.onEnd) {
+    classroomState.onEnd();
+  }
+  classroomState = null;
+}
+
+function buildClassroomToolrail(){
+  const rail = document.getElementById('classroomToolrail');
+  const canDraw = classroomState.isTeacher || classroomState.allowStudentDraw;
+  if (!canDraw) { rail.innerHTML = '<p style="color:#B9C2CE; font-size:10px; text-align:center; padding:8px 2px;">View only</p>'; return; }
+
+  let html = Object.keys(CLASSROOM_TOOL_ICONS).map(t =>
+    `<button type="button" class="classroom-tool-btn ${t==='pen'?'active':''}" data-tool="${t}" onclick="setClassroomTool('${t}')" title="${t}">
+      <svg class="icon" viewBox="0 0 24 24">${CLASSROOM_TOOL_ICONS[t]}</svg></button>`
+  ).join('');
+  html += `<div style="height:1px; background:rgba(255,255,255,.15); width:70%; margin:4px 0;"></div>`;
+  html += CLASSROOM_COLORS.map((c,i) => `<button type="button" class="classroom-tool-btn ${i===0?'active':''}" data-color="${c}" style="padding:8px;" onclick="setClassroomColor('${c}')" title="${c}"><span style="display:block; width:16px; height:16px; border-radius:50%; background:${c};"></span></button>`).join('');
+  html += `<div style="height:1px; background:rgba(255,255,255,.15); width:70%; margin:4px 0;"></div>`;
+  html += CLASSROOM_SIZES.map((s,i) => `<button type="button" class="classroom-tool-btn ${i===1?'active':''}" data-size="${s}" onclick="setClassroomSize(${s})"><span style="display:block; width:${s+3}px; height:${s+3}px; border-radius:50%; background:currentColor;"></span></button>`).join('');
+  if (classroomState.isTeacher) {
+    html += `<div style="height:1px; background:rgba(255,255,255,.15); width:70%; margin:4px 0;"></div>
+      <button type="button" class="classroom-tool-btn" onclick="classroomUndo()" title="Undo"><svg class="icon" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg></button>
+      <button type="button" class="classroom-tool-btn" onclick="classroomClearConfirm()" title="Clear page"><svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg></button>`;
+  }
+  rail.innerHTML = html;
+}
+
+function setClassroomTool(tool){ classroomState.tool = tool; document.querySelectorAll('.classroom-tool-btn[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === tool)); }
+function setClassroomColor(color){ classroomState.color = color; document.querySelectorAll('.classroom-tool-btn[data-color]').forEach(b => b.classList.toggle('active', b.dataset.color === color)); }
+function setClassroomSize(size){ classroomState.size = size; document.querySelectorAll('.classroom-tool-btn[data-size]').forEach(b => b.classList.toggle('active', Number(b.dataset.size) === size)); }
+
+function setupClassroomCanvas(){
+  resizeClassroomCanvas();
+  const canvas = document.getElementById('classroomCanvas');
+  canvas.onpointerdown = classroomPointerDown;
+  canvas.onpointermove = classroomPointerMove;
+  canvas.onpointerup = classroomPointerUp;
+  canvas.onpointerleave = classroomPointerUp;
+}
+
+function resizeClassroomCanvas(){
+  const canvas = document.getElementById('classroomCanvas');
+  const area = canvas.parentElement;
+  const prev = canvas.width ? canvas.toDataURL() : null;
+  canvas.width = area.clientWidth;
+  canvas.height = area.clientHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (prev) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height); img.src = prev; }
+}
+
+function classroomCanvasPoint(evt){
+  const canvas = document.getElementById('classroomCanvas');
+  const rect = canvas.getBoundingClientRect();
+  return { x: (evt.clientX - rect.left) * (canvas.width / rect.width), y: (evt.clientY - rect.top) * (canvas.height / rect.height) };
+}
+
+function classroomCanDraw(){ return classroomState && (classroomState.isTeacher || classroomState.allowStudentDraw); }
+
+function pushClassroomHistory(){
+  const canvas = document.getElementById('classroomCanvas');
+  classroomState.history.push(canvas.toDataURL());
+  if (classroomState.history.length > 15) classroomState.history.shift();
+}
+
+function classroomPointerDown(evt){
+  if (!classroomCanDraw()) return;
+  evt.preventDefault();
+  pushClassroomHistory();
+  const p = classroomCanvasPoint(evt);
+  classroomState.drawing = true;
+  classroomState.startX = p.x; classroomState.startY = p.y;
+  const ctx = document.getElementById('classroomCanvas').getContext('2d');
+  ctx.strokeStyle = classroomState.tool === 'eraser' ? '#ffffff' : classroomState.color;
+  ctx.globalAlpha = classroomState.tool === 'highlighter' ? 0.35 : 1;
+  ctx.lineWidth = classroomState.tool === 'eraser' ? classroomState.size * 4 : (classroomState.tool === 'highlighter' ? classroomState.size * 5 : classroomState.size);
+  if (classroomState.tool === 'pen' || classroomState.tool === 'eraser' || classroomState.tool === 'highlighter') {
+    ctx.beginPath(); ctx.moveTo(p.x, p.y);
+  } else {
+    classroomState.snapshot = new Image();
+    classroomState.snapshot.src = document.getElementById('classroomCanvas').toDataURL();
+  }
+}
+
+function classroomPointerMove(evt){
+  if (!classroomState || !classroomState.drawing) return;
+  evt.preventDefault();
+  const p = classroomCanvasPoint(evt);
+  const canvas = document.getElementById('classroomCanvas');
+  const ctx = canvas.getContext('2d');
+
+  if (classroomState.tool === 'pen' || classroomState.tool === 'eraser' || classroomState.tool === 'highlighter') {
+    ctx.lineTo(p.x, p.y); ctx.stroke();
+    sendClassroomStroke(classroomState.tool, classroomState.color, ctx.lineWidth, [{x: classroomState.startX, y: classroomState.startY}, p]);
+    classroomState.startX = p.x; classroomState.startY = p.y;
+    return;
+  }
+
+  if (!classroomState.snapshot || !classroomState.snapshot.complete) return;
+  ctx.globalAlpha = 1;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(classroomState.snapshot, 0, 0);
+  ctx.strokeStyle = classroomState.color; ctx.lineWidth = classroomState.size;
+  drawClassroomShape(ctx, classroomState.tool, classroomState.startX, classroomState.startY, p.x, p.y);
+}
+
+function classroomPointerUp(evt){
+  if (!classroomState || !classroomState.drawing) return;
+  classroomState.drawing = false;
+  const isShape = ['line','rect','circle','arrow'].includes(classroomState.tool);
+  if (isShape && evt) {
+    const p = classroomCanvasPoint(evt);
+    sendClassroomStroke(classroomState.tool, classroomState.color, classroomState.size, [{x: classroomState.startX, y: classroomState.startY}, p]);
+  }
+  classroomState.snapshot = null;
+}
+
+function drawClassroomShape(ctx, tool, x0, y0, x1, y1){
+  ctx.beginPath();
+  if (tool === 'line') { ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); }
+  else if (tool === 'rect') { ctx.strokeRect(x0, y0, x1 - x0, y1 - y0); return; }
+  else if (tool === 'circle') { const r = Math.hypot(x1 - x0, y1 - y0); ctx.arc(x0, y0, r, 0, Math.PI * 2); }
+  else if (tool === 'arrow') {
+    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1);
+    const angle = Math.atan2(y1 - y0, x1 - x0);
+    ctx.lineTo(x1 - 10 * Math.cos(angle - Math.PI/6), y1 - 10 * Math.sin(angle - Math.PI/6));
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - 10 * Math.cos(angle + Math.PI/6), y1 - 10 * Math.sin(angle + Math.PI/6));
+  }
+  ctx.stroke();
+}
+
+function classroomUndo(){
+  if (!classroomState.history.length) return;
+  const last = classroomState.history.pop();
+  const canvas = document.getElementById('classroomCanvas');
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+  img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.drawImage(img, 0, 0); sendClassroomFullSync(); };
+  img.src = last;
+}
+
+function classroomClearConfirm(){
+  if (!confirm('Clear this page? This cannot be undone.')) return;
+  pushClassroomHistory();
+  const canvas = document.getElementById('classroomCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  wsSend({ type: 'clear' });
+}
+
+// After undo (which can't be cleanly expressed as a single stroke to
+// replay), just re-broadcast the whole page as a fresh snapshot so
+// everyone's view corrects immediately.
+function sendClassroomFullSync(){
+  sendClassroomSnapshot();
+  wsSend({ type: 'clear' });
+  const canvas = document.getElementById('classroomCanvas');
+  const img = new Image();
+  img.onload = () => {}; // snapshot persisted server-side is enough for late joiners; live clients get 'clear' + will refresh on next reconnect if needed
+  img.src = canvas.toDataURL();
+}
+
+function sendClassroomStroke(tool, color, size, points){
+  wsSend({ type: 'stroke', tool, color, size, points });
+}
+
+function sendClassroomSnapshot(){
+  if (!classroomState || !classroomState.ws || classroomState.ws.readyState !== 1) return;
+  const dataUrl = document.getElementById('classroomCanvas').toDataURL('image/png');
+  wsSend({ type: 'snapshot', dataUrl });
+  document.getElementById('classroomStatus').textContent = 'Saved';
+}
+
+function wsSend(obj){
+  if (classroomState && classroomState.ws && classroomState.ws.readyState === 1) classroomState.ws.send(JSON.stringify(obj));
+}
+
+function renderIncomingStroke(msg){
+  const canvas = document.getElementById('classroomCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.globalAlpha = msg.tool === 'highlighter' ? 0.35 : 1;
+  ctx.strokeStyle = msg.tool === 'eraser' ? '#ffffff' : msg.color;
+  ctx.lineWidth = msg.size;
+  const [p0, p1] = msg.points;
+  if (msg.tool === 'pen' || msg.tool === 'eraser' || msg.tool === 'highlighter') {
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+  } else {
+    drawClassroomShape(ctx, msg.tool, p0.x, p0.y, p1.x, p1.y);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function loadSnapshotIntoCanvas(dataUrl){
+  const canvas = document.getElementById('classroomCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (!dataUrl) return;
+  const img = new Image();
+  img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  img.src = dataUrl;
+}
+
+function renderClassroomPageTabs(){
+  const wrap = document.getElementById('classroomPages');
+  let html = classroomState.pages.map((p, i) =>
+    `<button type="button" class="classroom-page-tab ${p.id===classroomState.currentPageId?'active':''}" onclick="switchClassroomPage(${p.id})">Page ${i+1}</button>`
+  ).join('');
+  if (classroomState.isTeacher) html += `<button type="button" class="classroom-page-tab" onclick="addClassroomPage()">+ Add</button>`;
+  wrap.innerHTML = html;
+}
+
+function switchClassroomPage(pageId){
+  if (pageId === classroomState.currentPageId) return;
+  if (classroomState.isTeacher) sendClassroomSnapshot(); // save outgoing page first
+  wsSend({ type: 'switchPage', pageId });
+}
+function addClassroomPage(){
+  sendClassroomSnapshot();
+  wsSend({ type: 'addPage' });
+}
+function toggleStudentDrawPermission(){
+  wsSend({ type: 'toggleStudentDraw', allow: !classroomState.allowStudentDraw });
+}
+function toggleClassroomChat(){
+  document.getElementById('classroomChatPanel').classList.toggle('collapsed');
+}
+
+function connectClassroomWS(){
+  const ws = new WebSocket(wsBaseUrl());
+  classroomState.ws = ws;
+
+  ws.onopen = () => {
+    classroomState.reconnectAttempts = 0;
+    ws.send(JSON.stringify({ type: 'join', token: authToken, whiteboardId: classroomState.whiteboardId }));
+  };
+
+  ws.onmessage = (evt) => {
+    let msg; try { msg = JSON.parse(evt.data); } catch { return; }
+
+    if (msg.type === 'error') { toast(msg.error); return; }
+
+    if (msg.type === 'state') {
+      classroomState.pages = msg.pages;
+      classroomState.currentPageId = msg.currentPageId;
+      classroomState.allowStudentDraw = msg.allowStudentDraw;
+      document.getElementById('classroomStatus').textContent = 'Connected';
+      document.getElementById('classroomStudentDrawToggle').textContent = classroomState.allowStudentDraw ? 'Students can draw ✓' : 'Allow students to draw';
+      buildClassroomToolrail();
+      renderClassroomPageTabs();
+      loadSnapshotIntoCanvas(msg.snapshot);
+    } else if (msg.type === 'stroke') {
+      renderIncomingStroke(msg);
+    } else if (msg.type === 'clear') {
+      const canvas = document.getElementById('classroomCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+    } else if (msg.type === 'pageAdded') {
+      classroomState.pages.push({ id: msg.pageId, position: msg.position });
+      classroomState.currentPageId = msg.pageId;
+      renderClassroomPageTabs();
+      loadSnapshotIntoCanvas(null);
+    } else if (msg.type === 'pageSwitched') {
+      classroomState.currentPageId = msg.pageId;
+      renderClassroomPageTabs();
+      loadSnapshotIntoCanvas(msg.snapshot);
+    } else if (msg.type === 'permissions') {
+      classroomState.allowStudentDraw = msg.allowStudentDraw;
+      document.getElementById('classroomStudentDrawToggle').textContent = classroomState.allowStudentDraw ? 'Students can draw ✓' : 'Allow students to draw';
+      buildClassroomToolrail();
+      if (!classroomState.isTeacher) toast(classroomState.allowStudentDraw ? 'The teacher enabled drawing for students.' : 'The teacher turned off student drawing.');
+    }
+  };
+
+  ws.onclose = () => {
+    if (!classroomState) return; // closed intentionally via closeClassroom()
+    document.getElementById('classroomStatus').textContent = 'Reconnecting…';
+    classroomState.reconnectAttempts++;
+    const delay = Math.min(1000 * classroomState.reconnectAttempts, 8000);
+    setTimeout(() => { if (classroomState) connectClassroomWS(); }, delay);
+  };
+
+  ws.onerror = () => {};
+
+  if (classroomState.isTeacher && !classroomState.snapshotTimer) {
+    classroomState.snapshotTimer = setInterval(sendClassroomSnapshot, 8000);
+  }
+}
+
 /* ============================== STUDENT ============================== */
 function studentRailBlock(time, subj, room, meetingLink, i){
   const isBreak = subj==='Break' || subj==='Lunch';
@@ -1753,6 +2136,23 @@ function showStudentPage(page){
   if (main) main.scrollTop = 0;
 }
 
+async function checkLiveClassroom(){
+  const btn = document.getElementById('studentClassroomBtn');
+  try {
+    const d = await api('/student/whiteboard/current');
+    if (d.whiteboard) {
+      btn.style.display = 'block';
+      btn.onclick = () => {
+        openClassroom(d.whiteboard.id, `${d.whiteboard.subject || 'Live class'} · ${d.whiteboard.teacherName}`, false);
+        openChatThread('classroom', d.whiteboard.teacherUserId);
+      };
+    } else {
+      btn.style.display = 'none';
+      btn.onclick = null;
+    }
+  } catch (err) { /* silent — non-critical dashboard widget */ }
+}
+
 async function loadStudentDashboard(){
   showStudentPage('dashboard');
   const p = currentUser.profile || {};
@@ -1782,6 +2182,8 @@ async function loadStudentDashboard(){
       joinBtn.disabled = true;
       joinBtn.onclick = null;
     }
+
+    checkLiveClassroom();
 
     const ring = document.getElementById('studentRing');
     if (d.attendancePct !== null) {
@@ -1836,6 +2238,7 @@ async function loadStudentDashboard(){
     await loadStudentExams();
     await loadStudentCourses();
     await loadStudentMaterials();
+    await loadStudentAssignments();
     await loadMessageContacts('student');
     await loadReportCard();
   } catch (err) {
@@ -1908,15 +2311,108 @@ async function confirmLessonWatched(lessonId, btnEl){
   }
 }
 
-async function submitHomework(assignmentId, btnEl){
+function assignStatusBadge(status){
+  const map = {
+    pending:   { bg: 'var(--indigo)', label: 'Pending' },
+    submitted: { bg: 'var(--amber)',  label: 'Awaiting grading' },
+    graded:    { bg: 'var(--green)',  label: 'Graded' },
+    overdue:   { bg: 'var(--magenta)', label: 'Overdue' }
+  };
+  const s = map[status] || map.pending;
+  return `<span class="tag" style="background:${s.bg};">${s.label}</span>`;
+}
+
+async function loadStudentAssignments(){
+  const subjectSel = document.getElementById('assignSubjectFilter');
+  const statusSel = document.getElementById('assignStatusFilter');
+  try {
+    const d = await api('/student/assignments');
+    if (subjectSel.options.length <= 1) {
+      [...new Set(d.assignments.map(a => a.subject))].sort().forEach(s => subjectSel.insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+    }
+    const subject = subjectSel.value, status = statusSel.value;
+    const filtered = d.assignments.filter(a => (!subject || a.subject === subject) && (!status || a.status === status));
+
+    document.getElementById('studentAssignments').innerHTML = filtered.length
+      ? filtered.map(a => `<div class="list-row">
+          <div class="l-main"><span class="tag" style="background:${subjectColor(a.subject)};">${a.subject}</span>
+            <div style="min-width:0;"><div class="l-title">${a.title}</div><div class="l-sub">${a.dueDate ? 'Due ' + fmtDate(a.dueDate) : 'No due date'}${a.status === 'graded' ? ` · ${a.marks}/${a.maxMarks}` : ''}</div></div></div>
+          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">${assignStatusBadge(a.status)}<button class="btn btn-outline btn-sm" onclick="openAssignmentDetail(${a.id})">View</button></div>
+        </div>`).join('')
+      : '<p class="empty">No assignments match those filters.</p>';
+  } catch (err) { toast(err.message); }
+}
+
+async function openAssignmentDetail(assignmentId){
+  const backdrop = document.getElementById('assignModalBackdrop');
+  const body = document.getElementById('assignModalBody');
+  backdrop.classList.add('open');
+  body.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/student/assignments/${assignmentId}`);
+    const a = d.assignment, sub = d.submission;
+    document.getElementById('assignModalTitle').textContent = a.title;
+
+    let html = `<div class="course-tags" style="margin-bottom:8px;"><span class="tag" style="background:${subjectColor(a.subject)};">${a.subject}</span>${a.dueDate ? `<span class="curr-pill">Due ${fmtDate(a.dueDate)}</span>` : ''}<span class="curr-pill">${a.maxMarks} marks</span></div>`;
+    html += a.description ? `<p style="font-size:13.5px; line-height:1.6; margin-bottom:14px;">${escapeHtml(a.description)}</p>` : '<p class="empty" style="margin-bottom:14px;">No instructions attached.</p>';
+
+    if (sub && sub.status === 'graded') {
+      html += `<div style="background:var(--paper-alt); border-radius:10px; padding:14px;">
+        <p style="font-weight:700; font-size:14px;">Grade: ${sub.marks}/${a.maxMarks}</p>
+        ${sub.feedback ? `<p style="font-size:13px; margin-top:8px;"><b>Teacher feedback:</b> ${escapeHtml(sub.feedback)}</p>` : ''}
+        <p style="font-size:12px; color:var(--ink-soft); margin-top:8px;">Your submission: ${sub.bodyText ? escapeHtml(sub.bodyText).slice(0,200) : (sub.fileName || '—')}</p>
+      </div>`;
+    } else if (sub && sub.status === 'submitted') {
+      html += `<div style="background:var(--paper-alt); border-radius:10px; padding:14px;">
+        <p style="font-weight:700; font-size:13.5px;">Submitted ${fmtDate(sub.submittedAt)} — awaiting grading.</p>
+        ${sub.bodyText ? `<p style="font-size:13px; margin-top:8px; white-space:pre-wrap;">${escapeHtml(sub.bodyText)}</p>` : ''}
+        ${sub.fileName ? `<p style="font-size:12.5px; margin-top:8px;">📎 ${escapeHtml(sub.fileName)}</p>` : ''}
+      </div>`;
+    } else {
+      html += `<label style="font-size:12.5px; font-weight:600; display:block; margin-bottom:6px;">Your answer</label>
+        <textarea class="grade-input" id="assignBodyText" style="width:100%; min-height:100px; font-family:inherit; margin-bottom:10px;" placeholder="Type your answer here…"></textarea>
+        <label style="font-size:12.5px; font-weight:600; display:block; margin-bottom:6px;">Attach a file (optional)</label>
+        <input type="file" id="assignFileInput" style="margin-bottom:14px;">
+        <button class="btn btn-ink" style="width:100%;" id="assignSubmitBtn" onclick="submitAssignment(${assignmentId}, this)">Submit assignment</button>`;
+    }
+    body.innerHTML = html;
+  } catch (err) {
+    body.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function closeAssignmentModal(){
+  document.getElementById('assignModalBackdrop').classList.remove('open');
+}
+
+async function submitAssignment(assignmentId, btnEl){
+  const bodyText = document.getElementById('assignBodyText').value.trim();
+  const fileInput = document.getElementById('assignFileInput');
+  const file = fileInput.files[0];
+
+  if (!bodyText && !file) { toast('Add a written answer or attach a file first.'); return; }
+
   btnEl.disabled = true; btnEl.textContent = 'Submitting…';
   try {
-    const res = await api(`/student/assignments/${assignmentId}/submit`, { method: 'POST' });
+    const payload = { body_text: bodyText || null };
+    if (file) {
+      payload.file_base64 = await fileToBase64(file);
+      payload.file_name = file.name;
+      payload.file_mime = file.type;
+    }
+    const res = await api(`/student/assignments/${assignmentId}/submit`, { method: 'POST', body: JSON.stringify(payload) });
     toast(res.message);
+    closeAssignmentModal();
+    loadStudentAssignments();
     loadStudentDashboard();
   } catch (err) {
-    toast(err.message); btnEl.disabled = false; btnEl.textContent = 'Submit';
+    toast(err.message); btnEl.disabled = false; btnEl.textContent = 'Submit assignment';
   }
+}
+
+async function submitHomework(assignmentId, btnEl){
+  showStudentPage('assignments');
+  openAssignmentDetail(assignmentId);
 }
 
 let examTimerInterval = null;
@@ -2080,6 +2576,8 @@ async function loadStudentCourses(){
   }
 }
 
+let courseLessonState = { courseId: null, courseTitle: '', lessons: [] }; // flattened, ordered, for Previous/Next
+
 async function toggleCourseDetail(courseId){
   const el = document.getElementById(`course-${courseId}`);
   const isOpen = el.classList.contains('open');
@@ -2089,23 +2587,22 @@ async function toggleCourseDetail(courseId){
   el.classList.add('open');
   try {
     const d = await api(`/student/courses/${courseId}`);
+    courseLessonState = { courseId, courseTitle: d.course.title, lessons: [] };
+    d.topics.forEach(t => t.lessons.forEach(l => courseLessonState.lessons.push({ ...l, topicTitle: t.title })));
+
     el.innerHTML = d.topics.length
       ? d.topics.map((t, ti) => `
         <div class="unit-block">
           <div class="unit-head"><div class="unit-num">${ti + 1}</div><div class="unit-title">${t.title}</div></div>
           ${t.lessons.map(l => {
-            const embed = videoEmbedSrc(l.videoUrl || '');
-            const player = l.contentType === 'video' && embed
-              ? `<div class="lesson-player"><div style="position:relative; padding-top:56.25%; border-radius:8px; overflow:hidden;"><iframe src="${embed}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div></div>`
-              : l.contentType === 'text' ? `<div class="lesson-player"><p style="font-size:13px; padding:8px; background:var(--paper-alt); border-radius:8px;">${l.bodyText || ''}</p></div>` : '';
             const icon = l.contentType === 'video'
               ? '<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>'
               : '<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg>';
             return `<div class="lesson-row ${l.completed ? 'is-done' : ''}">
               <div class="lesson-icon">${icon}</div>
-              <span class="lesson-title">${l.title}</span>
+              <span class="lesson-title" style="cursor:pointer; text-decoration:underline; text-decoration-color:var(--line);" onclick="openLessonReader(${l.id})">${l.title}</span>
               <label class="lesson-done-toggle"><input type="checkbox" ${l.completed ? 'checked' : ''} onchange="toggleLessonComplete(${l.id}, ${courseId}, this.checked)"> Done</label>
-            </div>${player}`;
+            </div>`;
           }).join('')}
         </div>`).join('')
       : '<p class="empty">No topics added yet.</p>';
@@ -2117,10 +2614,53 @@ async function toggleCourseDetail(courseId){
 async function toggleLessonComplete(lessonId, courseId, checked){
   try {
     await api(`/student/courses/lessons/${lessonId}/complete`, { method: checked ? 'POST' : 'DELETE' });
+    const l = courseLessonState.lessons.find(x => x.id === lessonId);
+    if (l) l.completed = checked;
     loadStudentCourses();
   } catch (err) {
     toast(err.message);
   }
+}
+
+/* ============================== Focused lesson reading view ============================== */
+
+function openLessonReader(lessonId){
+  const idx = courseLessonState.lessons.findIndex(l => l.id === lessonId);
+  if (idx === -1) return;
+  renderLessonReader(idx);
+  document.getElementById('lessonReaderBackdrop').classList.add('open');
+}
+
+function closeLessonReader(){
+  document.getElementById('lessonReaderBackdrop').classList.remove('open');
+}
+
+function lessonReaderNav(direction){
+  const nextIdx = courseLessonState.currentIdx + direction;
+  if (nextIdx < 0 || nextIdx >= courseLessonState.lessons.length) return;
+  renderLessonReader(nextIdx);
+}
+
+function renderLessonReader(idx){
+  courseLessonState.currentIdx = idx;
+  const l = courseLessonState.lessons[idx];
+  const embed = videoEmbedSrc(l.videoUrl || '');
+  const content = l.contentType === 'video' && embed
+    ? `<div style="position:relative; padding-top:56.25%; border-radius:10px; overflow:hidden; background:#000;"><iframe src="${embed}" style="position:absolute; inset:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe></div>`
+    : l.contentType === 'text' ? `<div style="font-size:14.5px; line-height:1.7; padding:16px; background:var(--paper-alt); border-radius:10px; white-space:pre-wrap;">${escapeHtml(l.bodyText || '')}</div>`
+    : '<p class="empty">No content on this lesson yet.</p>';
+
+  document.getElementById('lessonReaderBody').innerHTML = `
+    <p style="font-family:var(--mono); font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;">${escapeHtml(courseLessonState.courseTitle)} / ${escapeHtml(l.topicTitle)}</p>
+    <h2 style="font-size:19px; margin-bottom:14px;">${escapeHtml(l.title)}</h2>
+    ${content}
+    <div style="display:flex; align-items:center; gap:8px; margin-top:18px; border-top:1px solid var(--line); padding-top:14px;">
+      <button class="btn btn-outline btn-sm" ${idx===0?'disabled':''} onclick="lessonReaderNav(-1)">← Previous</button>
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; margin:0 auto;">
+        <input type="checkbox" ${l.completed?'checked':''} onchange="toggleLessonComplete(${l.id}, courseLessonState.courseId, this.checked)"> Mark complete
+      </label>
+      <button class="btn btn-outline btn-sm" ${idx===courseLessonState.lessons.length-1?'disabled':''} onclick="lessonReaderNav(1)">Next →</button>
+    </div>`;
 }
 
 /* ---------- Study materials library (student) ---------- */
@@ -2251,6 +2791,7 @@ async function loadTeacherDashboard(){
             <input class="grade-input" style="width:110px; min-width:0; flex:1 1 110px;" id="link-${c.id}" placeholder="Meeting link" value="${(c.meeting_link || '').replace(/"/g, '&quot;')}">
             <button class="btn btn-outline btn-sm" onclick="saveClassLink(${c.id})">Save</button>
             ${c.meeting_link ? `<a class="btn btn-primary btn-sm" href="${c.meeting_link}" target="_blank" rel="noopener">Open</a>` : ''}
+            <button class="btn btn-ink btn-sm" onclick="startClassroomWhiteboard('${c.section_code}','${c.subject.replace(/'/g,"\\'")}')">🖍 Whiteboard</button>
           </div></div>`).join('')
       : '<p class="empty">No classes today.</p>';
 
@@ -2291,6 +2832,29 @@ async function saveClassLink(timetableId){
     const res = await api(`/teacher/timetable/${timetableId}/link`, { method: 'POST', body: JSON.stringify({ meeting_link }) });
     toast(res.message);
     loadTeacherDashboard();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function startClassroomWhiteboard(sectionCode, subject){
+  try {
+    let sessionId;
+    try {
+      const startRes = await api('/teacher/live-session/start', { method: 'POST', body: JSON.stringify({ section_code: sectionCode }) });
+      sessionId = startRes.sessionId;
+    } catch (err) {
+      if (err.sessionId) sessionId = err.sessionId; // "already running" — resume it
+      else { toast(err.message); return; }
+    }
+    const wbRes = await api('/teacher/whiteboard/start', { method: 'POST', body: JSON.stringify({ class_session_id: sessionId, subject }) });
+    openClassroom(wbRes.whiteboardId, `${subject} · Section ${sectionCode}`, true);
+    classroomState.onEnd = async () => {
+      try {
+        const res = await api('/teacher/live-session/end', { method: 'POST', body: JSON.stringify({ section_code: sectionCode }) });
+        toast(res.message);
+      } catch (err) { toast(err.message); }
+    };
   } catch (err) {
     toast(err.message);
   }
@@ -3370,6 +3934,51 @@ if (authToken && currentUser && currentUser.role) {
       <button type="button" class="btn btn-outline btn-sm" onclick="clearDrawCanvas()">Clear</button>
       <button type="button" class="btn btn-outline btn-sm" onclick="undoDrawCanvas()">Undo</button>
       <button type="button" class="btn btn-ink btn-sm" style="margin-left:auto;" onclick="sendDrawing()">Send drawing</button>
+    </div>
+  </div>
+</div>
+<div class="draw-modal-backdrop" id="assignModalBackdrop">
+  <div class="draw-modal" style="max-width:480px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="font-size:15px;" id="assignModalTitle">Assignment</h3>
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeAssignmentModal()">Close</button>
+    </div>
+    <div id="assignModalBody"><p class="empty">Loading…</p></div>
+  </div>
+</div>
+<div class="draw-modal-backdrop" id="lessonReaderBackdrop">
+  <div class="draw-modal" style="max-width:560px;">
+    <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeLessonReader()">Close</button>
+    </div>
+    <div id="lessonReaderBody"></div>
+  </div>
+</div>
+<div class="classroom-backdrop" id="classroomBackdrop">
+  <div class="classroom-topbar">
+    <div>
+      <b id="classroomTitle" style="font-size:14.5px;">Whiteboard</b>
+      <span class="cb-status" id="classroomStatus" style="margin-left:10px;">Connecting…</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button type="button" class="btn btn-outline btn-sm" id="classroomChatToggle" onclick="toggleClassroomChat()" style="color:#fff; border-color:rgba(255,255,255,.3);">💬 Chat</button>
+      <button type="button" class="btn btn-outline btn-sm" id="classroomStudentDrawToggle" onclick="toggleStudentDrawPermission()" style="color:#fff; border-color:rgba(255,255,255,.3); display:none;">Allow students to draw</button>
+      <button type="button" class="btn btn-premium btn-sm" onclick="closeClassroom(true)">End class</button>
+    </div>
+  </div>
+  <div class="classroom-body">
+    <div class="classroom-toolrail" id="classroomToolrail"></div>
+    <div class="classroom-canvas-wrap">
+      <div class="classroom-canvas-area"><canvas id="classroomCanvas"></canvas></div>
+      <div class="classroom-pages" id="classroomPages"></div>
+    </div>
+    <div class="classroom-chat-panel collapsed" id="classroomChatPanel">
+      <div style="padding:10px 12px; border-bottom:1px solid var(--line); font-weight:700; font-size:13px;">Questions</div>
+      <div id="msgThread-classroom" style="flex:1; overflow-y:auto; padding:10px 12px;"><p class="empty">Loading…</p></div>
+      <div style="padding:10px 12px; border-top:1px solid var(--line);">
+        <div id="msgToolbar-classroom"></div>
+        <div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:36px; max-height:70px; resize:vertical; font-family:inherit; font-size:12.5px;" id="msgInput-classroom" placeholder="Ask a question…" rows="1" onkeydown="handleChatKeydown(event,'classroom')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('classroom')">Send</button></div>
+      </div>
     </div>
   </div>
 </div>

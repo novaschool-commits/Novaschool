@@ -61,6 +61,73 @@ router.get('/dashboard', asyncHandler(async (req, res) => {
   });
 }));
 
+router.get('/assignments', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const rows = await all(
+    `SELECT a.id, a.title, a.subject, a.due_date, a.max_marks,
+            s.id AS submission_id, s.status AS submission_status, s.marks, s.submitted_at
+     FROM assignments a
+     LEFT JOIN submissions s ON s.assignment_id = a.id AND s.student_id = $1
+     WHERE a.section_code = $2
+     ORDER BY a.due_date ASC NULLS LAST`,
+    [student.id, student.section_code]
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+  res.json({ assignments: rows.map(r => {
+    let status = 'pending';
+    if (r.submission_status === 'graded') status = 'graded';
+    else if (r.submission_status === 'submitted') status = 'submitted';
+    else if (r.due_date && r.due_date < today) status = 'overdue';
+    return {
+      id: r.id, title: r.title, subject: r.subject, dueDate: r.due_date, maxMarks: r.max_marks,
+      status, marks: r.marks, submittedAt: r.submitted_at
+    };
+  }) });
+}));
+
+router.get('/assignments/:id', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const assignmentId = Number(req.params.id);
+  const assignment = await get('SELECT * FROM assignments WHERE id = $1', [assignmentId]);
+  if (!assignment || assignment.section_code !== student.section_code) {
+    return res.status(404).json({ error: 'Assignment not found for your section.' });
+  }
+  const submission = await get(
+    'SELECT id, status, marks, feedback, body_text, file_name, submitted_at FROM submissions WHERE assignment_id = $1 AND student_id = $2',
+    [assignmentId, student.id]
+  );
+
+  res.json({
+    assignment: {
+      id: assignment.id, title: assignment.title, subject: assignment.subject,
+      description: assignment.description, dueDate: assignment.due_date, maxMarks: assignment.max_marks
+    },
+    submission: submission ? {
+      status: submission.status, marks: submission.marks, feedback: submission.feedback,
+      bodyText: submission.body_text, fileName: submission.file_name, submittedAt: submission.submitted_at
+    } : null
+  });
+}));
+
+router.get('/assignments/:id/submission-file', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const submission = await get(
+    'SELECT file_base64, file_name, file_mime FROM submissions WHERE assignment_id = $1 AND student_id = $2',
+    [Number(req.params.id), student.id]
+  );
+  if (!submission || !submission.file_base64) return res.status(404).json({ error: 'No file on this submission.' });
+  res.json({ fileBase64: submission.file_base64, fileName: submission.file_name, fileMime: submission.file_mime });
+}));
+
+const MAX_SUBMISSION_BASE64 = 5_000_000; // ~3.7MB decoded, safely under the 6MB request body limit
+
 router.post('/assignments/:id/submit', asyncHandler(async (req, res) => {
   const student = await getStudent(req);
   if (!student) return res.status(404).json({ error: 'Student profile not found.' });
@@ -71,14 +138,23 @@ router.post('/assignments/:id/submit', asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Assignment not found for your section.' });
   }
 
+  const { body_text, file_base64, file_name, file_mime } = req.body || {};
+  if (!body_text && !file_base64) {
+    return res.status(400).json({ error: 'Add a written answer or attach a file before submitting.' });
+  }
+  if (file_base64 && file_base64.length > MAX_SUBMISSION_BASE64) {
+    return res.status(413).json({ error: 'File is too large (limit ~3.7MB). Please use a smaller file.' });
+  }
+
   const existing = await get('SELECT id FROM submissions WHERE assignment_id = $1 AND student_id = $2', [assignmentId, student.id]);
   if (existing) {
     return res.status(409).json({ error: 'You have already submitted this assignment.' });
   }
 
   await run(
-    'INSERT INTO submissions (assignment_id, student_id, submitted_at, status) VALUES ($1, $2, $3, $4)',
-    [assignmentId, student.id, new Date().toISOString(), 'submitted']
+    `INSERT INTO submissions (assignment_id, student_id, submitted_at, status, body_text, file_base64, file_name, file_mime)
+     VALUES ($1,$2,$3,'submitted',$4,$5,$6,$7)`,
+    [assignmentId, student.id, new Date().toISOString(), body_text || null, file_base64 || null, file_name || null, file_mime || null]
   );
 
   res.status(201).json({ message: `"${assignment.title}" submitted.` });
@@ -480,6 +556,46 @@ router.get('/materials/:id/file', asyncHandler(async (req, res) => {
   if (!section || material.grade !== section.grade) return res.status(403).json({ error: 'This material is not available to your grade.' });
 
   res.json({ fileBase64: material.file_base64, fileName: material.file_name, fileMime: material.file_mime });
+}));
+
+// ---------- Virtual classroom whiteboard (student side) ----------
+
+router.get('/whiteboard/current', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const wb = await get(
+    `SELECT w.id, w.subject, w.status, t.first_name, t.last_name, t.user_id AS teacher_user_id
+     FROM whiteboards w JOIN teachers t ON t.id = w.teacher_id
+     JOIN class_sessions cs ON cs.id = w.class_session_id
+     WHERE w.section_code = $1 AND cs.ended_at IS NULL
+     ORDER BY w.created_at DESC LIMIT 1`,
+    [student.section_code]
+  );
+  res.json({ whiteboard: wb ? { id: wb.id, subject: wb.subject, teacherName: `${wb.first_name} ${wb.last_name}`, teacherUserId: wb.teacher_user_id } : null });
+}));
+
+router.get('/whiteboards', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const rows = await all(
+    `SELECT w.id, w.subject, w.status, w.created_at, t.first_name, t.last_name
+     FROM whiteboards w JOIN teachers t ON t.id = w.teacher_id
+     WHERE w.section_code = $1 AND w.status IN ('saved','live') ORDER BY w.created_at DESC LIMIT 50`,
+    [student.section_code]
+  );
+  res.json({ whiteboards: rows.map(r => ({ id: r.id, subject: r.subject, status: r.status, createdAt: r.created_at, teacherName: `${r.first_name} ${r.last_name}` })) });
+}));
+
+router.get('/whiteboard/:id', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const wb = await get('SELECT * FROM whiteboards WHERE id = $1 AND section_code = $2', [Number(req.params.id), student.section_code]);
+  if (!wb || wb.status === 'archived') return res.status(404).json({ error: 'Whiteboard not found.' });
+  const pages = await all('SELECT id, position, snapshot FROM whiteboard_pages WHERE whiteboard_id = $1 ORDER BY position', [wb.id]);
+  res.json({ whiteboard: wb, pages });
 }));
 
 module.exports = router;
