@@ -1791,6 +1791,7 @@ function openClassroom(whiteboardId, title, isTeacher){
   document.getElementById('classroomStudentDrawToggle').style.display = isTeacher ? 'inline-flex' : 'none';
   document.getElementById('classroomBackdrop').classList.add('open');
 
+  loadMessageContacts('classroom'); // populates the contact list + builds the chat toolbar
   buildClassroomToolrail();
   setupClassroomCanvas();
   connectClassroomWS();
@@ -3974,7 +3975,8 @@ if (authToken && currentUser && currentUser.role) {
     </div>
     <div class="classroom-chat-panel collapsed" id="classroomChatPanel">
       <div style="padding:10px 12px; border-bottom:1px solid var(--line); font-weight:700; font-size:13px;">Questions</div>
-      <div id="msgThread-classroom" style="flex:1; overflow-y:auto; padding:10px 12px;"><p class="empty">Loading…</p></div>
+      <div id="msgContacts-classroom" style="max-height:110px; overflow-y:auto; padding:6px 8px; border-bottom:1px solid var(--line); flex-shrink:0;"></div>
+      <div id="msgThread-classroom" style="flex:1; overflow-y:auto; padding:10px 12px;"><p class="empty">Select a student to reply to.</p></div>
       <div style="padding:10px 12px; border-top:1px solid var(--line);">
         <div id="msgToolbar-classroom"></div>
         <div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:36px; max-height:70px; resize:vertical; font-family:inherit; font-size:12.5px;" id="msgInput-classroom" placeholder="Ask a question…" rows="1" onkeydown="handleChatKeydown(event,'classroom')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('classroom')">Send</button></div>
