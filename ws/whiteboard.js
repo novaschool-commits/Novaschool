@@ -34,6 +34,16 @@ function broadcast(whiteboardId, data, exceptWs) {
   }
 }
 
+// Find a specific connected client's socket by their user id — needed to
+// relay WebRTC signaling messages (offer/answer/ICE) to exactly one peer,
+// not the whole room.
+function findClientWsByUserId(room, userId) {
+  for (const [clientWs, info] of room.clients) {
+    if (info.userId === userId) return clientWs;
+  }
+  return null;
+}
+
 // Only a teacher who owns the whiteboard, or a student in its section,
 // may join. Server-side check — never trust a client-supplied role alone.
 async function verifyAccess(userId, role, whiteboardId) {
@@ -91,9 +101,14 @@ function attachWhiteboardWS(server) {
           currentPageId: room.currentPageId,
           snapshot: currentPage ? currentPage.snapshot : null,
           allowStudentDraw: room.allowStudentDraw,
-          isTeacher: access.isTeacher
+          isTeacher: access.isTeacher,
+          micOn: !!room.micOn,
+          // Everyone already in the room, so a teacher whose mic is already
+          // on (or who turns it on later) knows who to call — without this,
+          // only *future* joins would ever trigger a peer connection.
+          otherPeers: [...room.clients.values()].filter(c => c.userId !== payload.id).map(c => ({ userId: c.userId, isTeacher: c.isTeacher }))
         }));
-        broadcast(msg.whiteboardId, { type: 'presence', count: room.clients.size }, null);
+        broadcast(msg.whiteboardId, { type: 'presence', count: room.clients.size, joinedUserId: payload.id, joinedIsTeacher: access.isTeacher }, ws);
         return;
       }
 
@@ -129,6 +144,23 @@ function attachWhiteboardWS(server) {
         room.allowStudentDraw = !!msg.allow;
         await run('UPDATE whiteboards SET allow_student_draw = $1 WHERE id = $2', [room.allowStudentDraw, joined.whiteboardId]);
         broadcast(joined.whiteboardId, { type: 'permissions', allowStudentDraw: room.allowStudentDraw }, null);
+
+      // ---- WebRTC signaling relay (teacher mic → students, one-way) ----
+      // The server never touches audio itself — it just forwards the
+      // offer/answer/ICE handshake between exactly the two peers involved,
+      // the same way a phone switchboard connects a call without hearing it.
+      } else if (msg.type === 'mic-status' && joined.isTeacher) {
+        room.micOn = !!msg.on;
+        broadcast(joined.whiteboardId, { type: 'mic-status', on: room.micOn }, ws);
+      } else if (msg.type === 'rtc-offer' && joined.isTeacher) {
+        const target = findClientWsByUserId(room, msg.to);
+        if (target) target.send(JSON.stringify({ type: 'rtc-offer', sdp: msg.sdp, from: joined.userId }));
+      } else if (msg.type === 'rtc-answer' && !joined.isTeacher) {
+        const target = findClientWsByUserId(room, msg.to);
+        if (target) target.send(JSON.stringify({ type: 'rtc-answer', sdp: msg.sdp, from: joined.userId }));
+      } else if (msg.type === 'rtc-ice-candidate') {
+        const target = findClientWsByUserId(room, msg.to);
+        if (target) target.send(JSON.stringify({ type: 'rtc-ice-candidate', candidate: msg.candidate, from: joined.userId }));
       }
     });
 
@@ -137,7 +169,7 @@ function attachWhiteboardWS(server) {
       const room = rooms.get(joined.whiteboardId);
       if (!room) return;
       room.clients.delete(ws);
-      broadcast(joined.whiteboardId, { type: 'presence', count: room.clients.size }, null);
+      broadcast(joined.whiteboardId, { type: 'presence', count: room.clients.size, leftUserId: joined.userId }, null);
       if (room.clients.size === 0) rooms.delete(joined.whiteboardId); // free memory once everyone's left
     });
   });

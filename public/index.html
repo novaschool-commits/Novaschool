@@ -1783,12 +1783,16 @@ function openClassroom(whiteboardId, title, isTeacher){
     tool: 'pen', color: CLASSROOM_COLORS[0], size: CLASSROOM_SIZES[1],
     allowStudentDraw: false, pages: [], currentPageId: null,
     drawing: false, startX: 0, startY: 0, snapshot: null, history: [],
-    snapshotTimer: null, reconnectAttempts: 0, chatPollTimer: null
+    snapshotTimer: null, reconnectAttempts: 0, chatPollTimer: null,
+    micOn: false, localStream: null, peers: {}, otherPeers: []
   };
 
   document.getElementById('classroomTitle').textContent = title || 'Whiteboard';
   document.getElementById('classroomStatus').textContent = 'Connecting…';
   document.getElementById('classroomStudentDrawToggle').style.display = isTeacher ? 'inline-flex' : 'none';
+  document.getElementById('classroomMicToggle').style.display = isTeacher ? 'inline-flex' : 'none';
+  document.getElementById('classroomMicStatus').style.display = 'none';
+  document.getElementById('classroomEndBtn').textContent = isTeacher ? 'End class' : 'Leave';
   document.getElementById('classroomBackdrop').classList.add('open');
 
   loadMessageContacts('classroom'); // populates the contact list + builds the chat toolbar
@@ -1813,6 +1817,8 @@ function closeClassroom(endClassToo){
     if (classroomState.isTeacher) sendClassroomSnapshot(); // final save before leaving
     if (classroomState.snapshotTimer) clearInterval(classroomState.snapshotTimer);
     if (classroomState.chatPollTimer) clearInterval(classroomState.chatPollTimer);
+    if (classroomState.localStream) classroomState.localStream.getTracks().forEach(t => t.stop());
+    Object.values(classroomState.peers).forEach(pc => { try { pc.close(); } catch (e) {} });
     if (classroomState.ws) classroomState.ws.close();
   }
   document.getElementById('classroomBackdrop').classList.remove('open');
@@ -2050,6 +2056,77 @@ function toggleClassroomChat(){
   document.getElementById('classroomChatPanel').classList.toggle('collapsed');
 }
 
+/* ---- Live teacher mic (WebRTC, one-way: teacher -> each connected student) ----
+   No TURN server configured (STUN only) — connections work directly for most
+   networks, but a student on a very restrictive network may get no audio
+   with no obvious error. Signaling rides the same whiteboard WebSocket;
+   the audio itself flows directly between browsers, never through our server. */
+const RTC_ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
+
+async function toggleClassroomMic(){
+  const btn = document.getElementById('classroomMicToggle');
+
+  if (classroomState.localStream) {
+    classroomState.localStream.getTracks().forEach(t => t.stop());
+    classroomState.localStream = null;
+    classroomState.micOn = false;
+    Object.values(classroomState.peers).forEach(pc => { try { pc.close(); } catch (e) {} });
+    classroomState.peers = {};
+    wsSend({ type: 'mic-status', on: false });
+    btn.textContent = '🎤 Start mic';
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    classroomState.localStream = stream;
+    classroomState.micOn = true;
+    wsSend({ type: 'mic-status', on: true });
+    btn.textContent = '🔴 Stop mic';
+    classroomState.otherPeers.filter(p => !p.isTeacher).forEach(p => createPeerAndOffer(p.userId));
+  } catch (err) {
+    toast('Could not access microphone: ' + err.message);
+  }
+}
+
+function createPeerAndOffer(studentUserId){
+  if (!classroomState.localStream) return;
+  const pc = new RTCPeerConnection({ iceServers: RTC_ICE_SERVERS });
+  classroomState.localStream.getTracks().forEach(track => pc.addTrack(track, classroomState.localStream));
+  pc.onicecandidate = (e) => { if (e.candidate) wsSend({ type: 'rtc-ice-candidate', to: studentUserId, candidate: e.candidate }); };
+  classroomState.peers[studentUserId] = pc;
+
+  pc.createOffer()
+    .then(offer => pc.setLocalDescription(offer))
+    .then(() => wsSend({ type: 'rtc-offer', to: studentUserId, sdp: pc.localDescription }))
+    .catch(err => console.error('Whiteboard mic: offer creation failed', err));
+}
+
+async function handleIncomingRtcOffer(msg){
+  const pc = new RTCPeerConnection({ iceServers: RTC_ICE_SERVERS });
+  pc.onicecandidate = (e) => { if (e.candidate) wsSend({ type: 'rtc-ice-candidate', to: msg.from, candidate: e.candidate }); };
+  pc.ontrack = (e) => {
+    const audioEl = document.getElementById('classroomRemoteAudio');
+    audioEl.srcObject = e.streams[0];
+    audioEl.play().catch(() => { /* some browsers require a user tap before autoplay — the live indicator still shows, tapping the page once resolves it */ });
+  };
+  classroomState.peers[msg.from] = pc;
+
+  try {
+    await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    wsSend({ type: 'rtc-answer', to: msg.from, sdp: pc.localDescription });
+  } catch (err) {
+    console.error('Whiteboard mic: failed to answer offer', err);
+  }
+}
+
+function closeClassroomPeer(userId){
+  const pc = classroomState.peers[userId];
+  if (pc) { try { pc.close(); } catch (e) {} delete classroomState.peers[userId]; }
+}
+
 function connectClassroomWS(){
   const ws = new WebSocket(wsBaseUrl());
   classroomState.ws = ws;
@@ -2068,8 +2145,10 @@ function connectClassroomWS(){
       classroomState.pages = msg.pages;
       classroomState.currentPageId = msg.currentPageId;
       classroomState.allowStudentDraw = msg.allowStudentDraw;
+      classroomState.otherPeers = msg.otherPeers || [];
       document.getElementById('classroomStatus').textContent = 'Connected';
       document.getElementById('classroomStudentDrawToggle').textContent = classroomState.allowStudentDraw ? 'Students can draw ✓' : 'Allow students to draw';
+      if (!classroomState.isTeacher) document.getElementById('classroomMicStatus').style.display = msg.micOn ? 'inline' : 'none';
       buildClassroomToolrail();
       renderClassroomPageTabs();
       loadSnapshotIntoCanvas(msg.snapshot);
@@ -2094,6 +2173,27 @@ function connectClassroomWS(){
       document.getElementById('classroomStudentDrawToggle').textContent = classroomState.allowStudentDraw ? 'Students can draw ✓' : 'Allow students to draw';
       buildClassroomToolrail();
       if (!classroomState.isTeacher) toast(classroomState.allowStudentDraw ? 'The teacher enabled drawing for students.' : 'The teacher turned off student drawing.');
+    } else if (msg.type === 'presence') {
+      if (msg.joinedUserId) {
+        if (!classroomState.otherPeers.some(p => p.userId === msg.joinedUserId)) {
+          classroomState.otherPeers.push({ userId: msg.joinedUserId, isTeacher: msg.joinedIsTeacher });
+        }
+        if (classroomState.isTeacher && classroomState.micOn && !msg.joinedIsTeacher) createPeerAndOffer(msg.joinedUserId);
+      }
+      if (msg.leftUserId) {
+        classroomState.otherPeers = classroomState.otherPeers.filter(p => p.userId !== msg.leftUserId);
+        closeClassroomPeer(msg.leftUserId);
+      }
+    } else if (msg.type === 'mic-status') {
+      if (!classroomState.isTeacher) document.getElementById('classroomMicStatus').style.display = msg.on ? 'inline' : 'none';
+    } else if (msg.type === 'rtc-offer' && !classroomState.isTeacher) {
+      handleIncomingRtcOffer(msg);
+    } else if (msg.type === 'rtc-answer' && classroomState.isTeacher) {
+      const pc = classroomState.peers[msg.from];
+      if (pc) pc.setRemoteDescription(new RTCSessionDescription(msg.sdp)).catch(err => console.error('Whiteboard mic: setRemoteDescription failed', err));
+    } else if (msg.type === 'rtc-ice-candidate') {
+      const pc = classroomState.peers[msg.from];
+      if (pc) pc.addIceCandidate(new RTCIceCandidate(msg.candidate)).catch(() => { /* candidate arrived before remote description was ready — safe to ignore */ });
     }
   };
 
@@ -3974,13 +4074,16 @@ if (authToken && currentUser && currentUser.role) {
     <div style="display:flex; align-items:center; gap:8px;">
       <button type="button" class="btn btn-outline btn-sm" id="classroomChatToggle" onclick="toggleClassroomChat()" style="color:#fff; border-color:rgba(255,255,255,.3);">💬 Chat</button>
       <button type="button" class="btn btn-outline btn-sm" id="classroomStudentDrawToggle" onclick="toggleStudentDrawPermission()" style="color:#fff; border-color:rgba(255,255,255,.3); display:none;">Allow students to draw</button>
-      <button type="button" class="btn btn-premium btn-sm" onclick="closeClassroom(true)">End class</button>
+      <button type="button" class="btn btn-outline btn-sm" id="classroomMicToggle" onclick="toggleClassroomMic()" style="color:#fff; border-color:rgba(255,255,255,.3); display:none;">🎤 Start mic</button>
+      <span class="cb-status" id="classroomMicStatus" style="display:none;">🔊 Teacher's mic is live</span>
+      <button type="button" class="btn btn-premium btn-sm" id="classroomEndBtn" onclick="closeClassroom(true)">End class</button>
     </div>
   </div>
   <div class="classroom-body">
     <div class="classroom-toolrail" id="classroomToolrail"></div>
     <div class="classroom-canvas-wrap">
       <div class="classroom-canvas-area"><canvas id="classroomCanvas"></canvas></div>
+      <audio id="classroomRemoteAudio" autoplay></audio>
       <div class="classroom-pages" id="classroomPages"></div>
     </div>
     <div class="classroom-chat-panel collapsed" id="classroomChatPanel">

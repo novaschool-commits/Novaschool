@@ -306,22 +306,6 @@ router.get('/messages/thread/:userId', authenticate, asyncHandler(async (req, re
   res.json({ partner, messages: rows.map(r => ({ id: r.id, body: r.body, sentAt: r.sent_at, outgoing: r.sender_id === req.user.id })) });
 }));
 
-// If the sender is a student and the recipient is a teacher currently running
-// a live class for that student's section, block the message — teacher can
-// still send freely, and admin is never blocked.
-async function isChatLockedForSender(senderUser, recipientId) {
-  if (senderUser.role !== 'student') return false;
-  const student = await get('SELECT section_code FROM students WHERE user_id = $1', [senderUser.id]);
-  if (!student) return false;
-  const recipientTeacher = await get('SELECT id FROM teachers WHERE user_id = $1', [recipientId]);
-  if (!recipientTeacher) return false;
-  const active = await get(
-    'SELECT id FROM class_sessions WHERE teacher_id = $1 AND section_code = $2 AND ended_at IS NULL AND is_locked = TRUE',
-    [recipientTeacher.id, student.section_code]
-  );
-  return !!active;
-}
-
 router.post('/messages', authenticate, asyncHandler(async (req, res) => {
   const { recipient_id, body } = req.body || {};
   if (!recipient_id || !body || !body.trim()) return res.status(400).json({ error: 'recipient_id and a message body are required.' });
@@ -329,9 +313,6 @@ router.post('/messages', authenticate, asyncHandler(async (req, res) => {
   const allowed = await getAllowedContacts(req.user);
   if (!allowed.includes(Number(recipient_id))) {
     return res.status(403).json({ error: 'You can only message teachers, admin, or (for teachers) your own students and their parents.' });
-  }
-  if (await isChatLockedForSender(req.user, Number(recipient_id))) {
-    return res.status(423).json({ error: 'This teacher has a live class in session — chat is locked until they end it.' });
   }
 
   await run('INSERT INTO messages (sender_id, recipient_id, body, sent_at) VALUES ($1,$2,$3,$4)', [req.user.id, recipient_id, body.trim(), new Date().toISOString()]);
@@ -351,17 +332,13 @@ router.post('/messages/group', authenticate, asyncHandler(async (req, res) => {
   const validIds = recipient_ids.map(Number).filter(id => allowed.has(id));
   if (!validIds.length) return res.status(403).json({ error: 'None of the selected recipients are allowed contacts.' });
 
-  const sendable = [];
-  for (const id of validIds) {
-    if (!(await isChatLockedForSender(req.user, id))) sendable.push(id);
-  }
-  if (!sendable.length) return res.status(423).json({ error: 'All selected recipients have a live class in session — chat is locked.' });
+  const sendable = validIds;
 
   const sentAt = new Date().toISOString();
   for (const id of sendable) {
     await run('INSERT INTO messages (sender_id, recipient_id, body, sent_at) VALUES ($1,$2,$3,$4)', [req.user.id, id, body.trim(), sentAt]);
   }
-  res.status(201).json({ message: `Sent to ${sendable.length} recipient${sendable.length === 1 ? '' : 's'}.${sendable.length < validIds.length ? ' (some were skipped — live class in session)' : ''}` });
+  res.status(201).json({ message: `Sent to ${sendable.length} recipient${sendable.length === 1 ? '' : 's'}.` });
 }));
 
 module.exports = router;
