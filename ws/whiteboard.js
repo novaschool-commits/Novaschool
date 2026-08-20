@@ -82,6 +82,24 @@ function attachWhiteboardWS(server) {
 
         joined = { whiteboardId: msg.whiteboardId, userId: payload.id, role: payload.role, isTeacher: access.isTeacher };
         const room = getRoom(msg.whiteboardId);
+
+        // If this same user already has a connection in the room (a stale
+        // tab, a mobile reconnect after a screen lock/network drop, etc.),
+        // close it out first — otherwise findClientWsByUserId() could route
+        // signaling to a dead socket instead of this fresh one, and the
+        // room's client count would double-count one person. Mark it as
+        // superseded so its own close handler (which fires asynchronously,
+        // after this new connection is already registered) doesn't
+        // broadcast a "left" event that would wrongly tear down what we're
+        // about to set up.
+        for (const [oldWs, info] of room.clients) {
+          if (info.userId === payload.id && oldWs !== ws) {
+            info.superseded = true;
+            room.clients.delete(oldWs);
+            try { oldWs.close(); } catch (e) {}
+          }
+        }
+
         room.clients.set(ws, joined);
         room.allowStudentDraw = access.wb.allow_student_draw;
 
@@ -165,7 +183,7 @@ function attachWhiteboardWS(server) {
     });
 
     ws.on('close', () => {
-      if (!joined) return;
+      if (!joined || joined.superseded) return; // a fresher connection from this same user already took over — nothing to clean up here
       const room = rooms.get(joined.whiteboardId);
       if (!room) return;
       room.clients.delete(ws);

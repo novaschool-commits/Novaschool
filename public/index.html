@@ -2093,6 +2093,7 @@ async function toggleClassroomMic(){
 
 function createPeerAndOffer(studentUserId){
   if (!classroomState.localStream) return;
+  closeClassroomPeer(studentUserId); // in case a stale connection to this student (e.g. from before a reconnect) is still lingering
   const pc = new RTCPeerConnection({ iceServers: RTC_ICE_SERVERS });
   classroomState.localStream.getTracks().forEach(track => pc.addTrack(track, classroomState.localStream));
   pc.onicecandidate = (e) => { if (e.candidate) wsSend({ type: 'rtc-ice-candidate', to: studentUserId, candidate: e.candidate }); };
@@ -2105,6 +2106,7 @@ function createPeerAndOffer(studentUserId){
 }
 
 async function handleIncomingRtcOffer(msg){
+  closeClassroomPeer(msg.from); // clear any stale connection from before a reconnect
   const pc = new RTCPeerConnection({ iceServers: RTC_ICE_SERVERS });
   pc.onicecandidate = (e) => { if (e.candidate) wsSend({ type: 'rtc-ice-candidate', to: msg.from, candidate: e.candidate }); };
   pc.ontrack = (e) => {
