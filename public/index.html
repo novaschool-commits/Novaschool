@@ -1792,6 +1792,7 @@ function openClassroom(whiteboardId, title, isTeacher){
   document.getElementById('classroomStudentDrawToggle').style.display = isTeacher ? 'inline-flex' : 'none';
   document.getElementById('classroomMicToggle').style.display = isTeacher ? 'inline-flex' : 'none';
   document.getElementById('classroomMicStatus').style.display = 'none';
+  document.getElementById('classroomAudioEnableBtn').style.display = 'none';
   document.getElementById('classroomEndBtn').textContent = isTeacher ? 'End class' : 'Leave';
   document.getElementById('classroomBackdrop').classList.add('open');
 
@@ -2108,7 +2109,12 @@ async function handleIncomingRtcOffer(msg){
   pc.ontrack = (e) => {
     const audioEl = document.getElementById('classroomRemoteAudio');
     audioEl.srcObject = e.streams[0];
-    audioEl.play().catch(() => { /* some browsers require a user tap before autoplay — the live indicator still shows, tapping the page once resolves it */ });
+    audioEl.play().catch(() => {
+      // Autoplay blocked — surface a visible tap-to-enable button instead
+      // of failing silently. Clicking it counts as a genuine user gesture,
+      // which satisfies the browser's autoplay restriction.
+      document.getElementById('classroomAudioEnableBtn').style.display = 'inline-flex';
+    });
   };
   classroomState.peers[msg.from] = pc;
 
@@ -2125,6 +2131,13 @@ async function handleIncomingRtcOffer(msg){
 function closeClassroomPeer(userId){
   const pc = classroomState.peers[userId];
   if (pc) { try { pc.close(); } catch (e) {} delete classroomState.peers[userId]; }
+}
+
+function enableClassroomAudio(){
+  const audioEl = document.getElementById('classroomRemoteAudio');
+  audioEl.play()
+    .then(() => { document.getElementById('classroomAudioEnableBtn').style.display = 'none'; })
+    .catch(() => toast('Still couldn\u2019t start audio — check your device isn\u2019t on silent/mute.'));
 }
 
 function connectClassroomWS(){
@@ -4076,6 +4089,7 @@ if (authToken && currentUser && currentUser.role) {
       <button type="button" class="btn btn-outline btn-sm" id="classroomStudentDrawToggle" onclick="toggleStudentDrawPermission()" style="color:#fff; border-color:rgba(255,255,255,.3); display:none;">Allow students to draw</button>
       <button type="button" class="btn btn-outline btn-sm" id="classroomMicToggle" onclick="toggleClassroomMic()" style="color:#fff; border-color:rgba(255,255,255,.3); display:none;">🎤 Start mic</button>
       <span class="cb-status" id="classroomMicStatus" style="display:none;">🔊 Teacher's mic is live</span>
+      <button type="button" class="btn btn-premium btn-sm" id="classroomAudioEnableBtn" onclick="enableClassroomAudio()" style="display:none;">🔊 Tap to hear teacher</button>
       <button type="button" class="btn btn-premium btn-sm" id="classroomEndBtn" onclick="closeClassroom(true)">End class</button>
     </div>
   </div>
@@ -4083,7 +4097,7 @@ if (authToken && currentUser && currentUser.role) {
     <div class="classroom-toolrail" id="classroomToolrail"></div>
     <div class="classroom-canvas-wrap">
       <div class="classroom-canvas-area"><canvas id="classroomCanvas"></canvas></div>
-      <audio id="classroomRemoteAudio" autoplay></audio>
+      <audio id="classroomRemoteAudio" autoplay playsinline></audio>
       <div class="classroom-pages" id="classroomPages"></div>
     </div>
     <div class="classroom-chat-panel collapsed" id="classroomChatPanel">
