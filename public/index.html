@@ -613,6 +613,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
       <div class="student-page" data-page="recordings">
         <div class="card"><div class="card-head"><h3>Recorded lessons</h3></div><div id="studentLessons"><p class="empty">Loading…</p></div></div>
+        <div class="card" style="margin-top:20px;"><div class="card-head"><h3>Saved whiteboards</h3></div><div id="studentWhiteboards"><p class="empty">Loading…</p></div></div>
       </div>
 
       <div class="student-page" data-page="messages">
@@ -692,7 +693,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     </aside>
     <main class="app-main">
       <div class="app-topbar"><div><h1 id="teacherGreeting">Good morning</h1><p class="sub" id="teacherSub">Loading your day…</p></div>
-        <div class="top-actions"><button class="btn btn-primary btn-sm" onclick="toast('Demo: opens the content uploader — wire this to your S3/GCS storage service.')">+ Upload content</button></div></div>
+        <div class="top-actions"><button class="btn btn-primary btn-sm" onclick="jumpToUploadContent()">+ Upload content</button></div></div>
       <div class="grid-2" style="margin-bottom:20px;">
         <div class="card"><div class="card-head"><h3>Today's classes</h3></div><div id="teacherClasses"><p class="empty">Loading…</p></div></div>
         <div class="card"><div class="card-head"><h3>Grading queue</h3></div><div id="teacherQueue"><p class="empty">Loading…</p></div></div>
@@ -774,7 +775,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div id="teacherCourses"><p class="empty">Loading…</p></div>
       </div>
-      <div class="card" style="margin-top:20px;">
+      <div class="card" style="margin-top:20px;" id="teacherMaterialsCard">
         <div class="card-head"><h3>Study materials library</h3></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
           <input class="grade-input" style="width:100%;" id="matSubject" placeholder="Subject (e.g. Chemistry)">
@@ -2363,6 +2364,7 @@ async function loadStudentDashboard(){
     await loadStudentCourses();
     await loadStudentMaterials();
     await loadStudentAssignments();
+    await loadStudentWhiteboards();
     await loadMessageContacts('student');
     await loadReportCard();
   } catch (err) {
@@ -2788,6 +2790,51 @@ function renderLessonReader(idx){
 }
 
 /* ---------- Study materials library (student) ---------- */
+
+async function loadStudentWhiteboards(){
+  try {
+    const d = await api('/student/whiteboards');
+    document.getElementById('studentWhiteboards').innerHTML = d.whiteboards.length
+      ? d.whiteboards.map(w => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(w.subject||'')};">${w.subject||'Class'}</span>
+          <div style="min-width:0;"><div class="l-title">${escapeHtml(w.teacherName)}</div><div class="l-sub">${fmtDate(w.createdAt)} · ${w.status === 'live' ? 'In progress' : 'Saved'}</div></div></div>
+          <button class="btn btn-outline btn-sm" onclick="openWhiteboardReview(${w.id})">Review</button></div>`).join('')
+      : '<p class="empty">No saved whiteboards yet.</p>';
+  } catch (err) { toast(err.message); }
+}
+
+let wbReviewState = { pages: [], currentIndex: 0 };
+
+async function openWhiteboardReview(whiteboardId){
+  const backdrop = document.getElementById('wbReviewBackdrop');
+  backdrop.classList.add('open');
+  document.getElementById('wbReviewImage').src = '';
+  document.getElementById('wbReviewPages').innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/student/whiteboard/${whiteboardId}`);
+    document.getElementById('wbReviewTitle').textContent = `${d.whiteboard.subject || 'Whiteboard'} — ${fmtDate(d.whiteboard.created_at)}`;
+    wbReviewState = { pages: d.pages, currentIndex: 0 };
+    renderWbReviewPage();
+  } catch (err) {
+    document.getElementById('wbReviewPages').innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
+  }
+}
+
+function renderWbReviewPage(){
+  const page = wbReviewState.pages[wbReviewState.currentIndex];
+  document.getElementById('wbReviewImage').src = (page && page.snapshot) || '';
+  document.getElementById('wbReviewPages').innerHTML = wbReviewState.pages.map((p, i) =>
+    `<button type="button" class="classroom-page-tab ${i===wbReviewState.currentIndex?'active':''}" onclick="wbReviewGoTo(${i})">Page ${i+1}</button>`
+  ).join('') || '<p class="empty">No pages saved.</p>';
+}
+
+function wbReviewGoTo(index){
+  wbReviewState.currentIndex = index;
+  renderWbReviewPage();
+}
+
+function closeWhiteboardReview(){
+  document.getElementById('wbReviewBackdrop').classList.remove('open');
+}
 
 async function loadStudentMaterials(){
   const filterEl = document.getElementById('matSubjectFilter');
@@ -3468,6 +3515,13 @@ function toggleMaterialTypeFields(){
   document.getElementById('matVideoUrl').style.display = isVideo ? 'block' : 'none';
 }
 
+function jumpToUploadContent(){
+  const card = document.getElementById('teacherMaterialsCard');
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setTimeout(() => document.getElementById('matTitle').focus(), 400);
+}
+
 async function uploadMaterial(){
   const subject = document.getElementById('matSubject').value.trim();
   const grade = document.getElementById('matGrade').value.trim();
@@ -4109,6 +4163,16 @@ if (authToken && currentUser && currentUser.role) {
         <div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:36px; max-height:70px; resize:vertical; font-family:inherit; font-size:12.5px;" id="msgInput-classroom" placeholder="Ask a question…" rows="1" onkeydown="handleChatKeydown(event,'classroom')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('classroom')">Send</button></div>
       </div>
     </div>
+  </div>
+</div>
+<div class="draw-modal-backdrop" id="wbReviewBackdrop">
+  <div class="draw-modal" style="max-width:560px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h3 style="font-size:15px;" id="wbReviewTitle">Whiteboard</h3>
+      <button type="button" class="btn btn-outline btn-sm" onclick="closeWhiteboardReview()">Close</button>
+    </div>
+    <img id="wbReviewImage" style="width:100%; border:1px solid var(--line); border-radius:10px; background:#fff;" alt="Whiteboard page">
+    <div class="draw-row" style="margin-top:10px; margin-bottom:0; justify-content:center;" id="wbReviewPages"></div>
   </div>
 </div>
 </body>
