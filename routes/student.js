@@ -305,8 +305,13 @@ router.post('/exams/:id/submit', asyncHandler(async (req, res) => {
   const questionMap = {};
   questions.forEach(q => { questionMap[q.id] = q; });
 
+  // Whether this exam needs teacher grading is a property of its questions,
+  // not of what happened to arrive in the submitted payload — a truncated
+  // or malformed submission (e.g. a network hiccup during the auto-submit
+  // that fires when time runs out) must never cause a descriptive question
+  // to be silently skipped and the attempt wrongly finalized as 'graded'.
+  const hasDescriptive = questions.some(q => q.question_type === 'descriptive');
   let autoScore = 0;
-  let hasDescriptive = false;
 
   for (const ans of (answers || [])) {
     const q = questionMap[ans.question_id];
@@ -322,7 +327,6 @@ router.post('/exams/:id/submit', asyncHandler(async (req, res) => {
         [attempt.id, q.id, ans.answer || '', isCorrect, marksAwarded]
       );
     } else {
-      hasDescriptive = true;
       await run(
         `INSERT INTO exam_answers (attempt_id, question_id, student_answer, is_correct, marks_awarded)
          VALUES ($1,$2,$3,NULL,NULL)

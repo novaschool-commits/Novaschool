@@ -163,10 +163,22 @@ router.post('/submissions/:id/grade', asyncHandler(async (req, res) => {
 
   await run("UPDATE submissions SET marks = $1, status = 'graded', feedback = $2 WHERE id = $3", [marks, feedback || null, submissionId]);
 
-  await run(
-    'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1, $2, $3, $4)',
-    [submission.student_id, submission.subject, submission.title, `${marks}/${submission.max_marks}`]
+  // Upsert rather than blind INSERT — a teacher correcting a mark (opening
+  // an already-graded submission and saving again) must update the
+  // existing gradebook entry, not add a second, duplicate one.
+  const scoreText = `${marks}/${submission.max_marks}`;
+  const existingGrade = await get(
+    'SELECT id FROM grades WHERE student_id = $1 AND subject = $2 AND assessment = $3',
+    [submission.student_id, submission.subject, submission.title]
   );
+  if (existingGrade) {
+    await run('UPDATE grades SET score = $1, recorded_at = CURRENT_TIMESTAMP WHERE id = $2', [scoreText, existingGrade.id]);
+  } else {
+    await run(
+      'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1, $2, $3, $4)',
+      [submission.student_id, submission.subject, submission.title, scoreText]
+    );
+  }
 
   res.json({ message: 'Grade recorded.' });
 }));
@@ -381,6 +393,19 @@ router.post('/exams/attempts/:attemptId/grade', asyncHandler(async (req, res) =>
     await run('UPDATE exam_answers SET marks_awarded = $1 WHERE attempt_id = $2 AND question_id = $3', [g.marks_awarded, attemptId, g.question_id]);
   }
 
+  // Only finalize and publish once every descriptive question actually has
+  // a mark — a partial save must not prematurely close grading or push an
+  // incomplete score to the student's gradebook.
+  const stillUngraded = await get(
+    `SELECT COUNT(*) AS c FROM exam_answers ea JOIN exam_questions eq ON eq.id = ea.question_id
+     WHERE ea.attempt_id = $1 AND eq.question_type = 'descriptive' AND ea.marks_awarded IS NULL`,
+    [attemptId]
+  );
+  if (Number(stillUngraded.c) > 0) {
+    const remaining = Number(stillUngraded.c);
+    return res.json({ message: `Saved. ${remaining} question${remaining === 1 ? '' : 's'} still need${remaining === 1 ? 's' : ''} a mark before this can be published.` });
+  }
+
   const totalsRow = await get('SELECT COALESCE(SUM(marks_awarded), 0) AS total FROM exam_answers WHERE attempt_id = $1', [attemptId]);
   const maxRow = await get(
     'SELECT COALESCE(SUM(marks),0) AS max FROM exam_questions WHERE exam_id = (SELECT exam_id FROM exam_attempts WHERE id = $1)',
@@ -390,10 +415,22 @@ router.post('/exams/attempts/:attemptId/grade', asyncHandler(async (req, res) =>
 
   await run("UPDATE exam_attempts SET total_score = $1, status = 'graded' WHERE id = $2", [totalScore, attemptId]);
 
-  await run(
-    'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1,$2,$3,$4)',
-    [attempt.student_id, attempt.subject, `Test: ${attempt.exam_title}`, `${totalScore}/${Number(maxRow.max)}`]
+  // Upsert rather than blind INSERT — regrading (adjusting a mark and
+  // saving again) must update the existing gradebook entry, not duplicate it.
+  const scoreText = `${totalScore}/${Number(maxRow.max)}`;
+  const assessmentLabel = `Test: ${attempt.exam_title}`;
+  const existingGrade = await get(
+    'SELECT id FROM grades WHERE student_id = $1 AND subject = $2 AND assessment = $3',
+    [attempt.student_id, attempt.subject, assessmentLabel]
   );
+  if (existingGrade) {
+    await run('UPDATE grades SET score = $1, recorded_at = CURRENT_TIMESTAMP WHERE id = $2', [scoreText, existingGrade.id]);
+  } else {
+    await run(
+      'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1,$2,$3,$4)',
+      [attempt.student_id, attempt.subject, assessmentLabel, scoreText]
+    );
+  }
 
   res.json({ message: 'Grading saved and published to the student\u2019s gradebook.' });
 }));
