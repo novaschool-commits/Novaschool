@@ -486,3 +486,28 @@ CREATE TABLE IF NOT EXISTS whiteboard_pages (
 -- Tracks which page the class was last on, so a refresh/reconnect resumes
 -- exactly where the teacher left off instead of defaulting back to page 1.
 ALTER TABLE whiteboards ADD COLUMN IF NOT EXISTS current_page_id INTEGER REFERENCES whiteboard_pages(id);
+
+-- ============================================================
+-- Honest fee "payment": parents can't self-mark an invoice paid with
+-- no money actually moving. They submit a payment claim (optionally
+-- with a note, e.g. a bank transfer reference); only an admin
+-- confirming it actually flips the invoice to 'paid'. No payment
+-- gateway is wired up — this matches how many schools already
+-- collect fees (bank transfer / cash), reconciled by the office.
+-- ============================================================
+DO $$
+DECLARE
+  con_name TEXT;
+BEGIN
+  SELECT conname INTO con_name
+  FROM pg_constraint
+  WHERE conrelid = 'invoices'::regclass AND contype = 'c'
+    AND pg_get_constraintdef(oid) ILIKE '%status%';
+  IF con_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE invoices DROP CONSTRAINT %I', con_name);
+  END IF;
+END $$;
+ALTER TABLE invoices ADD CONSTRAINT invoices_status_check CHECK (status IN ('pending','pending_confirmation','paid','overdue'));
+
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_note TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_claimed_at TIMESTAMPTZ;

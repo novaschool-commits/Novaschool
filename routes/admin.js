@@ -514,4 +514,44 @@ router.get('/results/overview', requirePermission('results.view'), asyncHandler(
   });
 }));
 
+// ---------- Fee payment confirmations ----------
+// Parents can only *claim* they've paid (routes/parent.js) — no payment
+// gateway is connected, so nothing is actually marked paid until an admin
+// confirms it here, ideally against a real bank/cash record.
+
+router.get('/invoices/pending-confirmation', requirePermission('settings.view'), asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT i.id, i.term, i.amount_due, i.due_date, i.payment_note, i.payment_claimed_at,
+            st.first_name, st.last_name, st.admission_no
+     FROM invoices i JOIN students st ON st.id = i.student_id
+     WHERE i.status = 'pending_confirmation' ORDER BY i.payment_claimed_at ASC`
+  );
+  res.json({ invoices: rows.map(r => ({
+    id: r.id, term: r.term, amountDue: r.amount_due, dueDate: r.due_date,
+    paymentNote: r.payment_note, claimedAt: r.payment_claimed_at,
+    studentName: `${r.first_name} ${r.last_name}`, admissionNo: r.admission_no
+  })) });
+}));
+
+router.post('/invoices/:id/confirm-payment', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const invoice = await get('SELECT * FROM invoices WHERE id = $1', [Number(req.params.id)]);
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found.' });
+  if (invoice.status !== 'pending_confirmation') return res.status(409).json({ error: 'This invoice isn\u2019t awaiting confirmation.' });
+
+  await run("UPDATE invoices SET status = 'paid', amount_paid = amount_due WHERE id = $1", [invoice.id]);
+  await logAudit(req, 'invoice.payment_confirmed', 'invoice', invoice.id, { amount: invoice.amount_due });
+  res.json({ message: 'Payment confirmed — the parent will see this invoice as paid.' });
+}));
+
+router.post('/invoices/:id/reject-payment', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const invoice = await get('SELECT * FROM invoices WHERE id = $1', [Number(req.params.id)]);
+  if (!invoice) return res.status(404).json({ error: 'Invoice not found.' });
+  if (invoice.status !== 'pending_confirmation') return res.status(409).json({ error: 'This invoice isn\u2019t awaiting confirmation.' });
+
+  const newStatus = invoice.due_date && invoice.due_date < new Date().toISOString().slice(0, 10) ? 'overdue' : 'pending';
+  await run(`UPDATE invoices SET status = $1, payment_note = NULL, payment_claimed_at = NULL WHERE id = $2`, [newStatus, invoice.id]);
+  await logAudit(req, 'invoice.payment_rejected', 'invoice', invoice.id, null);
+  res.json({ message: 'Payment claim rejected \u2014 the parent will see this invoice as unpaid again.' });
+}));
+
 module.exports = router;

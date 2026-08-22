@@ -90,11 +90,12 @@ router.get('/fees-summary', asyncHandler(async (req, res) => {
   res.json({ totalDue, nearestDueDate, invoices: rows });
 }));
 
-router.post('/invoices/:id/pay', asyncHandler(async (req, res) => {
+router.post('/invoices/:id/claim-payment', asyncHandler(async (req, res) => {
   const parent = await getParent(req);
   if (!parent) return res.status(404).json({ error: 'Parent profile not found.' });
 
   const invoiceId = Number(req.params.id);
+  const { note } = req.body || {};
   const invoice = await get(
     `SELECT i.* FROM invoices i
      JOIN student_parent_map m ON m.student_id = i.student_id
@@ -104,9 +105,13 @@ router.post('/invoices/:id/pay', asyncHandler(async (req, res) => {
 
   if (!invoice) return res.status(404).json({ error: 'Invoice not found for your account.' });
   if (invoice.status === 'paid') return res.status(409).json({ error: 'This invoice is already paid.' });
+  if (invoice.status === 'pending_confirmation') return res.status(409).json({ error: 'This invoice is already awaiting the office\u2019s confirmation.' });
 
-  await run("UPDATE invoices SET amount_paid = amount_due, status = 'paid' WHERE id = $1", [invoiceId]);
-  res.json({ message: 'Payment recorded. This demo does not move real money — wire in a payment gateway (Stripe/Razorpay) here.' });
+  await run(
+    "UPDATE invoices SET status = 'pending_confirmation', payment_note = $1, payment_claimed_at = CURRENT_TIMESTAMP WHERE id = $2",
+    [note || null, invoiceId]
+  );
+  res.json({ message: 'Marked as paid by you \u2014 the office will confirm and update your balance shortly. No online payment gateway is connected yet, so this doesn\u2019t move any money automatically.' });
 }));
 
 router.get('/messages', asyncHandler(async (req, res) => {

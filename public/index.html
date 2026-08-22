@@ -655,7 +655,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <div class="card-head"><h3>Fees — Term 2</h3></div>
           <p style="font-family:var(--display); font-size:28px; font-weight:700;" id="parentFeeAmount">—</p>
           <p class="progress-note" id="parentFeeNote">Loading…</p>
-          <button class="btn btn-primary" style="margin-top:16px; width:100%;" id="parentPayBtn" onclick="payFee()">Pay now</button>
+          <button class="btn btn-primary" style="margin-top:16px; width:100%;" id="parentPayBtn" onclick="claimFeePayment()">I've paid — notify office</button>
         </div>
       </div>
       <div class="grid-2">
@@ -882,6 +882,12 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="createSection()">Create section</button>
         <div class="table-scroll"><table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Curriculum</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Pending fee confirmations</h3></div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;">Parents can only claim they've paid — no payment gateway is connected. Confirm against your actual bank/cash record before approving.</p>
+        <div id="adminPendingFees"><p class="empty">Loading…</p></div>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -2901,8 +2907,16 @@ async function loadParentDashboard(){
     document.getElementById('parentFeeNote').textContent = fees.totalDue > 0
       ? `Combined balance across ${parentChildren.length} ${parentChildren.length===1?'child':'children'}${fees.nearestDueDate ? ', due ' + fees.nearestDueDate : ''}.`
       : 'All invoices are paid up. Nice.';
-    document.getElementById('parentPayBtn').disabled = fees.totalDue <= 0;
-    document.getElementById('parentPayBtn').textContent = fees.totalDue <= 0 ? 'Paid in full' : 'Pay now';
+    const claimable = fees.invoices.filter(i => i.status === 'pending' || i.status === 'overdue');
+    const awaitingConfirmation = fees.invoices.some(i => i.status === 'pending_confirmation');
+    const payBtn = document.getElementById('parentPayBtn');
+    if (fees.totalDue <= 0) {
+      payBtn.disabled = true; payBtn.textContent = 'Paid in full';
+    } else if (!claimable.length && awaitingConfirmation) {
+      payBtn.disabled = true; payBtn.textContent = 'Awaiting office confirmation';
+    } else {
+      payBtn.disabled = false; payBtn.textContent = "I've paid — notify office";
+    }
 
     await loadMessageContacts('parent');
 
@@ -2932,12 +2946,13 @@ async function loadChildData(studentId){
   }
 }
 
-async function payFee(){
-  const unpaid = (await api('/parent/fees-summary')).invoices.filter(i => i.status !== 'paid');
-  if (!unpaid.length) { toast('Nothing left to pay.'); return; }
+async function claimFeePayment(){
+  const unpaid = (await api('/parent/fees-summary')).invoices.filter(i => i.status === 'pending' || i.status === 'overdue');
+  if (!unpaid.length) { toast('Nothing left to mark as paid.'); return; }
+  const note = prompt('Optional: how did you pay? (e.g. bank transfer, receipt number) — this helps the office confirm faster.') || '';
   try {
     for (const inv of unpaid) {
-      const res = await api(`/parent/invoices/${inv.id}/pay`, { method: 'POST' });
+      const res = await api(`/parent/invoices/${inv.id}/claim-payment`, { method: 'POST', body: JSON.stringify({ note }) });
       toast(res.message);
     }
     loadParentDashboard();
@@ -3645,6 +3660,8 @@ async function loadAdminDashboard(){
     ).join('');
     populateSectionTeacherOptions();
 
+    await loadAdminPendingFees();
+
     const atSectionEl = document.getElementById('atSection');
     if (atSectionEl) {
       const prevValue = atSectionEl.value;
@@ -3895,6 +3912,33 @@ async function createSection(){
   } catch (err) {
     toast(err.message);
   }
+}
+
+async function loadAdminPendingFees(){
+  try {
+    const d = await api('/admin/invoices/pending-confirmation');
+    document.getElementById('adminPendingFees').innerHTML = d.invoices.length
+      ? d.invoices.map(i => `<div class="list-row"><div class="l-main"><div><div class="l-title">${escapeHtml(i.studentName)} — ${i.term}</div><div class="l-sub">Rs. ${Number(i.amountDue).toFixed(2)}${i.paymentNote ? ' · ' + escapeHtml(i.paymentNote) : ''} · claimed ${fmtDate(i.claimedAt)}</div></div></div>
+          <div style="display:flex; gap:6px; flex-shrink:0;"><button class="btn btn-outline btn-sm" onclick="rejectFeeConfirmation(${i.id})">Reject</button><button class="btn btn-primary btn-sm" onclick="confirmFeePayment(${i.id})">Confirm</button></div></div>`).join('')
+      : '<p class="empty">Nothing awaiting confirmation.</p>';
+  } catch (err) { toast(err.message); }
+}
+
+async function confirmFeePayment(invoiceId){
+  try {
+    const res = await api(`/admin/invoices/${invoiceId}/confirm-payment`, { method: 'POST' });
+    toast(res.message);
+    loadAdminPendingFees();
+  } catch (err) { toast(err.message); }
+}
+
+async function rejectFeeConfirmation(invoiceId){
+  if (!confirm('Reject this payment claim? The parent will see the invoice as unpaid again.')) return;
+  try {
+    const res = await api(`/admin/invoices/${invoiceId}/reject-payment`, { method: 'POST' });
+    toast(res.message);
+    loadAdminPendingFees();
+  } catch (err) { toast(err.message); }
 }
 
 async function deleteSection(code){
