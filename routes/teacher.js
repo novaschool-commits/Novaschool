@@ -811,4 +811,52 @@ router.delete('/materials/:id', asyncHandler(async (req, res) => {
   res.json({ message: 'Material removed.' });
 }));
 
+// ---------- Gradebook: full history across every student this teacher teaches ----------
+// "Students I teach" is scoped the same way as messaging contacts elsewhere
+// in the app — students in any section this teacher has a timetable entry
+// for — so this stays consistent with the rest of the app's permission model.
+
+router.get('/gradebook', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const sectionRows = await all('SELECT DISTINCT section_code FROM timetable WHERE teacher_id = $1', [teacher.id]);
+  const sectionCodes = sectionRows.map(r => r.section_code);
+  if (!sectionCodes.length) return res.json({ grades: [], sections: [], subjects: [] });
+
+  const { section, subject, search } = req.query;
+  const sectionFilter = section && sectionCodes.includes(section) ? [section] : sectionCodes;
+
+  const conditions = [`st.section_code = ANY($1)`];
+  const params = [sectionFilter];
+  let idx = 2;
+  if (subject) { conditions.push(`g.subject = $${idx++}`); params.push(subject); }
+  if (search) { conditions.push(`(st.first_name ILIKE $${idx} OR st.last_name ILIKE $${idx} OR g.assessment ILIKE $${idx})`); params.push(`%${search}%`); idx++; }
+
+  const rows = await all(
+    `SELECT g.id, g.subject, g.assessment, g.score, g.recorded_at,
+            st.id AS student_id, st.first_name, st.last_name, st.admission_no, st.section_code
+     FROM grades g JOIN students st ON st.id = g.student_id
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY g.recorded_at DESC LIMIT 300`,
+    params
+  );
+
+  // For the filter dropdowns — every section/subject actually in scope,
+  // not just what's on the current (possibly filtered) page of results.
+  const subjectRows = await all(
+    `SELECT DISTINCT g.subject FROM grades g JOIN students st ON st.id = g.student_id WHERE st.section_code = ANY($1) ORDER BY g.subject`,
+    [sectionCodes]
+  );
+
+  res.json({
+    grades: rows.map(r => ({
+      id: r.id, subject: r.subject, assessment: r.assessment, score: r.score, recordedAt: r.recorded_at,
+      studentName: `${r.first_name} ${r.last_name}`, admissionNo: r.admission_no, sectionCode: r.section_code
+    })),
+    sections: sectionCodes,
+    subjects: subjectRows.map(r => r.subject)
+  });
+}));
+
 module.exports = router;

@@ -693,6 +693,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="materials" onclick="showTeacherPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
         <a class="side-link" data-page="courses" onclick="showTeacherPage('courses')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="exams" onclick="showTeacherPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
+        <a class="side-link" data-page="gradebook" onclick="showTeacherPage('gradebook')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Gradebook</span></a>
         <a class="side-link" data-page="messages" onclick="showTeacherPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
       </nav>
       <div class="side-foot">
@@ -784,6 +785,21 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <button class="btn btn-primary btn-sm" onclick="createExam()">Create</button>
           </div>
           <div id="teacherExams"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="teacher-page" data-page="gradebook">
+        <div class="card">
+          <div class="card-head"><h3>Gradebook</h3></div>
+          <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-bottom:16px;">
+            <select class="grade-input" style="width:100%;" id="gbSectionFilter" onchange="loadTeacherGradebook()"><option value="">All sections</option></select>
+            <select class="grade-input" style="width:100%;" id="gbSubjectFilter" onchange="loadTeacherGradebook()"><option value="">All subjects</option></select>
+            <input class="grade-input" style="width:100%;" id="gbSearch" placeholder="Search student or assessment…" oninput="debouncedGradebookSearch()">
+          </div>
+          <div class="table-scroll"><table class="table-simple">
+            <thead><tr><th>Student</th><th>Section</th><th>Subject</th><th>Assessment</th><th>Score</th><th>Date</th></tr></thead>
+            <tbody id="teacherGradebookBody"><tr><td colspan="6"><p class="empty">Loading…</p></td></tr></tbody>
+          </table></div>
         </div>
       </div>
 
@@ -1386,6 +1402,7 @@ async function submitEntranceTest(kind){
 
 /* ============================== Messaging (shared: student/parent/teacher) ============================== */
 const chatState = {}; // scope -> { partnerId, groupMode, selected: Set<userId> }
+const chatPollTimers = {}; // scope -> interval id, for the persistent Messages tabs (not the classroom panel, which manages its own)
 
 function ensureChatState(scope){
   if (!chatState[scope]) chatState[scope] = { partnerId: null, groupMode: false, selected: new Set() };
@@ -1485,6 +1502,17 @@ async function openChatThread(scope, userId){
       : '<p class="empty">No messages yet — say hello.</p>';
     threadEl.scrollTop = threadEl.scrollHeight;
     renderMathIn(threadEl);
+
+    // The persistent Messages tabs (student/teacher/parent — not the
+    // classroom panel, which already polls on its own while open) have no
+    // push mechanism, so a thread left open would otherwise go stale.
+    if (scope !== 'classroom') {
+      clearInterval(chatPollTimers[scope]);
+      chatPollTimers[scope] = setInterval(() => {
+        if (ensureChatState(scope).partnerId === userId) openChatThread(scope, userId);
+        else clearInterval(chatPollTimers[scope]); // a different thread was opened meanwhile
+      }, 6000);
+    }
   } catch (err) {
     toast(err.message);
   }
@@ -3002,6 +3030,37 @@ async function claimFeePayment(){
 }
 
 /* ============================== TEACHER ============================== */
+async function loadTeacherGradebook(){
+  const sectionSel = document.getElementById('gbSectionFilter');
+  const subjectSel = document.getElementById('gbSubjectFilter');
+  const search = document.getElementById('gbSearch').value.trim();
+  const params = new URLSearchParams();
+  if (sectionSel.value) params.set('section', sectionSel.value);
+  if (subjectSel.value) params.set('subject', subjectSel.value);
+  if (search) params.set('search', search);
+
+  try {
+    const d = await api(`/teacher/gradebook?${params.toString()}`);
+    if (sectionSel.options.length <= 1) {
+      d.sections.forEach(s => sectionSel.insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+    }
+    if (subjectSel.options.length <= 1) {
+      d.subjects.forEach(s => subjectSel.insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+    }
+    document.getElementById('teacherGradebookBody').innerHTML = d.grades.length
+      ? d.grades.map(g => `<tr><td>${escapeHtml(g.studentName)}</td><td>${g.sectionCode||''}</td><td>${escapeHtml(g.subject)}</td><td>${escapeHtml(g.assessment)}</td><td>${escapeHtml(g.score)}</td><td>${fmtDate(g.recordedAt)}</td></tr>`).join('')
+      : '<tr><td colspan="6"><p class="empty">No grades match those filters yet.</p></td></tr>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+let gradebookSearchTimer = null;
+function debouncedGradebookSearch(){
+  clearTimeout(gradebookSearchTimer);
+  gradebookSearchTimer = setTimeout(loadTeacherGradebook, 350);
+}
+
 async function loadTeacherDashboard(){
   showTeacherPage('dashboard');
   const p = currentUser.profile || {};
@@ -3048,6 +3107,7 @@ async function loadTeacherDashboard(){
     await loadTeacherExams();
     await loadTeacherCourses();
     await loadTeacherMaterials();
+    await loadTeacherGradebook();
     await loadMessageContacts('teacher');
   } catch (err) {
     toast(err.message);
@@ -3574,10 +3634,8 @@ function toggleMaterialTypeFields(){
 }
 
 function jumpToUploadContent(){
-  const card = document.getElementById('teacherMaterialsCard');
-  if (!card) return;
-  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  setTimeout(() => document.getElementById('matTitle').focus(), 400);
+  showTeacherPage('materials');
+  setTimeout(() => document.getElementById('matTitle').focus(), 350);
 }
 
 async function uploadMaterial(){

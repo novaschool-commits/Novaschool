@@ -205,11 +205,25 @@ async function resolvePerson(userId) {
     const row = await get(`SELECT first_name, last_name FROM ${table} WHERE user_id = $1`, [userId]);
     if (row) return { userId, name: `${row.first_name} ${row.last_name}`, role };
   }
+  const staffRow = await get(
+    `SELECT s.first_name, s.last_name, sr.name AS role_name FROM staff s
+     LEFT JOIN staff_roles sr ON sr.id = s.staff_role_id WHERE s.user_id = $1 AND s.status = 'active'`,
+    [userId]
+  );
+  if (staffRow) return { userId, name: `${staffRow.first_name} ${staffRow.last_name}`, role: staffRow.role_name || 'Staff' };
   return { userId, name: 'Unknown', role: '' };
 }
 
 // Who is this person allowed to message? Kept deliberately restrictive —
-// students and parents can only reach teachers/admin, not each other directly.
+// students and parents can only reach teachers/admin/management staff, not
+// each other directly. Staff reach mirrors admin's — same trust level,
+// since they're admin-invited management-team members — not narrowed to
+// their specific permissions, to keep this simple.
+async function getActiveStaffUserIds() {
+  const rows = await all(`SELECT user_id FROM staff WHERE status = 'active' AND user_id IS NOT NULL`);
+  return rows.map(r => r.user_id);
+}
+
 async function getAllowedContacts(user) {
   if (user.role === 'student') {
     const student = await get('SELECT * FROM students WHERE user_id = $1', [user.id]);
@@ -219,7 +233,7 @@ async function getAllowedContacts(user) {
       [student.section_code]
     );
     const adminRows = await all('SELECT user_id FROM admins WHERE user_id IS NOT NULL');
-    return [...teacherRows, ...adminRows].map(r => r.user_id);
+    return [...teacherRows.map(r => r.user_id), ...adminRows.map(r => r.user_id), ...(await getActiveStaffUserIds())];
   }
   if (user.role === 'parent') {
     const parent = await get('SELECT * FROM parents WHERE user_id = $1', [user.id]);
@@ -233,16 +247,17 @@ async function getAllowedContacts(user) {
       [parent.id]
     );
     const adminRows = await all('SELECT user_id FROM admins WHERE user_id IS NOT NULL');
-    return [...teacherRows, ...adminRows].map(r => r.user_id);
+    return [...teacherRows.map(r => r.user_id), ...adminRows.map(r => r.user_id), ...(await getActiveStaffUserIds())];
   }
   if (user.role === 'teacher') {
     const teacher = await get('SELECT * FROM teachers WHERE user_id = $1', [user.id]);
     if (!teacher) return [];
     const sectionRows = await all('SELECT DISTINCT section_code FROM timetable WHERE teacher_id = $1', [teacher.id]);
     const sectionCodes = sectionRows.map(r => r.section_code);
+    const adminRows = await all('SELECT user_id FROM admins WHERE user_id IS NOT NULL');
+    const staffIds = await getActiveStaffUserIds();
     if (!sectionCodes.length) {
-      const adminRows = await all('SELECT user_id FROM admins WHERE user_id IS NOT NULL');
-      return adminRows.map(r => r.user_id);
+      return [...adminRows.map(r => r.user_id), ...staffIds];
     }
     const placeholders = sectionCodes.map((_, i) => `$${i + 1}`).join(',');
     const studentRows = await all(`SELECT user_id FROM students WHERE section_code IN (${placeholders}) AND user_id IS NOT NULL`, sectionCodes);
@@ -252,14 +267,15 @@ async function getAllowedContacts(user) {
        WHERE st.section_code IN (${placeholders}) AND p.user_id IS NOT NULL`,
       sectionCodes
     );
-    const adminRows = await all('SELECT user_id FROM admins WHERE user_id IS NOT NULL');
-    return [...studentRows, ...parentRows, ...adminRows].map(r => r.user_id);
+    return [...studentRows.map(r => r.user_id), ...parentRows.map(r => r.user_id), ...adminRows.map(r => r.user_id), ...staffIds];
   }
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'staff') {
     const teacherRows = await all('SELECT user_id FROM teachers WHERE user_id IS NOT NULL');
     const parentRows = await all('SELECT user_id FROM parents WHERE user_id IS NOT NULL');
     const studentRows = await all('SELECT user_id FROM students WHERE user_id IS NOT NULL');
-    return [...teacherRows, ...parentRows, ...studentRows].map(r => r.user_id);
+    const staffIds = (await getActiveStaffUserIds()).filter(id => id !== user.id); // don't list yourself
+    const adminRows = await all('SELECT user_id FROM admins WHERE user_id IS NOT NULL');
+    return [...teacherRows.map(r => r.user_id), ...parentRows.map(r => r.user_id), ...studentRows.map(r => r.user_id), ...staffIds, ...adminRows.map(r => r.user_id)];
   }
   return [];
 }
