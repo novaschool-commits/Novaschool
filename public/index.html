@@ -690,6 +690,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="students" onclick="showTeacherPage('students')"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.4.4 4.5 2.4 4.5 5.8"/></svg><span class="txt">My Students</span></a>
         <a class="side-link" data-page="live" onclick="showTeacherPage('live')"><svg class="icon" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="txt">Live Classes</span></a>
         <a class="side-link" data-page="lessons" onclick="showTeacherPage('lessons')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">Lessons</span></a>
+        <a class="side-link" data-page="assignments" onclick="showTeacherPage('assignments')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 3h6v4H9z"/><path d="M6 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1"/><path d="M8 12h8M8 16h5"/></svg><span class="txt">Assignments</span></a>
         <a class="side-link" data-page="materials" onclick="showTeacherPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
         <a class="side-link" data-page="courses" onclick="showTeacherPage('courses')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="exams" onclick="showTeacherPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
@@ -819,6 +820,26 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <button class="btn btn-primary btn-sm" onclick="createCourse()">Create</button>
           </div>
           <div id="teacherCourses"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="teacher-page" data-page="assignments">
+        <div class="card" id="teacherAssignmentsCard">
+          <div class="card-head"><h3>Create assignment</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="asgTitle" placeholder="Title">
+            <input class="grade-input" style="width:100%;" id="asgSubject" placeholder="Subject (e.g. Chemistry)">
+            <select class="grade-input" style="width:100%;" id="assignmentSection"></select>
+            <input class="grade-input" style="width:100%;" type="date" id="asgDueDate">
+            <input class="grade-input" style="width:100%;" type="number" id="asgMaxMarks" placeholder="Max marks" value="100">
+            <input class="grade-input" style="width:100%;" type="file" id="asgFile" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,image/*">
+          </div>
+          <textarea id="asgInstructions" placeholder="Instructions (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="createAssignment()">Create assignment</button>
+        </div>
+        <div class="card" style="margin-top:16px;">
+          <div class="card-head"><h3>My assignments</h3></div>
+          <div id="teacherAssignmentsList"><p class="empty">Loading…</p></div>
         </div>
       </div>
 
@@ -3063,6 +3084,10 @@ function debouncedGradebookSearch(){
 
 async function loadTeacherDashboard(){
   showTeacherPage('dashboard');
+  await refreshTeacherWidgets();
+}
+
+async function refreshTeacherWidgets(){
   const p = currentUser.profile || {};
   document.getElementById('teacherAvatar').textContent = initials(p.first_name, p.last_name);
   document.getElementById('teacherName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
@@ -3087,6 +3112,7 @@ async function loadTeacherDashboard(){
     sectionSelect.innerHTML = (d.mySections || []).map(s => `<option value="${s}">${s}</option>`).join('') || '<option value="">No sections yet</option>';
     document.getElementById('examSection').innerHTML = sectionSelect.innerHTML;
     document.getElementById('ttSection').innerHTML = sectionSelect.innerHTML;
+    document.getElementById('assignmentSection').innerHTML = sectionSelect.innerHTML;
     window._teacherSections = d.mySections || [];
     if ((d.mySections || []).length) { await loadTimetableManager(); await refreshLiveClassButton(); }
 
@@ -3106,6 +3132,7 @@ async function loadTeacherDashboard(){
     await loadTeacherLessons();
     await loadTeacherExams();
     await loadTeacherCourses();
+    await loadTeacherAssignments();
     await loadTeacherMaterials();
     await loadTeacherGradebook();
     await loadMessageContacts('teacher');
@@ -3696,6 +3723,62 @@ async function deleteMaterial(id){
   }
 }
 
+async function loadTeacherAssignments(){
+  try {
+    const d = await api('/teacher/assignments');
+    document.getElementById('teacherAssignmentsList').innerHTML = d.assignments.length
+      ? d.assignments.map(a => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(a.subject)};">${escapeHtml(a.subject)}</span>
+          <div><div class="l-title">${escapeHtml(a.title)}</div><div class="l-sub">Section ${escapeHtml(a.sectionCode)}${a.dueDate ? ' · Due ' + a.dueDate : ''} · ${a.pendingCount} to grade${a.hasAttachment ? ' · ' + escapeHtml(a.attachmentName) : ''}</div></div></div>
+          ${a.hasAttachment ? `<button class="btn btn-outline btn-sm" onclick="downloadTeacherAssignmentAttachment(${a.id})">Download</button>` : ''}</div>`).join('')
+      : '<p class="empty">No assignments created yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createAssignment(){
+  const title = document.getElementById('asgTitle').value.trim();
+  const subject = document.getElementById('asgSubject').value.trim();
+  const section_code = document.getElementById('assignmentSection').value;
+  const due_date = document.getElementById('asgDueDate').value;
+  const max_marks = document.getElementById('asgMaxMarks').value;
+  const description = document.getElementById('asgInstructions').value.trim();
+  const file = document.getElementById('asgFile').files[0];
+  if (!title || !subject || !section_code) { toast('Title, subject, and section are required.'); return; }
+
+  try {
+    const payload = { title, subject, section_code, due_date: due_date || null, max_marks: Number(max_marks) || 100, description: description || null };
+    if (file) {
+      payload.attachment_base64 = await fileToBase64(file);
+      payload.attachment_name = file.name;
+      payload.attachment_mime = file.type;
+    }
+    const res = await api('/teacher/assignments', { method: 'POST', body: JSON.stringify(payload) });
+    toast(res.message);
+    document.getElementById('asgTitle').value = '';
+    document.getElementById('asgSubject').value = '';
+    document.getElementById('asgDueDate').value = '';
+    document.getElementById('asgMaxMarks').value = '100';
+    document.getElementById('asgInstructions').value = '';
+    document.getElementById('asgFile').value = '';
+    await loadTeacherAssignments();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function downloadTeacherAssignmentAttachment(assignmentId){
+  try {
+    const d = await api(`/teacher/assignments/${assignmentId}/attachment`);
+    const a = document.createElement('a');
+    a.href = `data:${d.fileMime || 'application/octet-stream'};base64,${d.fileBase64}`;
+    a.download = d.fileName || 'attachment';
+    a.click();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 async function toggleQueue(assignmentId){
   const el = document.getElementById(`queue-${assignmentId}`);
   const isOpen = el.classList.contains('open');
@@ -3707,9 +3790,10 @@ async function toggleQueue(assignmentId){
     const d = await api(`/teacher/assignments/${assignmentId}/submissions`);
     el.innerHTML = d.submissions.length
       ? d.submissions.map(s => `
-        <div class="qrow"><span>${s.first_name} ${s.last_name}</span>
-          <span style="display:flex; gap:8px; align-items:center;">
-            <input type="number" class="grade-input" min="0" max="${d.assignment.maxMarks}" placeholder="/${d.assignment.maxMarks}" id="mark-${s.id}">
+        <div class="qrow" style="flex-wrap:wrap;"><span>${s.first_name} ${s.last_name}</span>
+          <span style="display:flex; gap:8px; align-items:center; flex:1 1 260px; flex-wrap:wrap;">
+            <input type="number" class="grade-input" style="width:70px;" min="0" max="${d.assignment.maxMarks}" placeholder="/${d.assignment.maxMarks}" id="mark-${s.id}">
+            <input type="text" class="grade-input" style="flex:1 1 140px;" placeholder="Feedback (optional)" id="feedback-${s.id}">
             <button class="btn btn-ink btn-sm" onclick="saveGrade(${s.id}, ${assignmentId})">Save</button>
           </span></div>`).join('')
       : '<p class="empty">All graded.</p>';
@@ -3720,12 +3804,13 @@ async function toggleQueue(assignmentId){
 
 async function saveGrade(submissionId, assignmentId){
   const input = document.getElementById(`mark-${submissionId}`);
+  const feedbackInput = document.getElementById(`feedback-${submissionId}`);
   const marks = Number(input.value);
   if (!input.value || Number.isNaN(marks)) { toast('Enter a mark first.'); return; }
   try {
-    const res = await api(`/teacher/submissions/${submissionId}/grade`, { method: 'POST', body: JSON.stringify({ marks }) });
+    const res = await api(`/teacher/submissions/${submissionId}/grade`, { method: 'POST', body: JSON.stringify({ marks, feedback: feedbackInput.value || null }) });
     toast(res.message);
-    loadTeacherDashboard();
+    await refreshTeacherWidgets();
   } catch (err) {
     toast(err.message);
   }

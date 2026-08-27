@@ -76,7 +76,7 @@ router.get('/assignments', asyncHandler(async (req, res) => {
   if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
 
   const rows = await all(
-    `SELECT a.id, a.title, a.subject, a.section_code, a.due_date, a.max_marks,
+    `SELECT a.id, a.title, a.subject, a.section_code, a.due_date, a.max_marks, a.attachment_name,
             COUNT(s.id) FILTER (WHERE s.status = 'submitted') AS pending_count,
             COUNT(s.id) FILTER (WHERE s.status = 'graded') AS graded_count
      FROM assignments a LEFT JOIN submissions s ON s.assignment_id = a.id
@@ -86,26 +86,47 @@ router.get('/assignments', asyncHandler(async (req, res) => {
   res.json({ assignments: rows.map(r => ({
     id: r.id, title: r.title, subject: r.subject, sectionCode: r.section_code,
     dueDate: r.due_date, maxMarks: r.max_marks,
+    hasAttachment: !!r.attachment_name, attachmentName: r.attachment_name,
     pendingCount: Number(r.pending_count), gradedCount: Number(r.graded_count)
   })) });
 }));
+
+const MAX_ASSIGNMENT_ATTACHMENT_BASE64 = 5_000_000; // ~3.7MB decoded, safely under the 6MB request body limit
 
 router.post('/assignments', asyncHandler(async (req, res) => {
   const teacher = await getTeacher(req);
   if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
 
-  const { title, subject, section_code, due_date, max_marks, description } = req.body || {};
+  const { title, subject, section_code, due_date, max_marks, description, attachment_base64, attachment_name, attachment_mime } = req.body || {};
   if (!title || !subject || !section_code) {
     return res.status(400).json({ error: 'title, subject, and section_code are required.' });
   }
   const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
   if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist.` });
+  if (attachment_base64 && attachment_base64.length > MAX_ASSIGNMENT_ATTACHMENT_BASE64) {
+    return res.status(413).json({ error: 'Attachment is too large (limit ~3.7MB). Please use a smaller file.' });
+  }
 
   const r = await run(
-    'INSERT INTO assignments (title, subject, section_code, teacher_id, due_date, max_marks, description) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-    [title, subject, section_code, teacher.id, due_date || null, Number(max_marks) || 100, description || null]
+    `INSERT INTO assignments (title, subject, section_code, teacher_id, due_date, max_marks, description, attachment_base64, attachment_name, attachment_mime)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+    [title, subject, section_code, teacher.id, due_date || null, Number(max_marks) || 100, description || null,
+     attachment_base64 || null, attachment_name || null, attachment_mime || null]
   );
   res.status(201).json({ message: 'Assignment created.', assignmentId: r.rows[0].id });
+}));
+
+router.get('/assignments/:id/attachment', asyncHandler(async (req, res) => {
+  const teacher = await getTeacher(req);
+  if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
+
+  const assignment = await get(
+    'SELECT attachment_base64, attachment_name, attachment_mime, teacher_id FROM assignments WHERE id = $1',
+    [Number(req.params.id)]
+  );
+  if (!assignment || assignment.teacher_id !== teacher.id) return res.status(404).json({ error: 'Assignment not found.' });
+  if (!assignment.attachment_base64) return res.status(404).json({ error: 'No attachment on this assignment.' });
+  res.json({ fileBase64: assignment.attachment_base64, fileName: assignment.attachment_name, fileMime: assignment.attachment_mime });
 }));
 
 router.get('/assignments/:id/submissions', asyncHandler(async (req, res) => {

@@ -511,3 +511,8 @@ ALTER TABLE invoices ADD CONSTRAINT invoices_status_check CHECK (status IN ('pen
 
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_note TEXT;
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_claimed_at TIMESTAMPTZ;
+
+-- Teacher assignment attachments (Phase 2B: Assignments UI)
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_base64 TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name TEXT;
+ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_mime TEXT;

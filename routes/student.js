@@ -105,13 +105,29 @@ router.get('/assignments/:id', asyncHandler(async (req, res) => {
   res.json({
     assignment: {
       id: assignment.id, title: assignment.title, subject: assignment.subject,
-      description: assignment.description, dueDate: assignment.due_date, maxMarks: assignment.max_marks
+      description: assignment.description, dueDate: assignment.due_date, maxMarks: assignment.max_marks,
+      attachmentName: assignment.attachment_name
     },
     submission: submission ? {
       status: submission.status, marks: submission.marks, feedback: submission.feedback,
       bodyText: submission.body_text, fileName: submission.file_name, submittedAt: submission.submitted_at
     } : null
   });
+}));
+
+router.get('/assignments/:id/attachment', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+
+  const assignment = await get(
+    'SELECT attachment_base64, attachment_name, attachment_mime, section_code FROM assignments WHERE id = $1',
+    [Number(req.params.id)]
+  );
+  if (!assignment || assignment.section_code !== student.section_code) {
+    return res.status(404).json({ error: 'Assignment not found for your section.' });
+  }
+  if (!assignment.attachment_base64) return res.status(404).json({ error: 'No attachment on this assignment.' });
+  res.json({ fileBase64: assignment.attachment_base64, fileName: assignment.attachment_name, fileMime: assignment.attachment_mime });
 }));
 
 router.get('/assignments/:id/submission-file', asyncHandler(async (req, res) => {
