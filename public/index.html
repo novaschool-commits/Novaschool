@@ -2642,8 +2642,10 @@ async function loadStaffCourses(){
     const canPublish = STAFF_PERMISSIONS.includes('courses.publish');
     document.getElementById('staffCoursesList').innerHTML = d.courses.length
       ? d.courses.map(c => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${escapeHtml(c.subject)}</span>
-          <div><div class="l-title">${escapeHtml(c.title)}</div><div class="l-sub">${escapeHtml(c.curriculum)} · ${escapeHtml(c.level)}${c.teacher_first ? ' · ' + escapeHtml(c.teacher_first) + ' ' + escapeHtml(c.teacher_last) : ''}</div></div></div>
-          ${canPublish ? `<button class="btn btn-outline btn-sm" onclick="publishStaffCourse(${c.id})">Mark reviewed</button>` : ''}</div>`).join('')
+          <div><div class="l-title">${escapeHtml(c.title)} <span class="tag" style="background:${c.status === 'published' ? 'var(--green)' : 'var(--ink-soft)'}; font-size:10.5px;">${c.status === 'published' ? 'Published' : 'Draft'}</span></div><div class="l-sub">${escapeHtml(c.curriculum)} · ${escapeHtml(c.level)}${c.teacher && c.teacher !== 'Unassigned' ? ' · ' + escapeHtml(c.teacher) : ''}</div></div></div>
+          ${canPublish ? (c.status === 'published'
+            ? `<button class="btn btn-outline btn-sm" onclick="unpublishStaffCourse(${c.id})">Unpublish</button>`
+            : `<button class="btn btn-primary btn-sm" onclick="publishStaffCourse(${c.id})">Publish</button>`) : ''}</div>`).join('')
       : '<p class="empty">No courses yet.</p>';
   } catch (err) {
     toast(err.message);
@@ -2671,6 +2673,18 @@ async function publishStaffCourse(courseId){
   try {
     const res = await api(`/admin/courses/${courseId}/publish-check`, { method: 'POST' });
     toast(res.message);
+    await loadStaffCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function unpublishStaffCourse(courseId){
+  if (!confirm('Move this course back to draft? It will be removed from the public course catalog.')) return;
+  try {
+    const res = await api(`/admin/courses/${courseId}/unpublish`, { method: 'POST' });
+    toast(res.message);
+    await loadStaffCourses();
   } catch (err) {
     toast(err.message);
   }
@@ -3934,7 +3948,7 @@ async function loadTeacherCourses(){
         <div style="border-bottom:1px solid var(--paper-alt); padding:12px 0;">
           <div class="list-row" style="border:none; padding:0 0 8px;">
             <div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${c.subject}</span>
-              <div><div class="l-title">${c.title}</div><div class="l-sub">${c.curriculum} · ${c.level} · ${c.topicCount} topic${c.topicCount===1?'':'s'}, ${c.lessonCount} lesson${c.lessonCount===1?'':'s'}</div></div></div>
+              <div><div class="l-title">${c.title} <span class="tag" style="background:${c.status === 'published' ? 'var(--green)' : 'var(--ink-soft)'}; font-size:10.5px;">${c.status === 'published' ? 'Published' : 'Draft'}</span></div><div class="l-sub">${c.curriculum} · ${c.level} · ${c.topicCount} topic${c.topicCount===1?'':'s'}, ${c.lessonCount} lesson${c.lessonCount===1?'':'s'}</div></div></div>
             <div style="display:flex; gap:6px;">
               <button class="btn btn-outline btn-sm" onclick="toggleCourseManage(${c.id})">Manage</button>
               ${c.isMine ? `<button class="btn btn-outline btn-sm" onclick="deleteCourse(${c.id})">Delete</button>` : ''}

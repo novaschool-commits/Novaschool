@@ -435,7 +435,7 @@ router.delete('/timetable/:id', requirePermission('courses.edit'), asyncHandler(
 
 router.get('/courses', requirePermission('courses.view'), asyncHandler(async (req, res) => {
   const rows = await all(
-    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.description, c.created_at,
+    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.description, c.created_at, c.status, c.published_at,
             t.first_name AS teacher_first, t.last_name AS teacher_last,
             (SELECT COUNT(*) FROM course_topics WHERE course_id = c.id) AS topic_count,
             (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count
@@ -445,7 +445,8 @@ router.get('/courses', requirePermission('courses.view'), asyncHandler(async (re
   res.json({ courses: rows.map(r => ({
     id: r.id, subject: r.subject, curriculum: r.curriculum, level: r.level, title: r.title, description: r.description,
     teacher: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned',
-    topicCount: Number(r.topic_count), lessonCount: Number(r.lesson_count), createdAt: r.created_at
+    topicCount: Number(r.topic_count), lessonCount: Number(r.lesson_count), createdAt: r.created_at,
+    status: r.status, publishedAt: r.published_at
   })) });
 }));
 
@@ -483,15 +484,23 @@ router.delete('/courses/:id', requirePermission('courses.edit'), asyncHandler(as
 }));
 
 router.post('/courses/:id/publish-check', requirePermission('courses.publish'), asyncHandler(async (req, res) => {
-  // "Publishing" here means marking a course as ready-for-students in the
-  // audit trail — the app doesn't currently have a draft/published flag on
-  // courses, so this just records the decision without changing any data
-  // until that column exists. Kept intentionally honest rather than faking it.
   const id = Number(req.params.id);
-  const course = await get('SELECT id, title FROM courses WHERE id = $1', [id]);
+  const course = await get('SELECT id, title, status FROM courses WHERE id = $1', [id]);
   if (!course) return res.status(404).json({ error: 'Course not found.' });
-  await logAudit(req, 'course.publish_reviewed', 'course', id, { title: course.title });
-  res.json({ message: 'Publish review recorded. Note: courses have no draft/published state yet in the schema — this only logs the review.' });
+  if (course.status === 'published') return res.status(400).json({ error: 'This course is already published.' });
+  await run('UPDATE courses SET status = \'published\', published_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+  await logAudit(req, 'course.published', 'course', id, { title: course.title });
+  res.json({ message: `"${course.title}" is now published and visible on the public course catalog.` });
+}));
+
+router.post('/courses/:id/unpublish', requirePermission('courses.publish'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const course = await get('SELECT id, title, status FROM courses WHERE id = $1', [id]);
+  if (!course) return res.status(404).json({ error: 'Course not found.' });
+  if (course.status === 'draft') return res.status(400).json({ error: 'This course is already a draft.' });
+  await run('UPDATE courses SET status = \'draft\' WHERE id = $1', [id]);
+  await logAudit(req, 'course.unpublished', 'course', id, { title: course.title });
+  res.json({ message: `"${course.title}" moved back to draft and removed from the public course catalog.` });
 }));
 
 // ---------- Results oversight (Exam Manager / Admin) ----------

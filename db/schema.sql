@@ -521,3 +521,15 @@ ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_mime TEXT;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS employee_id TEXT;
 ALTER TABLE staff ADD COLUMN IF NOT EXISTS department TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
+
+-- Real course publish/draft state (previously publish-check only logged an
+-- audit entry with no actual effect — the public catalog showed every
+-- course regardless of review status). Existing courses were already live
+-- on the public site before this feature existed, so they're backfilled to
+-- 'published' rather than silently disappearing; only courses created from
+-- here on default to 'draft' and need an explicit publish step.
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'published' CHECK (status IN ('draft','published'));
+ALTER TABLE courses ALTER COLUMN status SET NOT NULL;
+ALTER TABLE courses ALTER COLUMN status SET DEFAULT 'draft';
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+UPDATE courses SET published_at = COALESCE(published_at, created_at) WHERE status = 'published' AND published_at IS NULL;

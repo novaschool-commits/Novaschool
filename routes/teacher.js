@@ -551,14 +551,14 @@ router.get('/courses', asyncHandler(async (req, res) => {
   if (!teacher) return res.status(404).json({ error: 'Teacher profile not found.' });
 
   const courses = await all(
-    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.owner_teacher_id,
+    `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.owner_teacher_id, c.status,
             (SELECT COUNT(*) FROM course_topics WHERE course_id = c.id) AS topic_count,
             (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count
      FROM courses c ORDER BY c.subject, c.curriculum, c.level`
   );
 
   res.json({ courses: courses.map(c => ({
-    id: c.id, subject: c.subject, curriculum: c.curriculum, level: c.level, title: c.title,
+    id: c.id, subject: c.subject, curriculum: c.curriculum, level: c.level, title: c.title, status: c.status,
     topicCount: Number(c.topic_count), lessonCount: Number(c.lesson_count), isMine: c.owner_teacher_id === teacher.id
   })) });
 }));

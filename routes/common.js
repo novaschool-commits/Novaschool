@@ -60,13 +60,13 @@ router.get('/public/stats', asyncHandler(async (req, res) => {
 // per-student progress, since there's no logged-in student to attach it to.
 router.get('/public/courses', asyncHandler(async (req, res) => {
   const { subject, curriculum, level } = req.query;
-  const conditions = [];
+  const conditions = ["c.status = 'published'"];
   const params = [];
   let idx = 1;
   if (subject) { conditions.push(`c.subject = $${idx++}`); params.push(subject); }
   if (curriculum) { conditions.push(`c.curriculum = $${idx++}`); params.push(curriculum); }
   if (level) { conditions.push(`c.level = $${idx++}`); params.push(level); }
-  const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+  const where = 'WHERE ' + conditions.join(' AND ');
 
   const courses = await all(
     `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.description,

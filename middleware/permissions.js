@@ -42,6 +42,19 @@ function requirePermission(...keys) {
   };
 }
 
+// userHasPermission(req, key) — same rule as requirePermission but returns
+// a boolean instead of short-circuiting the request. Use inside a handler
+// that's already behind requirePermission(...) when different fields in
+// the same request need different, more specific permissions.
+async function userHasPermission(req, key) {
+  if (req.user.role === 'admin') return true;
+  if (req.user.role !== 'staff') return false;
+  const staffRow = req.staff || await get('SELECT staff_role_id, status FROM staff WHERE user_id = $1', [req.user.id]);
+  if (!staffRow || staffRow.status !== 'active' || !staffRow.staff_role_id) return false;
+  const row = await get('SELECT 1 FROM staff_role_permissions WHERE staff_role_id = $1 AND permission_key = $2', [staffRow.staff_role_id, key]);
+  return !!row;
+}
+
 // Records an audit trail entry. Never pass credentials/tokens in `details`.
 async function logAudit(req, action, targetType, targetId, details) {
   const { run } = require('../db');
@@ -51,4 +64,4 @@ async function logAudit(req, action, targetType, targetId, details) {
   );
 }
 
-module.exports = { requirePermission, logAudit };
+module.exports = { requirePermission, logAudit, userHasPermission };

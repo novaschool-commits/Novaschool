@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { all, get, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { requirePermission, logAudit } = require('../middleware/permissions');
+const { requirePermission, logAudit, userHasPermission } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
@@ -142,7 +142,7 @@ router.delete('/roles/:id', requireRole('admin'), asyncHandler(async (req, res) 
 
 // ---------- Management-team staff (Super Admin only) ----------
 
-router.get('/staff', requireRole('admin'), asyncHandler(async (req, res) => {
+router.get('/staff', requirePermission('staff.view'), asyncHandler(async (req, res) => {
   const rows = await all(
     `SELECT s.id, s.first_name, s.last_name, s.status, s.invited_at, s.activated_at, s.employee_id, s.department,
             u.email, u.last_login, sr.id AS role_id, sr.name AS role_name
@@ -158,7 +158,25 @@ router.get('/staff', requireRole('admin'), asyncHandler(async (req, res) => {
   })) });
 }));
 
-router.post('/staff/invite', requireRole('admin'), asyncHandler(async (req, res) => {
+// A non-admin staff member with staff.invite/staff.edit must never be able
+// to hand out a role with MORE permissions than their own — otherwise a
+// permission-holder could mint themselves (or a colleague) admin-equivalent
+// access. Admins are exempt (they can already do anything).
+async function assertNoPrivilegeEscalation(req, targetStaffRoleId) {
+  if (req.user.role === 'admin' || !targetStaffRoleId) return null;
+  const actorPerms = new Set((await all(
+    'SELECT permission_key FROM staff_role_permissions WHERE staff_role_id = $1',
+    [req.staff.staff_role_id]
+  )).map(r => r.permission_key));
+  const targetPerms = (await all(
+    'SELECT permission_key FROM staff_role_permissions WHERE staff_role_id = $1',
+    [targetStaffRoleId]
+  )).map(r => r.permission_key);
+  const escalates = targetPerms.some(p => !actorPerms.has(p));
+  return escalates ? 'You cannot assign a role with more permissions than your own.' : null;
+}
+
+router.post('/staff/invite', requirePermission('staff.invite'), asyncHandler(async (req, res) => {
   const { email, first_name, last_name, staff_role_id } = req.body || {};
   if (!email || !first_name || !last_name) {
     return res.status(400).json({ error: 'email, first_name, and last_name are required.' });
@@ -170,6 +188,8 @@ router.post('/staff/invite', requireRole('admin'), asyncHandler(async (req, res)
   if (staff_role_id) {
     const role = await get('SELECT id FROM staff_roles WHERE id = $1', [staff_role_id]);
     if (!role) return res.status(400).json({ error: 'That role does not exist.' });
+    const escalationError = await assertNoPrivilegeEscalation(req, staff_role_id);
+    if (escalationError) return res.status(403).json({ error: escalationError });
   }
 
   const token = crypto.randomBytes(24).toString('hex');
@@ -195,7 +215,7 @@ router.post('/staff/invite', requireRole('admin'), asyncHandler(async (req, res)
   });
 }));
 
-router.post('/staff/:id/resend-invite', requireRole('admin'), asyncHandler(async (req, res) => {
+router.post('/staff/:id/resend-invite', requirePermission('staff.invite'), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const staffRow = await get('SELECT * FROM staff WHERE id = $1', [id]);
   if (!staffRow) return res.status(404).json({ error: 'Staff member not found.' });
@@ -208,19 +228,31 @@ router.post('/staff/:id/resend-invite', requireRole('admin'), asyncHandler(async
   res.json({ message: 'New activation link generated.', activationToken: token });
 }));
 
-router.patch('/staff/:id', requireRole('admin'), asyncHandler(async (req, res) => {
+router.patch('/staff/:id', requirePermission('staff.edit', 'staff.suspend'), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const staffRow = await get('SELECT * FROM staff WHERE id = $1', [id]);
   if (!staffRow) return res.status(404).json({ error: 'Staff member not found.' });
+
+  if (req.user.role === 'staff' && staffRow.user_id === req.user.id) {
+    return res.status(403).json({ error: 'You cannot modify your own staff record.' });
+  }
 
   const { staff_role_id, status, employee_id, department } = req.body || {};
   const validStatuses = ['active', 'suspended', 'removed'];
   if (status && !validStatuses.includes(status)) {
     return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}.` });
   }
+  if (status && !(await userHasPermission(req, 'staff.suspend'))) {
+    return res.status(403).json({ error: 'You do not have permission to change staff status.' });
+  }
+  if ((staff_role_id || employee_id !== undefined || department !== undefined) && !(await userHasPermission(req, 'staff.edit'))) {
+    return res.status(403).json({ error: 'You do not have permission to edit staff details.' });
+  }
   if (staff_role_id) {
     const role = await get('SELECT id FROM staff_roles WHERE id = $1', [staff_role_id]);
     if (!role) return res.status(400).json({ error: 'That role does not exist.' });
+    const escalationError = await assertNoPrivilegeEscalation(req, staff_role_id);
+    if (escalationError) return res.status(403).json({ error: escalationError });
   }
 
   await run(
