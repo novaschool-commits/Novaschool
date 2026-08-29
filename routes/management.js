@@ -9,6 +9,30 @@ const { asyncHandler } = require('../middleware/asyncHandler');
 const router = express.Router();
 router.use(authenticate);
 
+// ---------- Self permissions (any authenticated staff/admin) ----------
+// Lets the frontend know what to show a given signed-in user without
+// duplicating the permission table client-side. Admins implicitly have
+// everything; staff get exactly what their assigned role grants.
+
+router.get('/my-permissions', asyncHandler(async (req, res) => {
+  if (req.user.role === 'admin') {
+    return res.json({ role: 'admin', roleName: 'Super Admin', status: 'active', permissions: null }); // null = unrestricted
+  }
+  if (req.user.role !== 'staff') {
+    return res.status(403).json({ error: 'You do not have access to this resource.' });
+  }
+  const staffRow = await get('SELECT status, staff_role_id FROM staff WHERE user_id = $1', [req.user.id]);
+  if (!staffRow) return res.status(404).json({ error: 'Staff profile not found.' });
+  if (staffRow.status !== 'active') {
+    return res.json({ role: 'staff', roleName: null, status: staffRow.status, permissions: [] });
+  }
+  const roleRow = staffRow.staff_role_id ? await get('SELECT name FROM staff_roles WHERE id = $1', [staffRow.staff_role_id]) : null;
+  const rows = staffRow.staff_role_id
+    ? await all('SELECT permission_key FROM staff_role_permissions WHERE staff_role_id = $1', [staffRow.staff_role_id])
+    : [];
+  res.json({ role: 'staff', roleName: roleRow ? roleRow.name : 'Unassigned', status: staffRow.status, permissions: rows.map(r => r.permission_key) });
+}));
+
 // ---------- Permission catalog (Super Admin only — this defines what
 // roles CAN be granted, so it isn't itself delegable) ----------
 

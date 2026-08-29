@@ -163,6 +163,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 .student-page.active{display:block;}
 .teacher-page{display:none; animation:fadeIn .18s ease;}
 .teacher-page.active{display:block;}
+.admin-page{display:none; animation:fadeIn .18s ease;}
+.admin-page.active{display:block;}
 @keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
 @media (prefers-reduced-motion: reduce){ .student-page, .teacher-page{animation:none;} }
 .side-link:hover{background:rgba(255,255,255,.06); color:#fff;} .side-link.active{background:rgba(255,255,255,.12); color:#fff;} .side-link .icon{width:17px; height:17px;}
@@ -690,7 +692,6 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="students" onclick="showTeacherPage('students')"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.4.4 4.5 2.4 4.5 5.8"/></svg><span class="txt">My Students</span></a>
         <a class="side-link" data-page="live" onclick="showTeacherPage('live')"><svg class="icon" viewBox="0 0 24 24"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><span class="txt">Live Classes</span></a>
         <a class="side-link" data-page="lessons" onclick="showTeacherPage('lessons')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">Lessons</span></a>
-        <a class="side-link" data-page="assignments" onclick="showTeacherPage('assignments')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 3h6v4H9z"/><path d="M6 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1"/><path d="M8 12h8M8 16h5"/></svg><span class="txt">Assignments</span></a>
         <a class="side-link" data-page="materials" onclick="showTeacherPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
         <a class="side-link" data-page="courses" onclick="showTeacherPage('courses')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="exams" onclick="showTeacherPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
@@ -823,26 +824,6 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
       </div>
 
-      <div class="teacher-page" data-page="assignments">
-        <div class="card" id="teacherAssignmentsCard">
-          <div class="card-head"><h3>Create assignment</h3></div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <input class="grade-input" style="width:100%;" id="asgTitle" placeholder="Title">
-            <input class="grade-input" style="width:100%;" id="asgSubject" placeholder="Subject (e.g. Chemistry)">
-            <select class="grade-input" style="width:100%;" id="assignmentSection"></select>
-            <input class="grade-input" style="width:100%;" type="date" id="asgDueDate">
-            <input class="grade-input" style="width:100%;" type="number" id="asgMaxMarks" placeholder="Max marks" value="100">
-            <input class="grade-input" style="width:100%;" type="file" id="asgFile" accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.xls,.xlsx,image/*">
-          </div>
-          <textarea id="asgInstructions" placeholder="Instructions (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
-          <button class="btn btn-primary btn-sm" onclick="createAssignment()">Create assignment</button>
-        </div>
-        <div class="card" style="margin-top:16px;">
-          <div class="card-head"><h3>My assignments</h3></div>
-          <div id="teacherAssignmentsList"><p class="empty">Loading…</p></div>
-        </div>
-      </div>
-
       <div class="teacher-page" data-page="materials">
         <div class="card" id="teacherMaterialsCard">
           <div class="card-head"><h3>Study materials library</h3></div>
@@ -872,7 +853,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   <div class="app-shell">
     <aside class="app-sidebar">
       <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
-      <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
+      <nav class="side-nav" id="adminSideNav">
+        <a class="side-link active" data-page="overview" onclick="showAdminPage('overview')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a>
+        <a class="side-link" data-page="management" onclick="showAdminPage('management')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/><path d="M17.5 3.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z"/></svg><span class="txt">Management</span></a>
+      </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
         <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
@@ -883,6 +867,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     <main class="app-main">
       <div class="app-topbar"><div><h1>School overview</h1><p class="sub">Live counts from the database.</p></div>
         <div class="top-actions"><button class="btn btn-outline btn-sm" onclick="toast('Demo: export would stream a CSV/PDF from the reporting endpoint.')">Export report</button></div></div>
+
+      <div class="admin-page active" data-page="overview">
       <div class="grid-4" style="margin-bottom:20px;" id="adminKpis">
         <div class="card kpi"><p class="k-label">Total students</p><p class="k-val">—</p></div>
         <div class="card kpi"><p class="k-label">Total teachers</p><p class="k-val">—</p></div>
@@ -1034,7 +1020,167 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div id="adminEntranceQuestions"><p class="empty">Loading…</p></div>
       </div>
+      </div>
+
+      <div class="admin-page" data-page="management">
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Management roles & permissions</h3></div>
+        <div id="adminRolesList"><p class="empty">Loading…</p></div>
+        <div class="divider" style="height:1px; background:var(--line); margin:16px 0;"></div>
+        <p style="font-size:13px; font-weight:600; margin-bottom:10px;">Create a new role</p>
+        <input class="grade-input" style="width:100%; margin-bottom:10px;" id="newRoleName" placeholder="Role name (e.g. Finance Officer)">
+        <div id="newRolePermissions" style="margin-bottom:12px;"><p class="empty">Loading permission catalog…</p></div>
+        <button class="btn btn-primary btn-sm" onclick="createRole()">Create role</button>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Management-team staff</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <input class="grade-input" style="width:100%;" id="newStaffFirst" placeholder="First name">
+          <input class="grade-input" style="width:100%;" id="newStaffLast" placeholder="Last name">
+          <input class="grade-input" style="width:100%;" id="newStaffEmail" placeholder="Email">
+          <select class="grade-input" style="width:100%;" id="newStaffRole"><option value="">Role (optional — can assign later)</option></select>
+        </div>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="inviteStaffMember()">Invite staff member</button>
+        <div id="staffInviteResultBox" style="margin-bottom:12px;"></div>
+        <div id="adminStaffList"><p class="empty">Loading…</p></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Audit log</h3><span class="mono" style="font-size:11.5px; color:var(--ink-soft);">most recent 100</span></div>
+        <div id="adminAuditLogs"><p class="empty">Loading…</p></div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="card-head"><h3>Curriculum catalog</h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+          <input class="grade-input" style="width:100%;" id="newCurriculumName" placeholder="Curriculum name (e.g. Cambridge IGCSE)">
+          <button class="btn btn-outline btn-sm" onclick="createCurriculum()">Add curriculum</button>
+        </div>
+        <div id="adminCurriculumList"><p class="empty">Loading…</p></div>
+      </div>
+      </div>
     </main>
+  </div>
+</section>
+
+<!-- ============================================================ STAFF (Management Team) ============================================================ -->
+<section class="screen" data-screen="staff">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">Novaschool.pk</span></div>
+      <nav class="side-nav" id="staffSideNav">
+        <a class="side-link active" data-page="dashboard" onclick="showStaffPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
+        <a class="side-link" data-page="students" data-perm="students.view" onclick="showStaffPage('students')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.4.4 4.5 2.4 4.5 5.8"/></svg><span class="txt">Students</span></a>
+        <a class="side-link" data-page="teachers" data-perm="teachers.view" onclick="showStaffPage('teachers')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span class="txt">Teachers</span></a>
+        <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
+        <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
+      </nav>
+      <div class="side-foot">
+        <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="staffAvatar">--</div><div><div class="u-name" id="staffName">—</div><div class="u-role" id="staffRoleLabel">—</div></div></div>
+        <a class="logout-link" onclick="go('landing')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11.5L12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg><span class="txt">Home</span></a>
+        <a class="logout-link" onclick="go('account')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">Account</span></a>
+        <a class="logout-link" onclick="logout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span class="txt">Log out</span></a>
+      </div>
+    </aside>
+    <main class="app-main">
+      <div class="app-topbar"><div><h1 id="staffGreeting">Good morning</h1><p class="sub" id="staffSub">Loading your access…</p></div></div>
+
+      <div id="staffInactiveNotice" style="display:none;" class="card" style="margin-bottom:20px;">
+        <p style="font-size:13.5px;">Your account isn't active yet. Contact an administrator for access.</p>
+      </div>
+
+      <div class="admin-page active" data-page="dashboard">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Your access</h3></div>
+          <div id="staffPermissionSummary"><p class="empty">Loading…</p></div>
+        </div>
+        <div class="grid-4" id="staffKpis" style="display:none;">
+          <div class="card kpi"><p class="k-label">Total students</p><p class="k-val">—</p></div>
+          <div class="card kpi"><p class="k-label">Total teachers</p><p class="k-val">—</p></div>
+          <div class="card kpi"><p class="k-label">Fee collection</p><p class="k-val">—</p></div>
+          <div class="card kpi"><p class="k-label">Attendance (avg)</p><p class="k-val">—</p></div>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="students">
+        <div class="card" id="staffStudentCreateCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Add student</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="staffStudentFirst" placeholder="First name">
+            <input class="grade-input" style="width:100%;" id="staffStudentLast" placeholder="Last name">
+            <input class="grade-input" style="width:100%;" id="staffStudentAdmNo" placeholder="Admission number">
+            <input class="grade-input" style="width:100%;" id="staffStudentSection" placeholder="Section code (e.g. 8B)">
+            <input class="grade-input" style="width:100%;" id="staffStudentEmail" placeholder="Login email (optional)">
+            <input class="grade-input" style="width:100%;" id="staffStudentPassword" placeholder="Password (optional, min 8 chars)">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createStaffStudent()">Add student</button>
+        </div>
+        <div class="card"><div class="card-head"><h3>Students</h3></div><div id="staffStudentsList"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="teachers">
+        <div class="card" id="staffTeacherCreateCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Add teacher</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="staffTeacherFirst" placeholder="First name">
+            <input class="grade-input" style="width:100%;" id="staffTeacherLast" placeholder="Last name">
+            <input class="grade-input" style="width:100%;" id="staffTeacherEmail" placeholder="Email">
+            <input class="grade-input" style="width:100%;" id="staffTeacherPassword" placeholder="Password (min 8 chars)">
+            <input class="grade-input" style="width:100%;" id="staffTeacherSubject" placeholder="Subject">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createStaffTeacher()">Create teacher account</button>
+        </div>
+        <div class="card"><div class="card-head"><h3>Teachers</h3></div><div id="staffTeachersList"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="courses">
+        <div class="card" id="staffCourseCreateCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Add course</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="staffCourseSubject" placeholder="Subject">
+            <input class="grade-input" style="width:100%;" id="staffCourseCurriculum" placeholder="Curriculum">
+            <input class="grade-input" style="width:100%;" id="staffCourseLevel" placeholder="Level">
+            <input class="grade-input" style="width:100%;" id="staffCourseTitle" placeholder="Title">
+          </div>
+          <textarea id="staffCourseDescription" placeholder="Description (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="createStaffCourse()">Add course</button>
+        </div>
+        <div class="card"><div class="card-head"><h3>Courses</h3></div><div id="staffCoursesList"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="results">
+        <div class="card"><div class="card-head"><h3>Results overview</h3></div><div id="staffResultsOverview"><p class="empty">Loading…</p></div></div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================ STAFF ACTIVATION ============================================================ -->
+<section class="screen" data-screen="activateStaff">
+  <div class="login-shell">
+    <div class="login-side">
+      <div>
+        <img src="assets/logo-full.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:88px;height:auto;margin-bottom:22px;">
+        <p class="quote">"Welcome to the Novaschool.pk management team."</p>
+      </div>
+    </div>
+    <div class="login-main">
+      <div class="login-box">
+        <h2 style="font-size:26px; margin-bottom:6px;">Activate your account</h2>
+        <div id="activateStaffInfo"><p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:26px;">Checking your invitation…</p></div>
+        <div id="activateStaffForm" style="display:none;">
+          <div class="field"><label>New password</label><input type="password" id="activatePassword" placeholder="••••••••"></div>
+          <div class="field"><label>Confirm password</label><input type="password" id="activatePasswordConfirm" placeholder="••••••••"></div>
+          <button class="btn btn-ink" id="activateBtn" onclick="submitActivation()">Activate account</button>
+        </div>
+        <div class="login-error" id="activateError"></div>
+        <div id="activateSuccess" style="display:none; margin-top:16px;">
+          <p style="color:var(--green); font-size:14px; margin-bottom:14px;">Account activated — you can log in now.</p>
+          <button class="btn btn-ink" onclick="go('login')">Go to login</button>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1245,6 +1391,7 @@ function loadDashboard(role){
   if (role === 'parent') loadParentDashboard();
   if (role === 'teacher') loadTeacherDashboard();
   if (role === 'admin') loadAdminDashboard();
+  if (role === 'staff') loadStaffDashboard();
 }
 
 /* ============================== PUBLIC: News, Admissions, Careers ============================== */
@@ -2358,6 +2505,215 @@ function showTeacherPage(page){
   if (main) main.scrollTop = 0;
 }
 
+function showAdminPage(page){
+  document.querySelectorAll('#adminSideNav .side-link').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  document.querySelectorAll('[data-screen="admin"] .app-main .admin-page').forEach(p => p.classList.toggle('active', p.dataset.page === page));
+  const main = document.querySelector('[data-screen="admin"] .app-main');
+  if (main) main.scrollTop = 0;
+}
+
+function showStaffPage(page){
+  document.querySelectorAll('#staffSideNav .side-link').forEach(a => a.classList.toggle('active', a.dataset.page === page));
+  document.querySelectorAll('[data-screen="staff"] .app-main .admin-page').forEach(p => p.classList.toggle('active', p.dataset.page === page));
+  const main = document.querySelector('[data-screen="staff"] .app-main');
+  if (main) main.scrollTop = 0;
+}
+
+/* ============================== STAFF (Management Team) dashboard ============================== */
+
+let STAFF_PERMISSIONS = [];
+
+async function loadStaffDashboard(){
+  try {
+    const d = await api('/management/my-permissions');
+    STAFF_PERMISSIONS = d.permissions || [];
+    document.getElementById('staffAvatar').textContent = initials(currentUser.profile?.firstName, currentUser.profile?.lastName);
+    document.getElementById('staffName').textContent = `${currentUser.profile?.firstName || ''} ${currentUser.profile?.lastName || ''}`.trim() || 'Staff member';
+    document.getElementById('staffRoleLabel').textContent = d.roleName || 'No role assigned';
+    document.getElementById('staffGreeting').textContent = `Good morning, ${currentUser.profile?.firstName || ''}`.trim();
+
+    if (d.status !== 'active') {
+      document.getElementById('staffInactiveNotice').style.display = 'block';
+      document.getElementById('staffSub').textContent = 'Account not active.';
+      return;
+    }
+    document.getElementById('staffInactiveNotice').style.display = 'none';
+    document.getElementById('staffSub').textContent = d.roleName ? `Role: ${d.roleName}` : 'No role assigned yet — contact an administrator.';
+
+    document.getElementById('staffPermissionSummary').innerHTML = STAFF_PERMISSIONS.length
+      ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${STAFF_PERMISSIONS.map(p => `<span class="tag" style="background:var(--teal);">${escapeHtml(p)}</span>`).join('')}</div>`
+      : '<p class="empty">No permissions granted yet. Contact an administrator.</p>';
+
+    const has = (perm) => STAFF_PERMISSIONS.includes(perm);
+    document.querySelectorAll('#staffSideNav [data-perm]').forEach(a => { a.style.display = has(a.dataset.perm) ? '' : 'none'; });
+
+    if (has('reports.view')) {
+      const overview = await api('/admin/overview');
+      const kpiEl = document.getElementById('staffKpis');
+      kpiEl.style.display = 'grid';
+      const vals = kpiEl.querySelectorAll('.k-val');
+      vals[0].textContent = overview.totalStudents;
+      vals[1].textContent = overview.totalTeachers;
+      vals[2].textContent = overview.feeCollectionPct + '%';
+      vals[3].textContent = overview.attendancePct + '%';
+    }
+
+    document.getElementById('staffStudentCreateCard').style.display = has('students.create') ? 'block' : 'none';
+    document.getElementById('staffTeacherCreateCard').style.display = has('teachers.create') ? 'block' : 'none';
+    document.getElementById('staffCourseCreateCard').style.display = has('courses.create') ? 'block' : 'none';
+
+    if (has('students.view')) loadStaffStudents();
+    if (has('teachers.view')) loadStaffTeachers();
+    if (has('courses.view')) loadStaffCourses();
+    if (has('results.view')) loadStaffResults();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffStudents(){
+  try {
+    const d = await api('/admin/students');
+    document.getElementById('staffStudentsList').innerHTML = d.students.length
+      ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Name</th><th>Admission #</th><th>Section</th><th>Email</th></tr></thead><tbody>${d.students.map(s => `
+        <tr><td>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</td><td>${escapeHtml(s.admission_no)}</td><td>${escapeHtml(s.section_code)}</td><td>${escapeHtml(s.email || '—')}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="empty">No students yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createStaffStudent(){
+  const first_name = document.getElementById('staffStudentFirst').value.trim();
+  const last_name = document.getElementById('staffStudentLast').value.trim();
+  const admission_no = document.getElementById('staffStudentAdmNo').value.trim();
+  const section_code = document.getElementById('staffStudentSection').value.trim();
+  const email = document.getElementById('staffStudentEmail').value.trim();
+  const password = document.getElementById('staffStudentPassword').value;
+  if (!first_name || !last_name || !admission_no || !section_code) { toast('First name, last name, admission number, and section are required.'); return; }
+  try {
+    const res = await api('/admin/students', { method: 'POST', body: JSON.stringify({ first_name, last_name, admission_no, section_code, email: email || undefined, password: password || undefined }) });
+    toast(res.message);
+    ['staffStudentFirst','staffStudentLast','staffStudentAdmNo','staffStudentSection','staffStudentEmail','staffStudentPassword'].forEach(id => document.getElementById(id).value = '');
+    await loadStaffStudents();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffTeachers(){
+  try {
+    const d = await api('/admin/teachers');
+    document.getElementById('staffTeachersList').innerHTML = d.teachers.length
+      ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Name</th><th>Subject</th><th>Email</th></tr></thead><tbody>${d.teachers.map(t => `
+        <tr><td>${escapeHtml(t.first_name)} ${escapeHtml(t.last_name)}</td><td>${escapeHtml(t.subject || '—')}</td><td>${escapeHtml(t.email)}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="empty">No teachers yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createStaffTeacher(){
+  const first_name = document.getElementById('staffTeacherFirst').value.trim();
+  const last_name = document.getElementById('staffTeacherLast').value.trim();
+  const email = document.getElementById('staffTeacherEmail').value.trim();
+  const password = document.getElementById('staffTeacherPassword').value;
+  const subject = document.getElementById('staffTeacherSubject').value.trim();
+  if (!first_name || !last_name || !email || !password) { toast('First name, last name, email, and password are required.'); return; }
+  try {
+    const res = await api('/admin/teachers', { method: 'POST', body: JSON.stringify({ first_name, last_name, email, password, subject: subject || undefined }) });
+    toast(res.message);
+    ['staffTeacherFirst','staffTeacherLast','staffTeacherEmail','staffTeacherPassword','staffTeacherSubject'].forEach(id => document.getElementById(id).value = '');
+    await loadStaffTeachers();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffCourses(){
+  try {
+    const d = await api('/admin/courses');
+    const canPublish = STAFF_PERMISSIONS.includes('courses.publish');
+    document.getElementById('staffCoursesList').innerHTML = d.courses.length
+      ? d.courses.map(c => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${escapeHtml(c.subject)}</span>
+          <div><div class="l-title">${escapeHtml(c.title)}</div><div class="l-sub">${escapeHtml(c.curriculum)} · ${escapeHtml(c.level)}${c.teacher_first ? ' · ' + escapeHtml(c.teacher_first) + ' ' + escapeHtml(c.teacher_last) : ''}</div></div></div>
+          ${canPublish ? `<button class="btn btn-outline btn-sm" onclick="publishStaffCourse(${c.id})">Mark reviewed</button>` : ''}</div>`).join('')
+      : '<p class="empty">No courses yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createStaffCourse(){
+  const subject = document.getElementById('staffCourseSubject').value.trim();
+  const curriculum = document.getElementById('staffCourseCurriculum').value.trim();
+  const level = document.getElementById('staffCourseLevel').value.trim();
+  const title = document.getElementById('staffCourseTitle').value.trim();
+  const description = document.getElementById('staffCourseDescription').value.trim();
+  if (!subject || !curriculum || !level || !title) { toast('Subject, curriculum, level, and title are required.'); return; }
+  try {
+    const res = await api('/admin/courses', { method: 'POST', body: JSON.stringify({ subject, curriculum, level, title, description: description || undefined }) });
+    toast(res.message);
+    ['staffCourseSubject','staffCourseCurriculum','staffCourseLevel','staffCourseTitle','staffCourseDescription'].forEach(id => document.getElementById(id).value = '');
+    await loadStaffCourses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function publishStaffCourse(courseId){
+  try {
+    const res = await api(`/admin/courses/${courseId}/publish-check`, { method: 'POST' });
+    toast(res.message);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffResults(){
+  try {
+    const d = await api('/admin/results/overview');
+    document.getElementById('staffResultsOverview').innerHTML = `
+      <p style="font-size:13px; margin-bottom:12px;"><b>${d.pendingGrading}</b> submissions across the school are still awaiting grading.</p>
+      <div class="table-scroll"><table class="table-simple"><thead><tr><th>Section</th><th>Grade</th><th>Recorded grades</th></tr></thead><tbody>${d.bySection.map(r => `
+        <tr><td>${escapeHtml(r.sectionCode)}</td><td>${escapeHtml(String(r.grade))}</td><td>${r.recordedGrades}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Staff activation (invite link) ============================== */
+
+let ACTIVATION_TOKEN = null;
+
+async function loadActivationInfo(token){
+  ACTIVATION_TOKEN = token;
+  try {
+    const d = await api(`/auth/activate-staff/${token}`);
+    document.getElementById('activateStaffInfo').innerHTML = `<p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:26px;">Hi ${escapeHtml(d.firstName)} — set a password to activate your ${escapeHtml(d.roleName || 'staff')} account (${escapeHtml(d.email)}).</p>`;
+    document.getElementById('activateStaffForm').style.display = 'block';
+  } catch (err) {
+    document.getElementById('activateStaffInfo').innerHTML = '';
+    document.getElementById('activateError').textContent = err.message || 'This invitation link is invalid or has expired.';
+  }
+}
+
+async function submitActivation(){
+  const password = document.getElementById('activatePassword').value;
+  const confirm = document.getElementById('activatePasswordConfirm').value;
+  const errorEl = document.getElementById('activateError');
+  errorEl.textContent = '';
+  if (!password || password.length < 8) { errorEl.textContent = 'Password must be at least 8 characters.'; return; }
+  if (password !== confirm) { errorEl.textContent = 'Passwords do not match.'; return; }
+  try {
+    await api('/auth/activate-staff', { method: 'POST', body: JSON.stringify({ token: ACTIVATION_TOKEN, password }) });
+    document.getElementById('activateStaffForm').style.display = 'none';
+    document.getElementById('activateSuccess').style.display = 'block';
+  } catch (err) {
+    errorEl.textContent = err.message;
+  }
+}
+
 async function checkLiveClassroom(){
   const btn = document.getElementById('studentClassroomBtn');
   try {
@@ -3084,10 +3440,6 @@ function debouncedGradebookSearch(){
 
 async function loadTeacherDashboard(){
   showTeacherPage('dashboard');
-  await refreshTeacherWidgets();
-}
-
-async function refreshTeacherWidgets(){
   const p = currentUser.profile || {};
   document.getElementById('teacherAvatar').textContent = initials(p.first_name, p.last_name);
   document.getElementById('teacherName').textContent = `${p.first_name||''} ${p.last_name||''}`.trim() || currentUser.email;
@@ -3112,7 +3464,6 @@ async function refreshTeacherWidgets(){
     sectionSelect.innerHTML = (d.mySections || []).map(s => `<option value="${s}">${s}</option>`).join('') || '<option value="">No sections yet</option>';
     document.getElementById('examSection').innerHTML = sectionSelect.innerHTML;
     document.getElementById('ttSection').innerHTML = sectionSelect.innerHTML;
-    document.getElementById('assignmentSection').innerHTML = sectionSelect.innerHTML;
     window._teacherSections = d.mySections || [];
     if ((d.mySections || []).length) { await loadTimetableManager(); await refreshLiveClassButton(); }
 
@@ -3132,7 +3483,6 @@ async function refreshTeacherWidgets(){
     await loadTeacherLessons();
     await loadTeacherExams();
     await loadTeacherCourses();
-    await loadTeacherAssignments();
     await loadTeacherMaterials();
     await loadTeacherGradebook();
     await loadMessageContacts('teacher');
@@ -3723,62 +4073,6 @@ async function deleteMaterial(id){
   }
 }
 
-async function loadTeacherAssignments(){
-  try {
-    const d = await api('/teacher/assignments');
-    document.getElementById('teacherAssignmentsList').innerHTML = d.assignments.length
-      ? d.assignments.map(a => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(a.subject)};">${escapeHtml(a.subject)}</span>
-          <div><div class="l-title">${escapeHtml(a.title)}</div><div class="l-sub">Section ${escapeHtml(a.sectionCode)}${a.dueDate ? ' · Due ' + a.dueDate : ''} · ${a.pendingCount} to grade${a.hasAttachment ? ' · ' + escapeHtml(a.attachmentName) : ''}</div></div></div>
-          ${a.hasAttachment ? `<button class="btn btn-outline btn-sm" onclick="downloadTeacherAssignmentAttachment(${a.id})">Download</button>` : ''}</div>`).join('')
-      : '<p class="empty">No assignments created yet.</p>';
-  } catch (err) {
-    toast(err.message);
-  }
-}
-
-async function createAssignment(){
-  const title = document.getElementById('asgTitle').value.trim();
-  const subject = document.getElementById('asgSubject').value.trim();
-  const section_code = document.getElementById('assignmentSection').value;
-  const due_date = document.getElementById('asgDueDate').value;
-  const max_marks = document.getElementById('asgMaxMarks').value;
-  const description = document.getElementById('asgInstructions').value.trim();
-  const file = document.getElementById('asgFile').files[0];
-  if (!title || !subject || !section_code) { toast('Title, subject, and section are required.'); return; }
-
-  try {
-    const payload = { title, subject, section_code, due_date: due_date || null, max_marks: Number(max_marks) || 100, description: description || null };
-    if (file) {
-      payload.attachment_base64 = await fileToBase64(file);
-      payload.attachment_name = file.name;
-      payload.attachment_mime = file.type;
-    }
-    const res = await api('/teacher/assignments', { method: 'POST', body: JSON.stringify(payload) });
-    toast(res.message);
-    document.getElementById('asgTitle').value = '';
-    document.getElementById('asgSubject').value = '';
-    document.getElementById('asgDueDate').value = '';
-    document.getElementById('asgMaxMarks').value = '100';
-    document.getElementById('asgInstructions').value = '';
-    document.getElementById('asgFile').value = '';
-    await loadTeacherAssignments();
-  } catch (err) {
-    toast(err.message);
-  }
-}
-
-async function downloadTeacherAssignmentAttachment(assignmentId){
-  try {
-    const d = await api(`/teacher/assignments/${assignmentId}/attachment`);
-    const a = document.createElement('a');
-    a.href = `data:${d.fileMime || 'application/octet-stream'};base64,${d.fileBase64}`;
-    a.download = d.fileName || 'attachment';
-    a.click();
-  } catch (err) {
-    toast(err.message);
-  }
-}
-
 async function toggleQueue(assignmentId){
   const el = document.getElementById(`queue-${assignmentId}`);
   const isOpen = el.classList.contains('open');
@@ -3790,10 +4084,9 @@ async function toggleQueue(assignmentId){
     const d = await api(`/teacher/assignments/${assignmentId}/submissions`);
     el.innerHTML = d.submissions.length
       ? d.submissions.map(s => `
-        <div class="qrow" style="flex-wrap:wrap;"><span>${s.first_name} ${s.last_name}</span>
-          <span style="display:flex; gap:8px; align-items:center; flex:1 1 260px; flex-wrap:wrap;">
-            <input type="number" class="grade-input" style="width:70px;" min="0" max="${d.assignment.maxMarks}" placeholder="/${d.assignment.maxMarks}" id="mark-${s.id}">
-            <input type="text" class="grade-input" style="flex:1 1 140px;" placeholder="Feedback (optional)" id="feedback-${s.id}">
+        <div class="qrow"><span>${s.first_name} ${s.last_name}</span>
+          <span style="display:flex; gap:8px; align-items:center;">
+            <input type="number" class="grade-input" min="0" max="${d.assignment.maxMarks}" placeholder="/${d.assignment.maxMarks}" id="mark-${s.id}">
             <button class="btn btn-ink btn-sm" onclick="saveGrade(${s.id}, ${assignmentId})">Save</button>
           </span></div>`).join('')
       : '<p class="empty">All graded.</p>';
@@ -3804,13 +4097,12 @@ async function toggleQueue(assignmentId){
 
 async function saveGrade(submissionId, assignmentId){
   const input = document.getElementById(`mark-${submissionId}`);
-  const feedbackInput = document.getElementById(`feedback-${submissionId}`);
   const marks = Number(input.value);
   if (!input.value || Number.isNaN(marks)) { toast('Enter a mark first.'); return; }
   try {
-    const res = await api(`/teacher/submissions/${submissionId}/grade`, { method: 'POST', body: JSON.stringify({ marks, feedback: feedbackInput.value || null }) });
+    const res = await api(`/teacher/submissions/${submissionId}/grade`, { method: 'POST', body: JSON.stringify({ marks }) });
     toast(res.message);
-    await refreshTeacherWidgets();
+    loadTeacherDashboard();
   } catch (err) {
     toast(err.message);
   }
@@ -3861,6 +4153,286 @@ async function loadAdminDashboard(){
     await loadAdminLiveClasses();
     await loadSchoolSettings();
     switchPeopleTab('teacher');
+    await loadManagementData();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== ADMIN: Management (roles, staff, audit, curriculum) ============================== */
+
+let PERMISSION_CATALOG = null;
+let ROLES_CACHE = [];
+
+async function loadManagementData(){
+  try {
+    await loadPermissionCatalog();
+    await loadRolesList();
+    await loadStaffRoleOptions();
+    await loadStaffList();
+    await loadAuditLogs();
+    await loadCurriculumList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadPermissionCatalog(){
+  const d = await api('/management/permissions');
+  PERMISSION_CATALOG = d.categories;
+  renderPermissionCheckboxes('newRolePermissions', [], 'newRole');
+}
+
+function renderPermissionCheckboxes(containerId, checkedKeys, prefix){
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (!PERMISSION_CATALOG) { container.innerHTML = '<p class="empty">Loading permission catalog…</p>'; return; }
+  const checked = new Set(checkedKeys);
+  container.innerHTML = Object.keys(PERMISSION_CATALOG).sort().map(cat => `
+    <div style="margin-bottom:10px;">
+      <p style="font-size:11.5px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;">${escapeHtml(cat)}</p>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        ${PERMISSION_CATALOG[cat].map(p => `
+          <label style="display:flex; align-items:center; gap:5px; font-size:12.5px; background:#fff; border:1px solid var(--line); padding:5px 10px; border-radius:8px; cursor:pointer;">
+            <input type="checkbox" value="${p.key}" id="${prefix}-perm-${p.key}" ${checked.has(p.key) ? 'checked' : ''}> ${escapeHtml(p.label)}
+          </label>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function getCheckedPermissions(prefix){
+  return Array.from(document.querySelectorAll(`[id^="${prefix}-perm-"]`)).filter(el => el.checked).map(el => el.value);
+}
+
+async function createRole(){
+  const name = document.getElementById('newRoleName').value.trim();
+  if (!name) { toast('Enter a role name.'); return; }
+  const permissions = getCheckedPermissions('newRole');
+  try {
+    const res = await api('/management/roles', { method: 'POST', body: JSON.stringify({ name, permissions }) });
+    toast(res.message);
+    document.getElementById('newRoleName').value = '';
+    renderPermissionCheckboxes('newRolePermissions', [], 'newRole');
+    await loadRolesList();
+    await loadStaffRoleOptions();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadRolesList(){
+  const d = await api('/management/roles');
+  ROLES_CACHE = d.roles;
+  const container = document.getElementById('adminRolesList');
+  container.innerHTML = d.roles.length ? d.roles.map(r => `
+    <div class="card" style="background:var(--paper-alt); box-shadow:none; margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+        <div><b>${escapeHtml(r.name)}</b> ${r.isSystem ? '<span class="tag" style="background:var(--ink-soft); margin-left:6px;">Built-in</span>' : ''}</div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn btn-ink btn-sm" onclick="saveRolePermissions(${r.id})">Save permissions</button>
+          ${!r.isSystem ? `<button class="btn btn-outline btn-sm" onclick="deleteRole(${r.id})">Delete</button>` : ''}
+        </div>
+      </div>
+      <div id="role-perms-${r.id}"></div>
+    </div>`).join('') : '<p class="empty">No roles yet.</p>';
+  d.roles.forEach(r => renderPermissionCheckboxes(`role-perms-${r.id}`, r.permissions, `role${r.id}`));
+}
+
+async function saveRolePermissions(roleId){
+  const permissions = getCheckedPermissions(`role${roleId}`);
+  try {
+    const res = await api(`/management/roles/${roleId}`, { method: 'PATCH', body: JSON.stringify({ permissions }) });
+    toast(res.message);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteRole(roleId){
+  try {
+    const res = await api(`/management/roles/${roleId}`, { method: 'DELETE' });
+    toast(res.message);
+    await loadRolesList();
+    await loadStaffRoleOptions();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffRoleOptions(){
+  const sel = document.getElementById('newStaffRole');
+  if (!sel) return;
+  const prevValue = sel.value;
+  sel.innerHTML = '<option value="">Role (optional — can assign later)</option>' + ROLES_CACHE.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+  if (prevValue) sel.value = prevValue;
+}
+
+function activationLinkHtml(message, token){
+  const link = `${window.location.origin}/activate-staff/${token}`;
+  return `<div style="padding:10px 12px; background:var(--gold-bg); border-radius:10px; font-size:12.5px;">
+      ${escapeHtml(message)}<br>
+      <span class="mono" style="word-break:break-all;">${escapeHtml(link)}</span><br>
+      <button class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="navigator.clipboard.writeText('${link}').then(()=>toast('Link copied.')).catch(()=>toast('Could not copy — select and copy manually.'))">Copy link</button>
+    </div>`;
+}
+
+async function inviteStaffMember(){
+  const first_name = document.getElementById('newStaffFirst').value.trim();
+  const last_name = document.getElementById('newStaffLast').value.trim();
+  const email = document.getElementById('newStaffEmail').value.trim();
+  const staff_role_id = document.getElementById('newStaffRole').value || null;
+  if (!first_name || !last_name || !email) { toast('First name, last name, and email are required.'); return; }
+  try {
+    const res = await api('/management/staff/invite', { method: 'POST', body: JSON.stringify({ email, first_name, last_name, staff_role_id }) });
+    document.getElementById('staffInviteResultBox').innerHTML = activationLinkHtml(res.message, res.activationToken);
+    document.getElementById('newStaffFirst').value = '';
+    document.getElementById('newStaffLast').value = '';
+    document.getElementById('newStaffEmail').value = '';
+    document.getElementById('newStaffRole').value = '';
+    await loadStaffList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffList(){
+  const d = await api('/management/staff');
+  const container = document.getElementById('adminStaffList');
+  const statusColor = { active: 'var(--green)', invited: 'var(--amber)', suspended: 'var(--magenta)', removed: 'var(--ink-soft)' };
+  container.innerHTML = d.staff.length ? d.staff.map(s => `
+    <div class="list-row" style="flex-wrap:wrap;">
+      <div class="l-main"><div class="avatar" style="width:36px;height:36px;background:var(--ink);">${initials(s.firstName, s.lastName)}</div>
+        <div><div class="l-title">${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}</div><div class="l-sub">${escapeHtml(s.email)}</div></div></div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <select class="grade-input" style="width:auto;" id="staffRole-${s.id}" onchange="updateStaffRole(${s.id})">
+          <option value="">Unassigned</option>
+          ${ROLES_CACHE.map(r => `<option value="${r.id}" ${r.id === s.roleId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
+        </select>
+        <span class="tag" style="background:${statusColor[s.status] || 'var(--ink-soft)'};">${escapeHtml(s.status)}</span>
+        ${s.status === 'invited' ? `<button class="btn btn-outline btn-sm" onclick="resendStaffInvite(${s.id})">Resend invite</button>` : ''}
+        ${s.status === 'active' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'suspended')">Suspend</button>` : ''}
+        ${s.status === 'suspended' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'active')">Reactivate</button>` : ''}
+        ${s.status !== 'removed' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'removed')">Remove</button>` : ''}
+      </div>
+    </div>`).join('') : '<p class="empty">No staff invited yet.</p>';
+}
+
+async function updateStaffRole(staffId){
+  const staff_role_id = document.getElementById(`staffRole-${staffId}`).value || null;
+  try {
+    const res = await api(`/management/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ staff_role_id }) });
+    toast(res.message);
+  } catch (err) {
+    toast(err.message);
+    await loadStaffList();
+  }
+}
+
+async function setStaffStatus(staffId, status){
+  try {
+    const res = await api(`/management/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast(res.message);
+    await loadStaffList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function resendStaffInvite(staffId){
+  try {
+    const res = await api(`/management/staff/${staffId}/resend-invite`, { method: 'POST' });
+    document.getElementById('staffInviteResultBox').innerHTML = activationLinkHtml('New activation link generated.', res.activationToken);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAuditLogs(){
+  const d = await api('/management/audit-logs');
+  document.getElementById('adminAuditLogs').innerHTML = d.logs.length
+    ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody>${d.logs.map(l => `
+      <tr><td class="mono" style="white-space:nowrap;">${fmtDate(l.createdAt)}</td><td>${escapeHtml(l.actorEmail || l.actorRole || '—')}</td><td>${escapeHtml(l.action)}</td><td>${escapeHtml(l.targetType || '')}${l.targetId ? ' #' + escapeHtml(String(l.targetId)) : ''}</td></tr>`).join('')}</tbody></table></div>`
+    : '<p class="empty">No activity logged yet.</p>';
+}
+
+async function loadCurriculumList(){
+  const d = await api('/management/curriculums');
+  const container = document.getElementById('adminCurriculumList');
+  container.innerHTML = d.curriculums.length ? d.curriculums.map(c => `
+    <div class="card" style="background:var(--paper-alt); box-shadow:none; margin-bottom:10px;">
+      <div style="margin-bottom:8px;"><b>${escapeHtml(c.name)}</b></div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <input class="grade-input" style="width:100%;" id="newBoard-${c.id}" placeholder="Board (e.g. Federal Board)">
+            <button class="btn btn-outline btn-sm" onclick="createBoard(${c.id})">Add</button>
+          </div>
+          <div id="boardsList-${c.id}"><p class="empty">Loading…</p></div>
+        </div>
+        <div>
+          <div style="display:flex; gap:6px; margin-bottom:6px;">
+            <input class="grade-input" style="width:100%;" id="newLevel-${c.id}" placeholder="Level (e.g. Matric / SSC)">
+            <button class="btn btn-outline btn-sm" onclick="createLevel(${c.id})">Add</button>
+          </div>
+          <div id="levelsList-${c.id}"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+    </div>`).join('') : '<p class="empty">No curriculums yet.</p>';
+  d.curriculums.forEach(c => { loadBoardsFor(c.id); loadLevelsFor(c.id); });
+}
+
+async function createCurriculum(){
+  const name = document.getElementById('newCurriculumName').value.trim();
+  if (!name) { toast('Enter a curriculum name.'); return; }
+  try {
+    const res = await api('/management/curriculums', { method: 'POST', body: JSON.stringify({ name }) });
+    toast(res.message);
+    document.getElementById('newCurriculumName').value = '';
+    await loadCurriculumList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadBoardsFor(curriculumId){
+  try {
+    const d = await api(`/management/boards?curriculum_id=${curriculumId}`);
+    const el = document.getElementById(`boardsList-${curriculumId}`);
+    if (el) el.innerHTML = d.boards.length ? d.boards.map(b => `<span class="tag" style="background:var(--indigo); margin:2px; display:inline-block;">${escapeHtml(b.name)}</span>`).join('') : '<p class="empty">No boards yet.</p>';
+  } catch (err) { /* non-fatal */ }
+}
+
+async function createBoard(curriculumId){
+  const input = document.getElementById(`newBoard-${curriculumId}`);
+  const name = input.value.trim();
+  if (!name) { toast('Enter a board name.'); return; }
+  try {
+    const res = await api('/management/boards', { method: 'POST', body: JSON.stringify({ curriculum_id: curriculumId, name }) });
+    toast(res.message);
+    input.value = '';
+    await loadBoardsFor(curriculumId);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadLevelsFor(curriculumId){
+  try {
+    const d = await api(`/management/academic-levels?curriculum_id=${curriculumId}`);
+    const el = document.getElementById(`levelsList-${curriculumId}`);
+    if (el) el.innerHTML = d.levels.length ? d.levels.map(l => `<span class="tag" style="background:var(--teal); margin:2px; display:inline-block;">${escapeHtml(l.name)}</span>`).join('') : '<p class="empty">No levels yet.</p>';
+  } catch (err) { /* non-fatal */ }
+}
+
+async function createLevel(curriculumId){
+  const input = document.getElementById(`newLevel-${curriculumId}`);
+  const name = input.value.trim();
+  if (!name) { toast('Enter a level name.'); return; }
+  try {
+    const res = await api('/management/academic-levels', { method: 'POST', body: JSON.stringify({ curriculum_id: curriculumId, name }) });
+    toast(res.message);
+    input.value = '';
+    await loadLevelsFor(curriculumId);
   } catch (err) {
     toast(err.message);
   }
@@ -4321,9 +4893,15 @@ loadPublicStats();
 loadPublicCourses();
 selectRole('student');
 
-// If a saved session exists (e.g. after a page refresh), jump straight back
-// to that dashboard instead of showing the landing page.
-if (authToken && currentUser && currentUser.role) {
+// If the URL is an activation link (/activate-staff/<token>), show that
+// screen and load the invite details, before any session-restore logic.
+const activationMatch = window.location.pathname.match(/^\/activate-staff\/([^/]+)\/?$/);
+if (activationMatch) {
+  go('activateStaff');
+  loadActivationInfo(activationMatch[1]);
+} else if (authToken && currentUser && currentUser.role) {
+  // If a saved session exists (e.g. after a page refresh), jump straight back
+  // to that dashboard instead of showing the landing page.
   go(currentUser.role);
   loadDashboard(currentUser.role);
 }
