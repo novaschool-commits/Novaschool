@@ -516,3 +516,8 @@ ALTER TABLE invoices ADD COLUMN IF NOT EXISTS payment_claimed_at TIMESTAMPTZ;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_base64 TEXT;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_name TEXT;
 ALTER TABLE assignments ADD COLUMN IF NOT EXISTS attachment_mime TEXT;
+
+-- Staff profile fields (Phase 2C: Staff Profile page)
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS employee_id TEXT;
+ALTER TABLE staff ADD COLUMN IF NOT EXISTS department TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;

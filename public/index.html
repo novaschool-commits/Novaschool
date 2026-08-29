@@ -1075,6 +1075,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="teachers" data-perm="teachers.view" onclick="showStaffPage('teachers')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span class="txt">Teachers</span></a>
         <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
+        <a class="side-link" data-page="profile" onclick="showStaffPage('profile')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">My Profile</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="staffAvatar">--</div><div><div class="u-name" id="staffName">—</div><div class="u-role" id="staffRoleLabel">—</div></div></div>
@@ -1151,6 +1152,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
       <div class="admin-page" data-page="results">
         <div class="card"><div class="card-head"><h3>Results overview</h3></div><div id="staffResultsOverview"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="profile">
+        <div class="card"><div id="staffProfileCard"><p class="empty">Loading…</p></div></div>
       </div>
     </main>
   </div>
@@ -2566,6 +2571,7 @@ async function loadStaffDashboard(){
     if (has('teachers.view')) loadStaffTeachers();
     if (has('courses.view')) loadStaffCourses();
     if (has('results.view')) loadStaffResults();
+    loadStaffProfile();
   } catch (err) {
     toast(err.message);
   }
@@ -2677,6 +2683,35 @@ async function loadStaffResults(){
       <p style="font-size:13px; margin-bottom:12px;"><b>${d.pendingGrading}</b> submissions across the school are still awaiting grading.</p>
       <div class="table-scroll"><table class="table-simple"><thead><tr><th>Section</th><th>Grade</th><th>Recorded grades</th></tr></thead><tbody>${d.bySection.map(r => `
         <tr><td>${escapeHtml(r.sectionCode)}</td><td>${escapeHtml(String(r.grade))}</td><td>${r.recordedGrades}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffProfile(){
+  try {
+    const d = await api('/management/my-profile');
+    const statusColor = { active: 'var(--green)', invited: 'var(--amber)', suspended: 'var(--magenta)', removed: 'var(--ink-soft)' };
+    document.getElementById('staffProfileCard').innerHTML = `
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+        <div class="avatar" style="width:56px;height:56px;font-size:18px;background:var(--ink);">${initials(d.firstName, d.lastName)}</div>
+        <div>
+          <div style="font-size:18px; font-weight:700;">${escapeHtml(d.firstName)} ${escapeHtml(d.lastName)}</div>
+          <div style="font-size:13px; color:var(--ink-soft);">${escapeHtml(d.roleName)} · <span class="tag" style="background:${statusColor[d.status] || 'var(--ink-soft)'};">${escapeHtml(d.status)}</span></div>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; font-size:13.5px;">
+        <div><p style="color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px;">Email</p><p>${escapeHtml(d.email)}</p></div>
+        <div><p style="color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px;">Employee ID</p><p>${escapeHtml(d.employeeId || '—')}</p></div>
+        <div><p style="color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px;">Department</p><p>${escapeHtml(d.department || '—')}</p></div>
+        <div><p style="color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px;">Date joined</p><p>${d.activatedAt ? fmtDate(d.activatedAt) : (d.invitedAt ? 'Invited ' + fmtDate(d.invitedAt) : '—')}</p></div>
+        <div><p style="color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:3px;">Last login</p><p>${d.lastLogin ? fmtDate(d.lastLogin) : 'This is your first login'}</p></div>
+      </div>
+      <p style="color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;">Your permissions</p>
+      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;">
+        ${d.permissions.length ? d.permissions.map(p => `<span class="tag" style="background:var(--teal);">${escapeHtml(p)}</span>`).join('') : '<p class="empty">No permissions granted yet.</p>'}
+      </div>
+      <p style="font-size:12px; color:var(--ink-soft);">To change your password, use Account in the sidebar. Employee ID and department are set by an administrator.</p>`;
   } catch (err) {
     toast(err.message);
   }
@@ -4249,6 +4284,7 @@ async function saveRolePermissions(roleId){
 }
 
 async function deleteRole(roleId){
+  if (!confirm('Delete this role? Any staff currently assigned to it will become Unassigned.')) return;
   try {
     const res = await api(`/management/roles/${roleId}`, { method: 'DELETE' });
     toast(res.message);
@@ -4300,21 +4336,39 @@ async function loadStaffList(){
   const container = document.getElementById('adminStaffList');
   const statusColor = { active: 'var(--green)', invited: 'var(--amber)', suspended: 'var(--magenta)', removed: 'var(--ink-soft)' };
   container.innerHTML = d.staff.length ? d.staff.map(s => `
-    <div class="list-row" style="flex-wrap:wrap;">
+    <div class="list-row" style="flex-wrap:wrap; align-items:flex-start;">
       <div class="l-main"><div class="avatar" style="width:36px;height:36px;background:var(--ink);">${initials(s.firstName, s.lastName)}</div>
-        <div><div class="l-title">${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}</div><div class="l-sub">${escapeHtml(s.email)}</div></div></div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <select class="grade-input" style="width:auto;" id="staffRole-${s.id}" onchange="updateStaffRole(${s.id})">
-          <option value="">Unassigned</option>
-          ${ROLES_CACHE.map(r => `<option value="${r.id}" ${r.id === s.roleId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
-        </select>
-        <span class="tag" style="background:${statusColor[s.status] || 'var(--ink-soft)'};">${escapeHtml(s.status)}</span>
-        ${s.status === 'invited' ? `<button class="btn btn-outline btn-sm" onclick="resendStaffInvite(${s.id})">Resend invite</button>` : ''}
-        ${s.status === 'active' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'suspended')">Suspend</button>` : ''}
-        ${s.status === 'suspended' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'active')">Reactivate</button>` : ''}
-        ${s.status !== 'removed' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'removed')">Remove</button>` : ''}
+        <div><div class="l-title">${escapeHtml(s.firstName)} ${escapeHtml(s.lastName)}</div><div class="l-sub">${escapeHtml(s.email)}${s.lastLogin ? ' · last login ' + fmtDate(s.lastLogin) : ' · never logged in'}</div></div></div>
+      <div style="display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <select class="grade-input" style="width:auto;" id="staffRole-${s.id}" onchange="updateStaffRole(${s.id})">
+            <option value="">Unassigned</option>
+            ${ROLES_CACHE.map(r => `<option value="${r.id}" ${r.id === s.roleId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
+          </select>
+          <span class="tag" style="background:${statusColor[s.status] || 'var(--ink-soft)'};">${escapeHtml(s.status)}</span>
+          ${s.status === 'invited' ? `<button class="btn btn-outline btn-sm" onclick="resendStaffInvite(${s.id})">Resend invite</button>` : ''}
+          ${s.status === 'active' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'suspended')">Suspend</button>` : ''}
+          ${s.status === 'suspended' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'active')">Reactivate</button>` : ''}
+          ${s.status !== 'removed' ? `<button class="btn btn-outline btn-sm" onclick="setStaffStatus(${s.id},'removed')">Remove</button>` : ''}
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <input class="grade-input" style="width:120px;" id="staffEmpId-${s.id}" placeholder="Employee ID" value="${escapeHtml(s.employeeId || '')}">
+          <input class="grade-input" style="width:140px;" id="staffDept-${s.id}" placeholder="Department" value="${escapeHtml(s.department || '')}">
+          <button class="btn btn-outline btn-sm" onclick="saveStaffDetails(${s.id})">Save</button>
+        </div>
       </div>
     </div>`).join('') : '<p class="empty">No staff invited yet.</p>';
+}
+
+async function saveStaffDetails(staffId){
+  const employee_id = document.getElementById(`staffEmpId-${staffId}`).value.trim();
+  const department = document.getElementById(`staffDept-${staffId}`).value.trim();
+  try {
+    const res = await api(`/management/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ employee_id: employee_id || undefined, department: department || undefined }) });
+    toast(res.message);
+  } catch (err) {
+    toast(err.message);
+  }
 }
 
 async function updateStaffRole(staffId){
@@ -4329,6 +4383,12 @@ async function updateStaffRole(staffId){
 }
 
 async function setStaffStatus(staffId, status){
+  const messages = {
+    suspended: 'Suspend this staff member? They will immediately lose access until reactivated.',
+    removed: 'Remove this staff member? This revokes their access. This action can be undone by an admin, but treat it as permanent.',
+    active: null
+  };
+  if (messages[status] && !confirm(messages[status])) return;
   try {
     const res = await api(`/management/staff/${staffId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
     toast(res.message);

@@ -33,6 +33,33 @@ router.get('/my-permissions', asyncHandler(async (req, res) => {
   res.json({ role: 'staff', roleName: roleRow ? roleRow.name : 'Unassigned', status: staffRow.status, permissions: rows.map(r => r.permission_key) });
 }));
 
+// ---------- Own profile (any authenticated staff member) ----------
+
+router.get('/my-profile', asyncHandler(async (req, res) => {
+  if (req.user.role !== 'staff') {
+    return res.status(403).json({ error: 'You do not have access to this resource.' });
+  }
+  const row = await get(
+    `SELECT s.first_name, s.last_name, s.status, s.invited_at, s.activated_at, s.employee_id, s.department,
+            u.email, u.last_login, sr.name AS role_name
+     FROM staff s JOIN users u ON u.id = s.user_id
+     LEFT JOIN staff_roles sr ON sr.id = s.staff_role_id
+     WHERE s.user_id = $1`,
+    [req.user.id]
+  );
+  if (!row) return res.status(404).json({ error: 'Staff profile not found.' });
+  const permRows = await get('SELECT staff_role_id FROM staff WHERE user_id = $1', [req.user.id]);
+  const permissions = permRows.staff_role_id
+    ? (await all('SELECT permission_key FROM staff_role_permissions WHERE staff_role_id = $1', [permRows.staff_role_id])).map(r => r.permission_key)
+    : [];
+  res.json({
+    firstName: row.first_name, lastName: row.last_name, email: row.email, status: row.status,
+    roleName: row.role_name || 'Unassigned', employeeId: row.employee_id, department: row.department,
+    invitedAt: row.invited_at, activatedAt: row.activated_at, lastLogin: row.last_login,
+    permissions
+  });
+}));
+
 // ---------- Permission catalog (Super Admin only — this defines what
 // roles CAN be granted, so it isn't itself delegable) ----------
 
@@ -117,8 +144,8 @@ router.delete('/roles/:id', requireRole('admin'), asyncHandler(async (req, res) 
 
 router.get('/staff', requireRole('admin'), asyncHandler(async (req, res) => {
   const rows = await all(
-    `SELECT s.id, s.first_name, s.last_name, s.status, s.invited_at, s.activated_at,
-            u.email, sr.id AS role_id, sr.name AS role_name
+    `SELECT s.id, s.first_name, s.last_name, s.status, s.invited_at, s.activated_at, s.employee_id, s.department,
+            u.email, u.last_login, sr.id AS role_id, sr.name AS role_name
      FROM staff s JOIN users u ON u.id = s.user_id
      LEFT JOIN staff_roles sr ON sr.id = s.staff_role_id
      ORDER BY s.invited_at DESC`
@@ -126,7 +153,8 @@ router.get('/staff', requireRole('admin'), asyncHandler(async (req, res) => {
   res.json({ staff: rows.map(r => ({
     id: r.id, firstName: r.first_name, lastName: r.last_name, email: r.email,
     status: r.status, roleId: r.role_id, roleName: r.role_name || 'Unassigned',
-    invitedAt: r.invited_at, activatedAt: r.activated_at
+    invitedAt: r.invited_at, activatedAt: r.activated_at, lastLogin: r.last_login,
+    employeeId: r.employee_id, department: r.department
   })) });
 }));
 
@@ -185,7 +213,7 @@ router.patch('/staff/:id', requireRole('admin'), asyncHandler(async (req, res) =
   const staffRow = await get('SELECT * FROM staff WHERE id = $1', [id]);
   if (!staffRow) return res.status(404).json({ error: 'Staff member not found.' });
 
-  const { staff_role_id, status } = req.body || {};
+  const { staff_role_id, status, employee_id, department } = req.body || {};
   const validStatuses = ['active', 'suspended', 'removed'];
   if (status && !validStatuses.includes(status)) {
     return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}.` });
@@ -196,10 +224,10 @@ router.patch('/staff/:id', requireRole('admin'), asyncHandler(async (req, res) =
   }
 
   await run(
-    'UPDATE staff SET staff_role_id = COALESCE($1, staff_role_id), status = COALESCE($2, status) WHERE id = $3',
-    [staff_role_id || null, status || null, id]
+    'UPDATE staff SET staff_role_id = COALESCE($1, staff_role_id), status = COALESCE($2, status), employee_id = COALESCE($3, employee_id), department = COALESCE($4, department) WHERE id = $5',
+    [staff_role_id || null, status || null, employee_id || null, department || null, id]
   );
-  await logAudit(req, 'staff.updated', 'staff', id, { staff_role_id, status });
+  await logAudit(req, 'staff.updated', 'staff', id, { staff_role_id, status, employee_id, department });
   res.json({ message: 'Staff record updated.' });
 }));
 

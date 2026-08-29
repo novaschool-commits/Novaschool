@@ -50,6 +50,7 @@ router.post('/login', async (req, res) => {
 
     const profile = await profileFor(user);
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET, { expiresIn: '12h' });
+    await run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
     res.json({
       token,
