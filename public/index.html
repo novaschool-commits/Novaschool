@@ -1076,6 +1076,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
         <a class="side-link" data-page="profile" onclick="showStaffPage('profile')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">My Profile</span></a>
+        <a class="side-link" data-page="messages" onclick="showStaffPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="staffAvatar">--</div><div><div class="u-name" id="staffName">—</div><div class="u-role" id="staffRoleLabel">—</div></div></div>
@@ -1085,7 +1086,19 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
     </aside>
     <main class="app-main">
-      <div class="app-topbar"><div><h1 id="staffGreeting">Good morning</h1><p class="sub" id="staffSub">Loading your access…</p></div></div>
+      <div class="app-topbar"><div><h1 id="staffGreeting">Good morning</h1><p class="sub" id="staffSub">Loading your access…</p></div>
+        <div class="top-actions" style="display:flex; align-items:center; gap:8px;">
+          <div style="position:relative;">
+            <input class="grade-input" style="width:170px;" id="staffSearchInput" placeholder="Search…" oninput="handleStaffSearch(this.value)" onfocus="handleStaffSearch(this.value)">
+            <div id="staffSearchResults" style="display:none; position:absolute; right:0; top:38px; width:260px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); z-index:60; max-height:320px; overflow-y:auto; padding:6px;"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="showStaffPage('messages')" title="Messages">Messages</button>
+          <div style="position:relative;">
+            <button class="btn btn-outline btn-sm" onclick="toggleNotificationsPanel()" title="Notifications">Notifications <span id="staffNotifBadge" class="tag" style="display:none; background:var(--magenta); margin-left:4px;">0</span></button>
+            <div id="staffNotifPanel" style="display:none; position:absolute; right:0; top:38px; width:290px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); z-index:60; max-height:340px; overflow-y:auto; padding:10px;"></div>
+          </div>
+        </div>
+      </div>
 
       <div id="staffInactiveNotice" style="display:none;" class="card" style="margin-bottom:20px;">
         <p style="font-size:13.5px;">Your account isn't active yet. Contact an administrator for access.</p>
@@ -1156,6 +1169,18 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
       <div class="admin-page" data-page="profile">
         <div class="card"><div id="staffProfileCard"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="messages">
+        <div class="card"><div class="card-head"><h3>Messages</h3></div>
+          <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
+            <div id="msgContacts-staff" style="border-right:1px solid var(--paper-alt); padding-right:8px; max-height:280px; overflow-y:auto;"><p class="empty">Loading…</p></div>
+            <div>
+              <div id="msgThread-staff" style="max-height:220px; overflow-y:auto; margin-bottom:10px;"><p class="empty">Select a contact.</p></div>
+              <div id="msgToolbar-staff"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-staff" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'staff')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('staff')">Send</button></div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
@@ -2572,6 +2597,8 @@ async function loadStaffDashboard(){
     if (has('courses.view')) loadStaffCourses();
     if (has('results.view')) loadStaffResults();
     loadStaffProfile();
+    loadMessageContacts('staff');
+    loadStaffNotifications();
   } catch (err) {
     toast(err.message);
   }
@@ -2730,6 +2757,93 @@ async function loadStaffProfile(){
     toast(err.message);
   }
 }
+
+/* ============================== Notifications (staff) ============================== */
+
+async function loadStaffNotifications(){
+  try {
+    const d = await api('/management/my-notifications');
+    const badge = document.getElementById('staffNotifBadge');
+    if (d.unreadCount > 0) { badge.style.display = 'inline-block'; badge.textContent = d.unreadCount; }
+    else { badge.style.display = 'none'; }
+    const panel = document.getElementById('staffNotifPanel');
+    panel.innerHTML = d.notifications.length
+      ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b style="font-size:12.5px;">Notifications</b>${d.unreadCount > 0 ? `<button class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11px;" onclick="markAllNotificationsRead()">Mark all read</button>` : ''}</div>
+        ${d.notifications.map(n => `
+          <div onclick="openNotification(${n.id}, '${n.targetPage || ''}')" style="padding:8px; border-radius:8px; margin-bottom:4px; cursor:pointer; background:${n.read ? 'transparent' : 'var(--gold-bg)'};">
+            <div style="font-size:12px;">${escapeHtml(n.message)}</div>
+            <div style="font-size:10.5px; color:var(--ink-soft); margin-top:2px;">${fmtDate(n.createdAt)}</div>
+          </div>`).join('')}`
+      : '<p class="empty" style="font-size:12px;">No notifications yet.</p>';
+  } catch (err) {
+    // silent — notifications are a convenience, not core functionality
+  }
+}
+
+function toggleNotificationsPanel(){
+  const panel = document.getElementById('staffNotifPanel');
+  document.getElementById('staffSearchResults').style.display = 'none';
+  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+async function openNotification(id, targetPage){
+  try { await api(`/management/notifications/${id}/read`, { method: 'POST' }); } catch (err) { /* non-fatal */ }
+  document.getElementById('staffNotifPanel').style.display = 'none';
+  if (targetPage) showStaffPage(targetPage);
+  loadStaffNotifications();
+}
+
+async function markAllNotificationsRead(){
+  try {
+    await api('/management/notifications/read-all', { method: 'POST' });
+    loadStaffNotifications();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Global search (staff) ============================== */
+
+let staffSearchDebounce = null;
+
+function handleStaffSearch(query){
+  clearTimeout(staffSearchDebounce);
+  document.getElementById('staffNotifPanel').style.display = 'none';
+  const resultsEl = document.getElementById('staffSearchResults');
+  if (!query || query.trim().length < 2) { resultsEl.style.display = 'none'; return; }
+  staffSearchDebounce = setTimeout(async () => {
+    try {
+      const d = await api(`/management/search?q=${encodeURIComponent(query.trim())}`);
+      resultsEl.style.display = 'block';
+      resultsEl.innerHTML = d.results.length
+        ? d.results.map(r => `<div onclick="goToSearchResult('${r.page}')" style="padding:7px 8px; border-radius:8px; cursor:pointer;">
+            <div style="font-size:11px; color:var(--ink-soft); text-transform:uppercase;">${escapeHtml(r.category)}</div>
+            <div style="font-size:12.5px;">${escapeHtml(r.label)}</div>
+            ${r.sub ? `<div style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.sub)}</div>` : ''}
+          </div>`).join('')
+        : '<p class="empty" style="font-size:12px; padding:6px;">No matches.</p>';
+    } catch (err) {
+      resultsEl.style.display = 'none';
+    }
+  }, 300);
+}
+
+function goToSearchResult(page){
+  document.getElementById('staffSearchResults').style.display = 'none';
+  document.getElementById('staffSearchInput').value = '';
+  showStaffPage(page);
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#staffSearchInput') && !e.target.closest('#staffSearchResults')) {
+    const el = document.getElementById('staffSearchResults');
+    if (el) el.style.display = 'none';
+  }
+  if (!e.target.closest('#staffNotifPanel') && !e.target.closest('[onclick="toggleNotificationsPanel()"]')) {
+    const el = document.getElementById('staffNotifPanel');
+    if (el) el.style.display = 'none';
+  }
+});
 
 /* ============================== Staff activation (invite link) ============================== */
 

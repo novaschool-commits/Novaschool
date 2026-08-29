@@ -2,6 +2,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
+const { notifyStaffWithPermission } = require('../middleware/permissions');
 
 const router = express.Router();
 
@@ -129,6 +130,7 @@ router.post('/admissions/apply', asyncHandler(async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
     [applicant_name, grade_applied, parent_email, 'pending', photo_base64 || null, document_base64 || null, document_filename || null, curriculum || 'Pakistani', fee.amount, fee.currency, contact_phone, guardian_id || null]
   );
+  await notifyStaffWithPermission('students.view', 'admission.applied', `New admission application from ${applicant_name} (Grade ${grade_applied}).`, 'students');
   res.status(201).json({
     message: `Application received for ${applicant_name}. The school will reach out to ${parent_email} within 5 business days.`,
     applicationId: r.rows[0].id,
@@ -163,6 +165,7 @@ router.post('/teacher-applications/apply', asyncHandler(async (req, res) => {
     'INSERT INTO teacher_applications (applicant_name, subject_applied, email, phone, status, photo_base64, document_base64, document_filename, co_curricular) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
     [applicant_name, subject_applied, email, phone, 'pending', photo_base64, document_base64, document_filename || null, co_curricular || null]
   );
+  await notifyStaffWithPermission('teachers.view', 'teacher_application.applied', `New teacher application from ${applicant_name} (${subject_applied}).`, 'teachers');
   res.status(201).json({
     message: `Application received for ${applicant_name}. The school will be in touch at ${email}.`,
     applicationId: r.rows[0].id

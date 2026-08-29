@@ -64,4 +64,22 @@ async function logAudit(req, action, targetType, targetId, details) {
   );
 }
 
-module.exports = { requirePermission, logAudit, userHasPermission };
+// Notify every active staff member whose role grants `permissionKey`. Used
+// only for real backend events (see call sites) — never invented/sample data.
+async function notifyStaffWithPermission(permissionKey, type, message, targetPage) {
+  const { all, run } = require('../db');
+  const rows = await all(
+    `SELECT s.id FROM staff s
+     JOIN staff_role_permissions srp ON srp.staff_role_id = s.staff_role_id
+     WHERE s.status = 'active' AND srp.permission_key = $1`,
+    [permissionKey]
+  );
+  for (const r of rows) {
+    await run(
+      'INSERT INTO staff_notifications (staff_id, type, message, target_page) VALUES ($1,$2,$3,$4)',
+      [r.id, type, message, targetPage || null]
+    );
+  }
+}
+
+module.exports = { requirePermission, logAudit, userHasPermission, notifyStaffWithPermission };

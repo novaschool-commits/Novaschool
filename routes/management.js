@@ -60,6 +60,79 @@ router.get('/my-profile', asyncHandler(async (req, res) => {
   });
 }));
 
+// ---------- Notifications (staff only — real events trigger these; see
+// notifyStaffWithPermission() call sites in routes/common.js) ----------
+
+async function getOwnStaffId(req) {
+  const row = await get('SELECT id FROM staff WHERE user_id = $1 AND status = $2', [req.user.id, 'active']);
+  return row ? row.id : null;
+}
+
+router.get('/my-notifications', asyncHandler(async (req, res) => {
+  if (req.user.role !== 'staff') return res.json({ notifications: [], unreadCount: 0 });
+  const staffId = await getOwnStaffId(req);
+  if (!staffId) return res.json({ notifications: [], unreadCount: 0 });
+
+  const rows = await all(
+    'SELECT id, type, message, target_page, read_at, created_at FROM staff_notifications WHERE staff_id = $1 ORDER BY created_at DESC LIMIT 30',
+    [staffId]
+  );
+  const unreadCount = rows.filter(r => !r.read_at).length;
+  res.json({
+    notifications: rows.map(r => ({ id: r.id, type: r.type, message: r.message, targetPage: r.target_page, read: !!r.read_at, createdAt: r.created_at })),
+    unreadCount
+  });
+}));
+
+router.post('/notifications/:id/read', asyncHandler(async (req, res) => {
+  const staffId = await getOwnStaffId(req);
+  if (!staffId) return res.status(404).json({ error: 'Staff profile not found.' });
+  await run('UPDATE staff_notifications SET read_at = CURRENT_TIMESTAMP WHERE id = $1 AND staff_id = $2 AND read_at IS NULL', [Number(req.params.id), staffId]);
+  res.json({ message: 'Marked as read.' });
+}));
+
+router.post('/notifications/read-all', asyncHandler(async (req, res) => {
+  const staffId = await getOwnStaffId(req);
+  if (!staffId) return res.status(404).json({ error: 'Staff profile not found.' });
+  await run('UPDATE staff_notifications SET read_at = CURRENT_TIMESTAMP WHERE staff_id = $1 AND read_at IS NULL', [staffId]);
+  res.json({ message: 'All notifications marked as read.' });
+}));
+
+// ---------- Global search (permission-aware — a staff member never sees a
+// hit in a category their role doesn't grant view access to) ----------
+
+router.get('/search', asyncHandler(async (req, res) => {
+  const q = (req.query.q || '').trim();
+  if (q.length < 2) return res.json({ results: [] });
+  const like = `%${q}%`;
+  const results = [];
+  const can = async (perm) => req.user.role === 'admin' || (await userHasPermission(req, perm));
+
+  if (await can('students.view')) {
+    const rows = await all(
+      `SELECT id, first_name, last_name, admission_no, section_code FROM students
+       WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR admission_no ILIKE $1 LIMIT 5`,
+      [like]
+    );
+    rows.forEach(r => results.push({ category: 'Students', label: `${r.first_name} ${r.last_name} — ${r.admission_no}`, sub: `Section ${r.section_code}`, page: 'students' }));
+  }
+  if (await can('teachers.view')) {
+    const rows = await all(
+      `SELECT id, first_name, last_name, subject FROM teachers WHERE first_name ILIKE $1 OR last_name ILIKE $1 LIMIT 5`,
+      [like]
+    );
+    rows.forEach(r => results.push({ category: 'Teachers', label: `${r.first_name} ${r.last_name}`, sub: r.subject || '', page: 'teachers' }));
+  }
+  if (await can('courses.view')) {
+    const rows = await all(
+      `SELECT id, title, subject, curriculum FROM courses WHERE title ILIKE $1 OR subject ILIKE $1 LIMIT 5`,
+      [like]
+    );
+    rows.forEach(r => results.push({ category: 'Courses', label: r.title, sub: `${r.subject} · ${r.curriculum}`, page: 'courses' }));
+  }
+  res.json({ results });
+}));
+
 // ---------- Permission catalog (Super Admin only — this defines what
 // roles CAN be granted, so it isn't itself delegable) ----------
 

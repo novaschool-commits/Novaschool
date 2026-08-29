@@ -533,3 +533,15 @@ ALTER TABLE courses ALTER COLUMN status SET NOT NULL;
 ALTER TABLE courses ALTER COLUMN status SET DEFAULT 'draft';
 ALTER TABLE courses ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
 UPDATE courses SET published_at = COALESCE(published_at, created_at) WHERE status = 'published' AND published_at IS NULL;
+
+-- Staff notifications (real events only — new admission/teacher applications
+-- so far; extend the trigger points below as more real events warrant it).
+CREATE TABLE IF NOT EXISTS staff_notifications (
+  id SERIAL PRIMARY KEY,
+  staff_id INTEGER NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  target_page TEXT,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
