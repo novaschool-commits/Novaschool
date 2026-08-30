@@ -1072,6 +1072,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <nav class="side-nav" id="staffSideNav">
         <a class="side-link active" data-page="dashboard" onclick="showStaffPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
         <a class="side-link" data-page="students" data-perm="students.view" onclick="showStaffPage('students')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.4.4 4.5 2.4 4.5 5.8"/></svg><span class="txt">Students</span></a>
+        <a class="side-link" data-page="admissions" data-perm="students.view" onclick="showStaffPage('admissions')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M9 12l2 2 4-4"/></svg><span class="txt">Admissions</span></a>
         <a class="side-link" data-page="teachers" data-perm="teachers.view" onclick="showStaffPage('teachers')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span class="txt">Teachers</span></a>
         <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
@@ -1132,6 +1133,19 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <button class="btn btn-primary btn-sm" onclick="createStaffStudent()">Add student</button>
         </div>
         <div class="card"><div class="card-head"><h3>Students</h3></div><div id="staffStudentsList"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="admissions">
+        <div class="card">
+          <div class="card-head"><h3>Admissions</h3>
+            <select class="grade-input" style="width:auto;" id="staffAdmissionsStatus" onchange="loadStaffAdmissions()">
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="declined">Declined</option>
+            </select>
+          </div>
+          <div id="staffAdmissionsList"><p class="empty">Loading…</p></div>
+        </div>
       </div>
 
       <div class="admin-page" data-page="teachers">
@@ -2620,7 +2634,7 @@ async function loadStaffDashboard(){
     document.getElementById('assignTaskCard').style.display = has('tasks.assign') ? 'block' : 'none';
     document.getElementById('assignedTasksCard').style.display = has('tasks.assign') ? 'block' : 'none';
 
-    if (has('students.view')) loadStaffStudents();
+    if (has('students.view')) { loadStaffStudents(); loadStaffAdmissions(); }
     if (has('teachers.view')) loadStaffTeachers();
     if (has('courses.view')) loadStaffCourses();
     if (has('results.view')) loadStaffResults();
@@ -2659,6 +2673,32 @@ async function createStaffStudent(){
     toast(res.message);
     ['staffStudentFirst','staffStudentLast','staffStudentAdmNo','staffStudentSection','staffStudentEmail','staffStudentPassword'].forEach(id => document.getElementById(id).value = '');
     await loadStaffStudents();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffAdmissions(){
+  try {
+    const status = document.getElementById('staffAdmissionsStatus').value;
+    const d = await api(`/admin/admissions?status=${status}`);
+    const canDecide = STAFF_PERMISSIONS.includes('students.create') && status === 'pending';
+    document.getElementById('staffAdmissionsList').innerHTML = d.applications.length
+      ? d.applications.map(app => `<div class="list-row"><div class="l-main">
+          ${app.photoBase64 ? `<img src="data:image/*;base64,${app.photoBase64}" style="width:36px;height:36px;border-radius:8px;object-fit:cover;" alt="">` : `<div class="avatar" style="width:36px;height:36px;background:var(--indigo);">${escapeHtml(app.applicantName[0])}</div>`}
+          <div><div class="l-title">${escapeHtml(app.applicantName)}</div><div class="l-sub">Applying — ${escapeHtml(app.gradeApplied)} · ${escapeHtml(app.contactPhone || 'no phone')}${app.entranceScore ? ' · Entrance test: ' + escapeHtml(String(app.entranceScore)) : ''}${app.documentFilename ? ` · <a href="javascript:void(0)" onclick="downloadAdmissionDoc(${app.id})" style="color:var(--indigo);">${escapeHtml(app.documentFilename)}</a>` : ''}</div></div></div>
+          ${canDecide ? `<div style="display:flex; gap:6px;"><button class="btn btn-outline btn-sm" onclick="staffDecideAdmission(${app.id},'declined')">Decline</button><button class="btn btn-ink btn-sm" onclick="staffDecideAdmission(${app.id},'approved')">Approve</button></div>` : ''}</div>`).join('')
+      : `<p class="empty">No ${escapeHtml(status)} applications.</p>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function staffDecideAdmission(id, decision){
+  try {
+    const res = await api(`/admin/admissions/${id}/decision`, { method: 'POST', body: JSON.stringify({ decision }) });
+    toast(res.message);
+    await loadStaffAdmissions();
   } catch (err) {
     toast(err.message);
   }
