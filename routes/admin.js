@@ -523,6 +523,209 @@ router.get('/results/overview', requirePermission('results.view'), asyncHandler(
   });
 }));
 
+// ---------- Exams & question banks (school-wide — every teacher's exams,
+// not just one teacher's own, matching the pre-seeded Exam Manager role
+// which already pairs assignments.* with results.* permissions) ----------
+
+router.get('/exams', requirePermission('assignments.view'), asyncHandler(async (req, res) => {
+  const exams = await all(
+    `SELECT e.id, e.title, e.subject, e.section_code, e.duration_minutes, e.is_published,
+            t.first_name AS teacher_first, t.last_name AS teacher_last,
+            (SELECT COUNT(*) FROM exam_questions WHERE exam_id = e.id) AS question_count,
+            (SELECT COUNT(*) FROM exam_attempts WHERE exam_id = e.id AND status = 'submitted') AS pending_grading
+     FROM exams e LEFT JOIN teachers t ON t.id = e.teacher_id ORDER BY e.created_at DESC`
+  );
+  res.json({ exams: exams.map(e => ({
+    id: e.id, title: e.title, subject: e.subject, sectionCode: e.section_code,
+    durationMinutes: e.duration_minutes, isPublished: e.is_published,
+    teacher: e.teacher_first ? `${e.teacher_first} ${e.teacher_last}` : 'Unassigned',
+    questionCount: Number(e.question_count), pendingGrading: Number(e.pending_grading)
+  })) });
+}));
+
+router.post('/exams', requirePermission('assignments.create'), asyncHandler(async (req, res) => {
+  const { title, subject, section_code, duration_minutes, teacher_id } = req.body || {};
+  if (!title || !subject || !section_code) {
+    return res.status(400).json({ error: 'title, subject, and section_code are required.' });
+  }
+  const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
+  if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist.` });
+  if (teacher_id) {
+    const teacher = await get('SELECT id FROM teachers WHERE id = $1', [teacher_id]);
+    if (!teacher) return res.status(400).json({ error: 'That teacher does not exist.' });
+  }
+  const r = await run(
+    'INSERT INTO exams (title, subject, section_code, teacher_id, duration_minutes) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+    [title, subject, section_code, teacher_id || null, Number(duration_minutes) || 30]
+  );
+  await logAudit(req, 'exam.created', 'exam', r.rows[0].id, { title, subject, section_code });
+  res.status(201).json({ message: 'Test created. Add questions, then publish it.', examId: r.rows[0].id });
+}));
+
+router.post('/exams/:id/questions', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+
+  const { question_text, question_type, options, correct_answer, marks } = req.body || {};
+  if (!question_text || !['mcq', 'descriptive'].includes(question_type)) {
+    return res.status(400).json({ error: 'question_text and a valid question_type (mcq/descriptive) are required.' });
+  }
+  if (question_type === 'mcq' && (!Array.isArray(options) || options.length < 2 || !correct_answer)) {
+    return res.status(400).json({ error: 'MCQ questions need at least 2 options and a correct_answer.' });
+  }
+  const posRow = await get('SELECT COALESCE(MAX(position), 0) + 1 AS next FROM exam_questions WHERE exam_id = $1', [examId]);
+  await run(
+    'INSERT INTO exam_questions (exam_id, question_text, question_type, options, correct_answer, marks, position) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+    [examId, question_text, question_type,
+     question_type === 'mcq' ? JSON.stringify(options) : null,
+     question_type === 'mcq' ? correct_answer : null,
+     Number(marks) || 1, posRow.next]
+  );
+  res.status(201).json({ message: 'Question added.' });
+}));
+
+router.get('/exams/:id', requirePermission('assignments.view'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  const questions = await all('SELECT * FROM exam_questions WHERE exam_id = $1 ORDER BY position, id', [examId]);
+  res.json({
+    exam: { id: exam.id, title: exam.title, subject: exam.subject, sectionCode: exam.section_code, durationMinutes: exam.duration_minutes, isPublished: exam.is_published },
+    questions: questions.map(q => ({ id: q.id, questionText: q.question_text, questionType: q.question_type, options: q.options, correctAnswer: q.correct_answer, marks: q.marks }))
+  });
+}));
+
+router.delete('/exams/:id/questions/:qid', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT is_published FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  if (exam.is_published) return res.status(400).json({ error: 'Unpublish the test before removing questions from it.' });
+  await run('DELETE FROM exam_questions WHERE id = $1 AND exam_id = $2', [Number(req.params.qid), examId]);
+  res.json({ message: 'Question removed.' });
+}));
+
+router.post('/exams/:id/publish', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  const countRow = await get('SELECT COUNT(*) AS c FROM exam_questions WHERE exam_id = $1', [examId]);
+  if (Number(countRow.c) === 0) return res.status(400).json({ error: 'Add at least one question before publishing.' });
+  await run('UPDATE exams SET is_published = TRUE WHERE id = $1', [examId]);
+  await logAudit(req, 'exam.published', 'exam', examId, { title: exam.title });
+  res.json({ message: 'Test published — students in this section can now see and take it.' });
+}));
+
+router.post('/exams/:id/unpublish', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  await run('UPDATE exams SET is_published = FALSE WHERE id = $1', [examId]);
+  await logAudit(req, 'exam.unpublished', 'exam', examId, { title: exam.title });
+  res.json({ message: 'Test moved back to draft.' });
+}));
+
+router.delete('/exams/:id', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  await run('DELETE FROM exam_answers WHERE attempt_id IN (SELECT id FROM exam_attempts WHERE exam_id = $1)', [examId]);
+  await run('DELETE FROM exam_attempts WHERE exam_id = $1', [examId]);
+  await run('DELETE FROM exam_questions WHERE exam_id = $1', [examId]);
+  await run('DELETE FROM exams WHERE id = $1', [examId]);
+  await logAudit(req, 'exam.deleted', 'exam', examId, { title: exam.title });
+  res.json({ message: 'Test removed.' });
+}));
+
+router.get('/exams/:id/attempts', requirePermission('results.view'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  const attempts = await all(
+    `SELECT a.id, a.status, a.auto_score, a.total_score, a.submitted_at, st.first_name, st.last_name
+     FROM exam_attempts a JOIN students st ON st.id = a.student_id
+     WHERE a.exam_id = $1 AND a.status IN ('submitted','graded')
+     ORDER BY a.submitted_at DESC`,
+    [examId]
+  );
+  res.json({ exam: { id: exam.id, title: exam.title }, attempts: attempts.map(a => ({
+    id: a.id, status: a.status, studentName: `${a.first_name} ${a.last_name}`,
+    autoScore: Number(a.auto_score), totalScore: a.total_score !== null ? Number(a.total_score) : null,
+    submittedAt: a.submitted_at
+  })) });
+}));
+
+router.get('/exams/attempts/:attemptId', requirePermission('results.view'), asyncHandler(async (req, res) => {
+  const attemptId = Number(req.params.attemptId);
+  const attempt = await get(
+    `SELECT a.*, e.title AS exam_title, st.first_name, st.last_name
+     FROM exam_attempts a JOIN exams e ON e.id = a.exam_id JOIN students st ON st.id = a.student_id
+     WHERE a.id = $1`,
+    [attemptId]
+  );
+  if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
+  const answers = await all(
+    `SELECT ea.id AS answer_id, ea.student_answer, ea.is_correct, ea.marks_awarded,
+            q.id AS question_id, q.question_text, q.question_type, q.options, q.correct_answer, q.marks
+     FROM exam_answers ea JOIN exam_questions q ON q.id = ea.question_id
+     WHERE ea.attempt_id = $1 ORDER BY q.position, q.id`,
+    [attemptId]
+  );
+  res.json({
+    attempt: { id: attempt.id, studentName: `${attempt.first_name} ${attempt.last_name}`, examTitle: attempt.exam_title, status: attempt.status },
+    answers
+  });
+}));
+
+router.post('/exams/attempts/:attemptId/grade', requirePermission('results.enter'), asyncHandler(async (req, res) => {
+  const attemptId = Number(req.params.attemptId);
+  const attempt = await get(
+    `SELECT a.*, e.title AS exam_title, e.subject FROM exam_attempts a JOIN exams e ON e.id = a.exam_id WHERE a.id = $1`,
+    [attemptId]
+  );
+  if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
+
+  const { grades } = req.body || {};
+  for (const g of (grades || [])) {
+    await run('UPDATE exam_answers SET marks_awarded = $1 WHERE attempt_id = $2 AND question_id = $3', [g.marks_awarded, attemptId, g.question_id]);
+  }
+
+  const stillUngraded = await get(
+    `SELECT COUNT(*) AS c FROM exam_answers ea JOIN exam_questions eq ON eq.id = ea.question_id
+     WHERE ea.attempt_id = $1 AND eq.question_type = 'descriptive' AND ea.marks_awarded IS NULL`,
+    [attemptId]
+  );
+  if (Number(stillUngraded.c) > 0) {
+    const remaining = Number(stillUngraded.c);
+    return res.json({ message: `Saved. ${remaining} question${remaining === 1 ? '' : 's'} still need${remaining === 1 ? 's' : ''} a mark before this can be published.` });
+  }
+
+  const totalsRow = await get('SELECT COALESCE(SUM(marks_awarded), 0) AS total FROM exam_answers WHERE attempt_id = $1', [attemptId]);
+  const maxRow = await get(
+    'SELECT COALESCE(SUM(marks),0) AS max FROM exam_questions WHERE exam_id = (SELECT exam_id FROM exam_attempts WHERE id = $1)',
+    [attemptId]
+  );
+  const totalScore = Number(totalsRow.total);
+  await run("UPDATE exam_attempts SET total_score = $1, status = 'graded' WHERE id = $2", [totalScore, attemptId]);
+
+  const scoreText = `${totalScore}/${Number(maxRow.max)}`;
+  const assessmentLabel = `Test: ${attempt.exam_title}`;
+  const existingGrade = await get(
+    'SELECT id FROM grades WHERE student_id = $1 AND subject = $2 AND assessment = $3',
+    [attempt.student_id, attempt.subject, assessmentLabel]
+  );
+  if (existingGrade) {
+    await run('UPDATE grades SET score = $1, recorded_at = CURRENT_TIMESTAMP WHERE id = $2', [scoreText, existingGrade.id]);
+  } else {
+    await run(
+      'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1,$2,$3,$4)',
+      [attempt.student_id, attempt.subject, assessmentLabel, scoreText]
+    );
+  }
+  await logAudit(req, 'exam.graded', 'exam_attempt', attemptId, { examTitle: attempt.exam_title, totalScore });
+  res.json({ message: `Graded — ${scoreText}. Result published to the student's gradebook.` });
+}));
+
 // ---------- Fee payment confirmations ----------
 // Parents can only *claim* they've paid (routes/parent.js) — no payment
 // gateway is connected, so nothing is actually marked paid until an admin

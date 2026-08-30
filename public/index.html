@@ -1075,6 +1075,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="admissions" data-perm="students.view" onclick="showStaffPage('admissions')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M9 12l2 2 4-4"/></svg><span class="txt">Admissions</span></a>
         <a class="side-link" data-page="teachers" data-perm="teachers.view" onclick="showStaffPage('teachers')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span class="txt">Teachers</span></a>
         <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
+        <a class="side-link" data-page="exams" data-perm="assignments.view" onclick="showStaffPage('exams')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6l1 4H8z"/><path d="M8 6h8v14a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z"/><path d="M9 11l2 2 4-4"/></svg><span class="txt">Exams</span></a>
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
         <a class="side-link" data-page="profile" onclick="showStaffPage('profile')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">My Profile</span></a>
         <a class="side-link" data-page="messages" onclick="showStaffPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
@@ -1176,6 +1177,21 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <button class="btn btn-primary btn-sm" onclick="createStaffCourse()">Add course</button>
         </div>
         <div class="card"><div class="card-head"><h3>Courses</h3></div><div id="staffCoursesList"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="exams">
+        <div class="card" id="staffExamCreateCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Create a test</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="staffExamTitle" placeholder="Title">
+            <input class="grade-input" style="width:100%;" id="staffExamSubject" placeholder="Subject">
+            <input class="grade-input" style="width:100%;" id="staffExamSection" placeholder="Section code (e.g. 8B)">
+            <input class="grade-input" style="width:100%;" type="number" id="staffExamDuration" placeholder="Duration (minutes)" value="30">
+            <select class="grade-input" style="width:100%; grid-column:1/-1;" id="staffExamTeacher"><option value="">Assign to teacher (optional)</option></select>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="createStaffExam()">Create test</button>
+        </div>
+        <div class="card"><div class="card-head"><h3>Tests</h3></div><div id="staffExamsList"><p class="empty">Loading…</p></div></div>
       </div>
 
       <div class="admin-page" data-page="results">
@@ -2633,11 +2649,13 @@ async function loadStaffDashboard(){
     document.getElementById('staffCourseCreateCard').style.display = has('courses.create') ? 'block' : 'none';
     document.getElementById('assignTaskCard').style.display = has('tasks.assign') ? 'block' : 'none';
     document.getElementById('assignedTasksCard').style.display = has('tasks.assign') ? 'block' : 'none';
+    document.getElementById('staffExamCreateCard').style.display = has('assignments.create') ? 'block' : 'none';
 
     if (has('students.view')) { loadStaffStudents(); loadStaffAdmissions(); }
     if (has('teachers.view')) loadStaffTeachers();
     if (has('courses.view')) loadStaffCourses();
     if (has('results.view')) loadStaffResults();
+    if (has('assignments.view')) { loadStaffExams(); if (has('assignments.create')) loadExamTeacherOptions(); }
     loadStaffProfile();
     loadMessageContacts('staff');
     loadStaffNotifications();
@@ -2794,6 +2812,195 @@ async function loadStaffResults(){
       <p style="font-size:13px; margin-bottom:12px;"><b>${d.pendingGrading}</b> submissions across the school are still awaiting grading.</p>
       <div class="table-scroll"><table class="table-simple"><thead><tr><th>Section</th><th>Grade</th><th>Recorded grades</th></tr></thead><tbody>${d.bySection.map(r => `
         <tr><td>${escapeHtml(r.sectionCode)}</td><td>${escapeHtml(String(r.grade))}</td><td>${r.recordedGrades}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Exams & question banks (staff) ============================== */
+
+async function loadExamTeacherOptions(){
+  try {
+    const d = await api('/admin/teachers');
+    document.getElementById('staffExamTeacher').innerHTML = '<option value="">Assign to teacher (optional)</option>' + d.teachers.map(t => `<option value="${t.id}">${escapeHtml(t.first_name)} ${escapeHtml(t.last_name)}</option>`).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStaffExams(){
+  try {
+    const d = await api('/admin/exams');
+    const canEdit = STAFF_PERMISSIONS.includes('assignments.edit');
+    document.getElementById('staffExamsList').innerHTML = d.exams.length
+      ? d.exams.map(e => `<div class="list-row" style="flex-wrap:wrap; align-items:flex-start;">
+          <div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
+            <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${e.isPublished?'var(--green)':'var(--ink-soft)'}; font-size:10.5px;">${e.isPublished?'Published':'Draft'}</span></div>
+              <div class="l-sub">Section ${escapeHtml(e.sectionCode)} · ${escapeHtml(e.teacher)} · ${e.questionCount} question${e.questionCount===1?'':'s'}${e.pendingGrading?' · ' + e.pendingGrading + ' to grade':''}</div></div></div>
+          <button class="btn btn-outline btn-sm" onclick="toggleExamDetail(${e.id}, ${canEdit})">Manage</button>
+        </div>
+        <div id="examDetail-${e.id}" style="display:none; padding:12px; background:var(--paper-alt); border-radius:10px; margin:4px 0 10px;"></div>`).join('')
+      : '<p class="empty">No tests created yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createStaffExam(){
+  const title = document.getElementById('staffExamTitle').value.trim();
+  const subject = document.getElementById('staffExamSubject').value.trim();
+  const section_code = document.getElementById('staffExamSection').value.trim();
+  const duration_minutes = document.getElementById('staffExamDuration').value;
+  const teacher_id = document.getElementById('staffExamTeacher').value;
+  if (!title || !subject || !section_code) { toast('Title, subject, and section are required.'); return; }
+  try {
+    const res = await api('/admin/exams', { method: 'POST', body: JSON.stringify({ title, subject, section_code, duration_minutes: Number(duration_minutes) || 30, teacher_id: teacher_id || undefined }) });
+    toast(res.message);
+    ['staffExamTitle','staffExamSubject','staffExamSection'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('staffExamDuration').value = '30';
+    document.getElementById('staffExamTeacher').value = '';
+    await loadStaffExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleExamDetail(examId, canEdit){
+  const el = document.getElementById(`examDetail-${examId}`);
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/admin/exams/${examId}`);
+    const canGrade = STAFF_PERMISSIONS.includes('results.enter');
+    const canViewResults = STAFF_PERMISSIONS.includes('results.view');
+    el.innerHTML = `
+      <p style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;">Questions</p>
+      <div id="examQuestions-${examId}" style="margin-bottom:12px;">${d.questions.length ? d.questions.map(q => `
+        <div style="margin-bottom:8px; padding:8px; background:#fff; border-radius:8px;">
+          <div style="font-size:12.5px;">${escapeHtml(q.questionText)} <span style="color:var(--ink-soft); font-size:11px;">(${q.marks} mark${q.marks===1?'':'s'}, ${q.questionType})</span></div>
+          ${q.questionType==='mcq' ? `<div style="font-size:11.5px; color:var(--ink-soft);">Options: ${(q.options||[]).map(o=>escapeHtml(o)).join(', ')} · Correct: ${escapeHtml(q.correctAnswer)}</div>` : ''}
+          ${canEdit && !d.exam.isPublished ? `<button class="btn btn-outline btn-sm" style="margin-top:4px;" onclick="deleteExamQuestion(${examId},${q.id})">Remove</button>` : ''}
+        </div>`).join('') : '<p class="empty">No questions yet.</p>'}</div>
+      ${canEdit && !d.exam.isPublished ? `
+      <div style="margin-bottom:12px; padding:10px; background:#fff; border-radius:8px;">
+        <input class="grade-input" style="width:100%; margin-bottom:6px;" id="qText-${examId}" placeholder="Question text">
+        <div style="display:flex; gap:6px; margin-bottom:6px;">
+          <select class="grade-input" id="qType-${examId}" onchange="document.getElementById('qMcqFields-${examId}').style.display = this.value==='mcq' ? 'block' : 'none';">
+            <option value="mcq">Multiple choice</option><option value="descriptive">Descriptive</option>
+          </select>
+          <input class="grade-input" style="width:80px;" type="number" id="qMarks-${examId}" placeholder="Marks" value="1">
+        </div>
+        <div id="qMcqFields-${examId}">
+          <input class="grade-input" style="width:100%; margin-bottom:6px;" id="qOptions-${examId}" placeholder="Options, comma-separated (e.g. A, B, C, D)">
+          <input class="grade-input" style="width:100%; margin-bottom:6px;" id="qCorrect-${examId}" placeholder="Correct answer (must match one option exactly)">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="addExamQuestion(${examId})">Add question</button>
+      </div>
+      <button class="btn ${d.exam.isPublished?'btn-outline':'btn-primary'} btn-sm" onclick="${d.exam.isPublished?'unpublishStaffExam':'publishStaffExam'}(${examId})">${d.exam.isPublished?'Unpublish':'Publish test'}</button>
+      ` : ''}
+      ${canViewResults ? `<div style="margin-top:14px;"><button class="btn btn-outline btn-sm" onclick="loadExamAttempts(${examId},${canGrade})">View submissions</button><div id="examAttempts-${examId}" style="margin-top:10px;"></div></div>` : ''}
+    `;
+  } catch (err) {
+    el.innerHTML = '<p class="empty">Could not load this test.</p>';
+  }
+}
+
+async function addExamQuestion(examId){
+  const question_text = document.getElementById(`qText-${examId}`).value.trim();
+  const question_type = document.getElementById(`qType-${examId}`).value;
+  const marks = document.getElementById(`qMarks-${examId}`).value;
+  const optionsRaw = document.getElementById(`qOptions-${examId}`).value.trim();
+  const correct_answer = document.getElementById(`qCorrect-${examId}`).value.trim();
+  if (!question_text) { toast('Enter the question text.'); return; }
+  const options = optionsRaw ? optionsRaw.split(',').map(o => o.trim()).filter(Boolean) : undefined;
+  if (question_type === 'mcq' && (!options || options.length < 2 || !correct_answer)) {
+    toast('MCQ questions need at least 2 options and a correct answer.'); return;
+  }
+  try {
+    const res = await api(`/admin/exams/${examId}/questions`, { method: 'POST', body: JSON.stringify({ question_text, question_type, options, correct_answer: correct_answer || undefined, marks: Number(marks) || 1 }) });
+    toast(res.message);
+    toggleExamDetail(examId); toggleExamDetail(examId, true);
+    loadStaffExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteExamQuestion(examId, questionId){
+  try {
+    const res = await api(`/admin/exams/${examId}/questions/${questionId}`, { method: 'DELETE' });
+    toast(res.message);
+    toggleExamDetail(examId); toggleExamDetail(examId, true);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function publishStaffExam(examId){
+  try {
+    const res = await api(`/admin/exams/${examId}/publish`, { method: 'POST' });
+    toast(res.message);
+    toggleExamDetail(examId); toggleExamDetail(examId, true);
+    loadStaffExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function unpublishStaffExam(examId){
+  if (!confirm('Move this test back to draft? Students will no longer be able to see or take it.')) return;
+  try {
+    const res = await api(`/admin/exams/${examId}/unpublish`, { method: 'POST' });
+    toast(res.message);
+    toggleExamDetail(examId); toggleExamDetail(examId, true);
+    loadStaffExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadExamAttempts(examId, canGrade){
+  const el = document.getElementById(`examAttempts-${examId}`);
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/admin/exams/${examId}/attempts`);
+    el.innerHTML = d.attempts.length ? d.attempts.map(a => `
+      <div style="padding:8px; background:#fff; border-radius:8px; margin-bottom:6px;">
+        <div style="font-size:12.5px;">${escapeHtml(a.studentName)} — <span class="tag" style="background:${a.status==='graded'?'var(--green)':'var(--amber)'};">${a.status}</span> ${a.totalScore!==null ? `Score: ${a.totalScore}` : ''}</div>
+        ${canGrade && a.status==='submitted' ? `<button class="btn btn-outline btn-sm" style="margin-top:4px;" onclick="gradeExamAttempt(${a.id})">Grade</button>` : ''}
+        <div id="attemptGrade-${a.id}" style="margin-top:6px;"></div>
+      </div>`).join('') : '<p class="empty">No submissions yet.</p>';
+  } catch (err) {
+    el.innerHTML = '<p class="empty">Could not load submissions.</p>';
+  }
+}
+
+async function gradeExamAttempt(attemptId){
+  const el = document.getElementById(`attemptGrade-${attemptId}`);
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/admin/exams/attempts/${attemptId}`);
+    const descriptive = d.answers.filter(a => a.question_type === 'descriptive');
+    el.innerHTML = descriptive.length ? `
+      ${descriptive.map(a => `
+        <div style="margin-bottom:6px;">
+          <div style="font-size:12px; font-weight:600;">${escapeHtml(a.question_text)}</div>
+          <div style="font-size:12.5px; color:var(--ink-soft); margin-bottom:4px;">${escapeHtml(a.student_answer || '(no answer)')}</div>
+          <input class="grade-input" style="width:80px;" type="number" id="mark-${attemptId}-${a.question_id}" placeholder="/${a.marks}" value="${a.marks_awarded ?? ''}">
+        </div>`).join('')}
+      <button class="btn btn-ink btn-sm" onclick="saveExamGrades(${attemptId}, [${descriptive.map(a=>a.question_id).join(',')}])">Save grades</button>
+    ` : '<p class="empty" style="font-size:12px;">No descriptive questions to grade — MCQs are auto-graded.</p>';
+  } catch (err) {
+    el.innerHTML = '<p class="empty">Could not load this submission.</p>';
+  }
+}
+
+async function saveExamGrades(attemptId, questionIds){
+  const grades = questionIds.map(qid => ({ question_id: qid, marks_awarded: Number(document.getElementById(`mark-${attemptId}-${qid}`).value) || 0 }));
+  try {
+    const res = await api(`/admin/exams/attempts/${attemptId}/grade`, { method: 'POST', body: JSON.stringify({ grades }) });
+    toast(res.message);
   } catch (err) {
     toast(err.message);
   }
