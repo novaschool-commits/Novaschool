@@ -276,7 +276,7 @@ router.post('/tasks/:id/comments', asyncHandler(async (req, res) => {
   res.status(201).json({ message: 'Comment added.' });
 }));
 
-router.get('/assignable-staff', requirePermission('tasks.assign'), asyncHandler(async (req, res) => {
+router.get('/assignable-staff', requirePermission('tasks.assign', 'support.manage'), asyncHandler(async (req, res) => {
   const rows = await all(`SELECT id, first_name, last_name FROM staff WHERE status = 'active' ORDER BY first_name`);
   res.json({ staff: rows.map(r => ({ id: r.id, name: `${r.first_name} ${r.last_name}` })) });
 }));

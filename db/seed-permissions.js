@@ -47,7 +47,9 @@ const PERMISSIONS = [
   ['settings.view', 'Settings', 'View system settings'],
   ['settings.edit', 'Settings', 'Edit system settings'],
 
-  ['tasks.assign', 'Tasks', 'Assign tasks to other staff members']
+  ['tasks.assign', 'Tasks', 'Assign tasks to other staff members'],
+
+  ['support.manage', 'Support', 'View, assign, and resolve support tickets']
 ];
 
 // [role_key, display name, [permission keys]]
@@ -78,7 +80,7 @@ const DEFAULT_ROLES = [
     'students.view', 'students.create', 'reports.view'
   ]],
   ['support_manager', 'Support Manager', [
-    'students.view', 'teachers.view', 'reports.view'
+    'students.view', 'teachers.view', 'reports.view', 'support.manage'
   ]],
   ['data_entry_staff', 'Data Entry Staff', [
     'students.create', 'students.edit', 'results.enter'

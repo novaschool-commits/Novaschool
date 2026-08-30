@@ -572,3 +572,27 @@ CREATE TABLE IF NOT EXISTS staff_task_comments (
   body TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Support ticketing. Any authenticated role can raise a ticket via the API,
+-- though only the staff dashboard has a UI for it so far — student/parent/
+-- teacher-facing ticket UIs are a separate, not-yet-built increment.
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id SERIAL PRIMARY KEY,
+  raised_by_user_id INTEGER NOT NULL REFERENCES users(id),
+  raised_by_role TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL DEFAULT 'general' CHECK (category IN ('student','teacher','technical','general')),
+  status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','in_progress','resolved','closed')),
+  assigned_to_staff_id INTEGER REFERENCES staff(id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  resolved_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS support_ticket_replies (
+  id SERIAL PRIMARY KEY,
+  ticket_id INTEGER NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  author_user_id INTEGER REFERENCES users(id),
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);

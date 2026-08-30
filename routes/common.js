@@ -2,7 +2,7 @@ const express = require('express');
 const { all, get, run } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
-const { notifyStaffWithPermission } = require('../middleware/permissions');
+const { notifyStaffWithPermission, userHasPermission } = require('../middleware/permissions');
 
 const router = express.Router();
 
@@ -358,6 +358,143 @@ router.post('/messages/group', authenticate, asyncHandler(async (req, res) => {
     await run('INSERT INTO messages (sender_id, recipient_id, body, sent_at) VALUES ($1,$2,$3,$4)', [req.user.id, id, body.trim(), sentAt]);
   }
   res.status(201).json({ message: `Sent to ${sendable.length} recipient${sendable.length === 1 ? '' : 's'}.` });
+}));
+
+// ---------- Support tickets ----------
+// Any authenticated role can raise a ticket and see their own. Only a
+// staff/admin with support.manage can see and manage everyone's tickets —
+// note only the staff dashboard has a UI for this so far; student/parent/
+// teacher-facing ticket screens are a separate, not-yet-built increment.
+
+router.post('/support-tickets', authenticate, asyncHandler(async (req, res) => {
+  const { subject, description, category } = req.body || {};
+  if (!subject || !subject.trim()) return res.status(400).json({ error: 'subject is required.' });
+  const validCategories = ['student', 'teacher', 'technical', 'general'];
+  if (category && !validCategories.includes(category)) {
+    return res.status(400).json({ error: `category must be one of: ${validCategories.join(', ')}.` });
+  }
+  const r = await run(
+    'INSERT INTO support_tickets (raised_by_user_id, raised_by_role, subject, description, category) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+    [req.user.id, req.user.role, subject.trim(), description || null, category || 'general']
+  );
+  await notifyStaffWithPermission('support.manage', 'ticket.raised', `New support ticket: "${subject.trim()}".`, 'support');
+  res.status(201).json({ message: 'Ticket submitted. Support will follow up.', ticketId: r.rows[0].id });
+}));
+
+router.get('/support-tickets/mine', authenticate, asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT t.*, (SELECT COUNT(*) FROM support_ticket_replies WHERE ticket_id = t.id) AS reply_count
+     FROM support_tickets t WHERE t.raised_by_user_id = $1 ORDER BY t.created_at DESC`,
+    [req.user.id]
+  );
+  res.json({ tickets: rows.map(formatTicket) });
+}));
+
+router.get('/support-tickets', authenticate, asyncHandler(async (req, res) => {
+  if (!(await userHasPermission(req, 'support.manage'))) {
+    return res.status(403).json({ error: 'You do not have permission to view all tickets.' });
+  }
+  const status = req.query.status;
+  const rows = await all(
+    `SELECT t.*, u.email AS raised_by_email, s.first_name AS assignee_first, s.last_name AS assignee_last,
+            (SELECT COUNT(*) FROM support_ticket_replies WHERE ticket_id = t.id) AS reply_count
+     FROM support_tickets t
+     JOIN users u ON u.id = t.raised_by_user_id
+     LEFT JOIN staff s ON s.id = t.assigned_to_staff_id
+     ${status ? 'WHERE t.status = $1' : ''}
+     ORDER BY (t.status IN ('resolved','closed')), t.created_at DESC`,
+    status ? [status] : []
+  );
+  res.json({ tickets: rows.map(r => ({
+    ...formatTicket(r), raisedByEmail: r.raised_by_email,
+    assigneeName: r.assignee_first ? `${r.assignee_first} ${r.assignee_last}` : null
+  })) });
+}));
+
+function formatTicket(r) {
+  return {
+    id: r.id, subject: r.subject, description: r.description, category: r.category, status: r.status,
+    raisedByRole: r.raised_by_role, createdAt: r.created_at, resolvedAt: r.resolved_at,
+    replyCount: Number(r.reply_count || 0)
+  };
+}
+
+router.get('/support-tickets/:id', authenticate, asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const ticket = await get('SELECT * FROM support_tickets WHERE id = $1', [id]);
+  if (!ticket) return res.status(404).json({ error: 'Ticket not found.' });
+  const canManage = await userHasPermission(req, 'support.manage');
+  if (ticket.raised_by_user_id !== req.user.id && !canManage) {
+    return res.status(403).json({ error: 'You do not have access to this ticket.' });
+  }
+  const replies = await all(
+    `SELECT r.id, r.body, r.created_at, r.author_user_id, u.role AS author_role,
+            COALESCE(s.first_name || ' ' || s.last_name, a.first_name || ' ' || a.last_name, t.first_name || ' ' || t.last_name, st.first_name || ' ' || st.last_name)
+              AS author_name
+     FROM support_ticket_replies r
+     JOIN users u ON u.id = r.author_user_id
+     LEFT JOIN staff s ON s.user_id = r.author_user_id
+     LEFT JOIN admins a ON a.user_id = r.author_user_id
+     LEFT JOIN teachers t ON t.user_id = r.author_user_id
+     LEFT JOIN students st ON st.user_id = r.author_user_id
+     WHERE r.ticket_id = $1 ORDER BY r.created_at ASC`,
+    [id]
+  );
+  res.json({
+    ticket: formatTicket(ticket),
+    replies: replies.map(r => ({ id: r.id, body: r.body, createdAt: r.created_at, authorRole: r.author_role, authorName: r.author_name || 'Unknown', mine: r.author_user_id === req.user.id }))
+  });
+}));
+
+router.post('/support-tickets/:id/reply', authenticate, asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const ticket = await get('SELECT * FROM support_tickets WHERE id = $1', [id]);
+  if (!ticket) return res.status(404).json({ error: 'Ticket not found.' });
+  const canManage = await userHasPermission(req, 'support.manage');
+  if (ticket.raised_by_user_id !== req.user.id && !canManage) {
+    return res.status(403).json({ error: 'You do not have access to this ticket.' });
+  }
+  const { body } = req.body || {};
+  if (!body || !body.trim()) return res.status(400).json({ error: 'Reply cannot be empty.' });
+  await run('INSERT INTO support_ticket_replies (ticket_id, author_user_id, body) VALUES ($1,$2,$3)', [id, req.user.id, body.trim()]);
+  if (canManage && ticket.raised_by_role === 'staff') {
+    const raiserStaff = await get('SELECT id FROM staff WHERE user_id = $1', [ticket.raised_by_user_id]);
+    if (raiserStaff) {
+      await run('INSERT INTO staff_notifications (staff_id, type, message, target_page) VALUES ($1,$2,$3,$4)',
+        [raiserStaff.id, 'ticket.reply', `New reply on your ticket: "${ticket.subject}".`, 'support']);
+    }
+  }
+  res.status(201).json({ message: 'Reply added.' });
+}));
+
+router.patch('/support-tickets/:id', authenticate, asyncHandler(async (req, res) => {
+  if (!(await userHasPermission(req, 'support.manage'))) {
+    return res.status(403).json({ error: 'You do not have permission to manage tickets.' });
+  }
+  const id = Number(req.params.id);
+  const ticket = await get('SELECT * FROM support_tickets WHERE id = $1', [id]);
+  if (!ticket) return res.status(404).json({ error: 'Ticket not found.' });
+
+  const { status, assigned_to_staff_id } = req.body || {};
+  const validStatuses = ['open', 'in_progress', 'resolved', 'closed'];
+  if (status && !validStatuses.includes(status)) return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}.` });
+  if (assigned_to_staff_id) {
+    const staffRow = await get('SELECT id FROM staff WHERE id = $1 AND status = $2', [assigned_to_staff_id, 'active']);
+    if (!staffRow) return res.status(400).json({ error: 'That staff member does not exist or is not active.' });
+  }
+  await run(
+    `UPDATE support_tickets SET
+       status = COALESCE($1, status), assigned_to_staff_id = COALESCE($2, assigned_to_staff_id),
+       resolved_at = CASE WHEN $1 IN ('resolved','closed') AND status NOT IN ('resolved','closed') THEN CURRENT_TIMESTAMP
+                          WHEN $1 IS NOT NULL AND $1 NOT IN ('resolved','closed') THEN NULL ELSE resolved_at END
+     WHERE id = $3`,
+    [status || null, assigned_to_staff_id || null, id]
+  );
+  if (assigned_to_staff_id) {
+    await run('INSERT INTO staff_notifications (staff_id, type, message, target_page) VALUES ($1,$2,$3,$4)',
+      [assigned_to_staff_id, 'ticket.assigned', `Ticket assigned to you: "${ticket.subject}".`, 'support']);
+  }
+  res.json({ message: 'Ticket updated.' });
 }));
 
 module.exports = router;

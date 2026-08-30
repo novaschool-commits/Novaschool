@@ -523,6 +523,33 @@ router.get('/results/overview', requirePermission('results.view'), asyncHandler(
   });
 }));
 
+// ---------- Reports (role-specific — each section only appears in the
+// staff dashboard if the viewer's role also grants the underlying view
+// permission for that data) ----------
+
+router.get('/reports/exam-summary', requirePermission('results.view'), asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT e.subject,
+            COUNT(a.id) AS attempts_graded,
+            ROUND(AVG(100.0 * a.total_score / NULLIF(mx.max_marks, 0)), 1) AS avg_pct,
+            SUM(CASE WHEN a.total_score >= 0.5 * mx.max_marks THEN 1 ELSE 0 END) AS pass_count
+     FROM exam_attempts a
+     JOIN exams e ON e.id = a.exam_id
+     JOIN (SELECT exam_id, SUM(marks) AS max_marks FROM exam_questions GROUP BY exam_id) mx ON mx.exam_id = a.exam_id
+     WHERE a.status = 'graded'
+     GROUP BY e.subject ORDER BY e.subject`
+  );
+  res.json({ bySubject: rows.map(r => ({
+    subject: r.subject, attemptsGraded: Number(r.attempts_graded),
+    avgPct: r.avg_pct !== null ? Number(r.avg_pct) : null, passCount: Number(r.pass_count)
+  })) });
+}));
+
+router.get('/reports/admissions-summary', requirePermission('students.view'), asyncHandler(async (req, res) => {
+  const rows = await all('SELECT status, COUNT(*) AS c FROM admission_applications GROUP BY status');
+  res.json({ byStatus: rows.map(r => ({ status: r.status, count: Number(r.c) })) });
+}));
+
 // ---------- Exams & question banks (school-wide — every teacher's exams,
 // not just one teacher's own, matching the pre-seeded Exam Manager role
 // which already pairs assignments.* with results.* permissions) ----------

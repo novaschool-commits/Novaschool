@@ -1077,6 +1077,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="exams" data-perm="assignments.view" onclick="showStaffPage('exams')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6l1 4H8z"/><path d="M8 6h8v14a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z"/><path d="M9 11l2 2 4-4"/></svg><span class="txt">Exams</span></a>
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
+        <a class="side-link" data-page="reports" data-perm="reports.view" onclick="showStaffPage('reports')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="txt">Reports</span></a>
+        <a class="side-link" data-page="support" onclick="showStaffPage('support')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-1c0-1 1-1.5 1.8-2.2A2.5 2.5 0 1 0 9.5 9.8"/><circle cx="12" cy="19" r=".3"/></svg><span class="txt">Support</span></a>
         <a class="side-link" data-page="profile" onclick="showStaffPage('profile')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">My Profile</span></a>
         <a class="side-link" data-page="messages" onclick="showStaffPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
         <a class="side-link" data-page="tasks" onclick="showStaffPage('tasks')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span class="txt">Tasks</span></a>
@@ -1196,6 +1198,49 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 
       <div class="admin-page" data-page="results">
         <div class="card"><div class="card-head"><h3>Results overview</h3></div><div id="staffResultsOverview"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="reports">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>School overview</h3><button class="btn btn-outline btn-sm" id="exportOverviewBtn" style="display:none;" onclick="exportReportCsv('overview')">Export CSV</button></div>
+          <div id="reportOverview"><p class="empty">Loading…</p></div>
+        </div>
+        <div class="card" id="reportExamCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Exam results by subject</h3><button class="btn btn-outline btn-sm" id="exportExamBtn" style="display:none;" onclick="exportReportCsv('exam')">Export CSV</button></div>
+          <div id="reportExamSummary"><p class="empty">Loading…</p></div>
+        </div>
+        <div class="card" id="reportAdmissionsCard" style="display:none;">
+          <div class="card-head"><h3>Admissions funnel</h3><button class="btn btn-outline btn-sm" id="exportAdmissionsBtn" style="display:none;" onclick="exportReportCsv('admissions')">Export CSV</button></div>
+          <div id="reportAdmissionsSummary"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="support">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Raise a ticket</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="ticketSubject" placeholder="Subject">
+            <select class="grade-input" style="width:100%;" id="ticketCategory">
+              <option value="general">General</option><option value="student">Student issue</option>
+              <option value="teacher">Teacher issue</option><option value="technical">Technical</option>
+            </select>
+          </div>
+          <textarea id="ticketDescription" placeholder="Describe the issue…" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="raiseSupportTicket()">Submit ticket</button>
+        </div>
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>My tickets</h3></div>
+          <div id="myTicketsList"><p class="empty">Loading…</p></div>
+        </div>
+        <div class="card" id="allTicketsCard" style="display:none;">
+          <div class="card-head"><h3>All tickets</h3>
+            <select class="grade-input" style="width:auto;" id="allTicketsStatus" onchange="loadAllTickets()">
+              <option value="open">Open</option><option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option><option value="closed">Closed</option>
+            </select>
+          </div>
+          <div id="allTicketsList"><p class="empty">Loading…</p></div>
+        </div>
       </div>
 
       <div class="admin-page" data-page="profile">
@@ -2650,12 +2695,16 @@ async function loadStaffDashboard(){
     document.getElementById('assignTaskCard').style.display = has('tasks.assign') ? 'block' : 'none';
     document.getElementById('assignedTasksCard').style.display = has('tasks.assign') ? 'block' : 'none';
     document.getElementById('staffExamCreateCard').style.display = has('assignments.create') ? 'block' : 'none';
+    document.getElementById('allTicketsCard').style.display = has('support.manage') ? 'block' : 'none';
 
     if (has('students.view')) { loadStaffStudents(); loadStaffAdmissions(); }
     if (has('teachers.view')) loadStaffTeachers();
     if (has('courses.view')) loadStaffCourses();
     if (has('results.view')) loadStaffResults();
     if (has('assignments.view')) { loadStaffExams(); if (has('assignments.create')) loadExamTeacherOptions(); }
+    if (has('reports.view')) loadReports();
+    loadMyTickets();
+    if (has('support.manage')) loadAllTickets();
     loadStaffProfile();
     loadMessageContacts('staff');
     loadStaffNotifications();
@@ -3001,6 +3050,191 @@ async function saveExamGrades(attemptId, questionIds){
   try {
     const res = await api(`/admin/exams/attempts/${attemptId}/grade`, { method: 'POST', body: JSON.stringify({ grades }) });
     toast(res.message);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Reports (staff) ============================== */
+
+let REPORT_DATA = {};
+
+async function loadReports(){
+  try {
+    const overview = await api('/admin/overview');
+    REPORT_DATA.overview = overview.enrollmentByGrade;
+    document.getElementById('reportOverview').innerHTML = `
+      <p style="font-size:13px; margin-bottom:10px;">Fee collection: <b>${overview.feeCollectionPct}%</b> · Attendance: <b>${overview.attendancePct}%</b></p>
+      <div class="table-scroll"><table class="table-simple"><thead><tr><th>Grade</th><th>Students</th></tr></thead><tbody>
+        ${overview.enrollmentByGrade.map(r => `<tr><td>${escapeHtml(String(r.grade))}</td><td>${r.count}</td></tr>`).join('')}
+      </tbody></table></div>`;
+    if (STAFF_PERMISSIONS.includes('reports.export')) document.getElementById('exportOverviewBtn').style.display = 'inline-block';
+  } catch (err) {
+    toast(err.message);
+  }
+
+  if (STAFF_PERMISSIONS.includes('assignments.view') || STAFF_PERMISSIONS.includes('results.view')) {
+    try {
+      const d = await api('/admin/reports/exam-summary');
+      REPORT_DATA.exam = d.bySubject;
+      document.getElementById('reportExamCard').style.display = 'block';
+      document.getElementById('reportExamSummary').innerHTML = d.bySubject.length
+        ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Graded attempts</th><th>Avg %</th><th>Passed (≥50%)</th></tr></thead><tbody>
+            ${d.bySubject.map(r => `<tr><td>${escapeHtml(r.subject)}</td><td>${r.attemptsGraded}</td><td>${r.avgPct ?? '—'}</td><td>${r.passCount}</td></tr>`).join('')}
+          </tbody></table></div>`
+        : '<p class="empty">No graded exam attempts yet.</p>';
+      if (STAFF_PERMISSIONS.includes('reports.export')) document.getElementById('exportExamBtn').style.display = 'inline-block';
+    } catch (err) { /* permission may be granted in the UI's Dashboard summary but not for this specific report — fail silently */ }
+  }
+
+  if (STAFF_PERMISSIONS.includes('students.view')) {
+    try {
+      const d = await api('/admin/reports/admissions-summary');
+      REPORT_DATA.admissions = d.byStatus;
+      document.getElementById('reportAdmissionsCard').style.display = 'block';
+      document.getElementById('reportAdmissionsSummary').innerHTML = d.byStatus.length
+        ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Status</th><th>Count</th></tr></thead><tbody>
+            ${d.byStatus.map(r => `<tr><td>${escapeHtml(r.status)}</td><td>${r.count}</td></tr>`).join('')}
+          </tbody></table></div>`
+        : '<p class="empty">No admission applications yet.</p>';
+      if (STAFF_PERMISSIONS.includes('reports.export')) document.getElementById('exportAdmissionsBtn').style.display = 'inline-block';
+    } catch (err) { /* ignore */ }
+  }
+}
+
+function exportReportCsv(kind){
+  const data = REPORT_DATA[kind];
+  if (!data || !data.length) { toast('Nothing to export.'); return; }
+  const headers = Object.keys(data[0]);
+  const csvRows = [headers.join(','), ...data.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g,'""')}"`).join(','))];
+  const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${kind}-report.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ============================== Support tickets (staff) ============================== */
+
+const TICKET_STATUS_LABEL = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
+
+function ticketRowHtml(t, opts = {}){
+  return `<div class="list-row" style="flex-wrap:wrap; align-items:flex-start;">
+      <div class="l-main"><span class="tag" style="background:var(--indigo);">${escapeHtml(t.category)}</span>
+        <div><div class="l-title">${escapeHtml(t.subject)}${opts.raisedByEmail ? ' — ' + escapeHtml(opts.raisedByEmail) : ''}</div>
+          <div class="l-sub">${TICKET_STATUS_LABEL[t.status]}${opts.assigneeName ? ' · Assigned to ' + escapeHtml(opts.assigneeName) : ''} · ${t.replyCount} repl${t.replyCount===1?'y':'ies'}</div></div></div>
+      <button class="btn btn-outline btn-sm" onclick="toggleTicketDetail(${t.id}, ${!!opts.canManage})">Details</button>
+    </div>
+    <div id="ticketDetail-${t.id}" style="display:none; padding:10px 14px; background:var(--paper-alt); border-radius:10px; margin:4px 0 10px;"></div>`;
+}
+
+async function raiseSupportTicket(){
+  const subject = document.getElementById('ticketSubject').value.trim();
+  const category = document.getElementById('ticketCategory').value;
+  const description = document.getElementById('ticketDescription').value.trim();
+  if (!subject) { toast('Enter a subject.'); return; }
+  try {
+    const res = await api('/support-tickets', { method: 'POST', body: JSON.stringify({ subject, category, description: description || undefined }) });
+    toast(res.message);
+    document.getElementById('ticketSubject').value = '';
+    document.getElementById('ticketDescription').value = '';
+    document.getElementById('ticketCategory').value = 'general';
+    await loadMyTickets();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadMyTickets(){
+  try {
+    const d = await api('/support-tickets/mine');
+    document.getElementById('myTicketsList').innerHTML = d.tickets.length ? d.tickets.map(t => ticketRowHtml(t)).join('') : '<p class="empty">You haven\'t raised any tickets.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAllTickets(){
+  try {
+    const status = document.getElementById('allTicketsStatus').value;
+    const d = await api(`/support-tickets?status=${status}`);
+    document.getElementById('allTicketsList').innerHTML = d.tickets.length
+      ? d.tickets.map(t => ticketRowHtml(t, { raisedByEmail: t.raisedByEmail, assigneeName: t.assigneeName, canManage: true })).join('')
+      : `<p class="empty">No ${escapeHtml(status)} tickets.</p>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleTicketDetail(ticketId, canManage){
+  const el = document.getElementById(`ticketDetail-${ticketId}`);
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/support-tickets/${ticketId}`);
+    el.innerHTML = `
+      ${d.ticket.description ? `<p style="font-size:12.5px; margin-bottom:10px;">${escapeHtml(d.ticket.description)}</p>` : ''}
+      ${canManage ? `
+      <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+        <select class="grade-input" style="width:auto;" onchange="updateTicketStatus(${ticketId}, this.value)">
+          ${Object.keys(TICKET_STATUS_LABEL).map(s => `<option value="${s}" ${s===d.ticket.status?'selected':''}>${TICKET_STATUS_LABEL[s]}</option>`).join('')}
+        </select>
+        <select class="grade-input" style="width:auto;" id="ticketAssignee-${ticketId}"><option value="">Assign to…</option></select>
+        <button class="btn btn-outline btn-sm" onclick="assignTicket(${ticketId})">Assign</button>
+      </div>` : ''}
+      <p style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;">Replies</p>
+      <div style="margin-bottom:10px;">${d.replies.length ? d.replies.map(r => `
+        <div style="margin-bottom:8px;"><span style="font-size:12px; font-weight:600;">${escapeHtml(r.authorName)}</span> <span style="font-size:10.5px; color:var(--ink-soft);">${fmtDate(r.createdAt)}</span>
+          <div style="font-size:12.5px;">${escapeHtml(r.body)}</div></div>`).join('') : '<p class="empty" style="font-size:12px;">No replies yet.</p>'}</div>
+      <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="ticketReply-${ticketId}" placeholder="Reply…" onkeydown="if(event.key==='Enter'){addTicketReply(${ticketId});}"><button class="btn btn-ink btn-sm" onclick="addTicketReply(${ticketId})">Send</button></div>`;
+    if (canManage) loadAssignableStaffForTicket(ticketId);
+  } catch (err) {
+    el.innerHTML = '<p class="empty">Could not load this ticket.</p>';
+  }
+}
+
+async function loadAssignableStaffForTicket(ticketId){
+  try {
+    const d = await api('/management/assignable-staff');
+    const sel = document.getElementById(`ticketAssignee-${ticketId}`);
+    if (sel) sel.innerHTML = '<option value="">Assign to…</option>' + d.staff.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  } catch (err) { /* ignore — assignee dropdown just stays empty */ }
+}
+
+async function updateTicketStatus(ticketId, status){
+  try {
+    const res = await api(`/support-tickets/${ticketId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast(res.message);
+    loadAllTickets();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function assignTicket(ticketId){
+  const staffId = document.getElementById(`ticketAssignee-${ticketId}`).value;
+  if (!staffId) { toast('Choose someone to assign this to.'); return; }
+  try {
+    const res = await api(`/support-tickets/${ticketId}`, { method: 'PATCH', body: JSON.stringify({ assigned_to_staff_id: Number(staffId) }) });
+    toast(res.message);
+    toggleTicketDetail(ticketId); toggleTicketDetail(ticketId, true);
+    loadAllTickets();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function addTicketReply(ticketId){
+  const input = document.getElementById(`ticketReply-${ticketId}`);
+  const body = input.value.trim();
+  if (!body) return;
+  try {
+    await api(`/support-tickets/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ body }) });
+    input.value = '';
+    const canManage = !!document.querySelector(`#ticketDetail-${ticketId} [onclick^="updateTicketStatus"]`);
+    toggleTicketDetail(ticketId); // close
+    toggleTicketDetail(ticketId, canManage); // reopen refreshed
   } catch (err) {
     toast(err.message);
   }
