@@ -133,6 +133,154 @@ router.get('/search', asyncHandler(async (req, res) => {
   res.json({ results });
 }));
 
+// ---------- Tasks ----------
+// Everyone with a staff account can see and update their OWN assigned
+// tasks (no permission needed, same as Profile/Messages). Assigning tasks
+// to someone else requires tasks.assign (or admin).
+
+router.get('/my-tasks', asyncHandler(async (req, res) => {
+  const staffId = await getOwnStaffId(req);
+  if (!staffId) return res.json({ tasks: [] });
+  const rows = await all(
+    `SELECT t.*, (SELECT COUNT(*) FROM staff_task_comments WHERE task_id = t.id) AS comment_count
+     FROM staff_tasks t WHERE t.assigned_to_staff_id = $1
+     ORDER BY (t.status = 'completed'), t.due_date NULLS LAST, t.created_at DESC`,
+    [staffId]
+  );
+  res.json({ tasks: rows.map(formatTask) });
+}));
+
+router.get('/tasks/assigned-by-me', requirePermission('tasks.assign'), asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT t.*, s.first_name AS assignee_first, s.last_name AS assignee_last,
+            (SELECT COUNT(*) FROM staff_task_comments WHERE task_id = t.id) AS comment_count
+     FROM staff_tasks t JOIN staff s ON s.id = t.assigned_to_staff_id
+     WHERE t.assigned_by_user_id = $1 ORDER BY (t.status = 'completed'), t.due_date NULLS LAST, t.created_at DESC`,
+    [req.user.id]
+  );
+  res.json({ tasks: rows.map(r => ({ ...formatTask(r), assigneeName: `${r.assignee_first} ${r.assignee_last}` })) });
+}));
+
+function formatTask(r) {
+  return {
+    id: r.id, title: r.title, description: r.description, priority: r.priority, status: r.status,
+    dueDate: r.due_date, relatedLabel: r.related_label, createdAt: r.created_at, completedAt: r.completed_at,
+    commentCount: Number(r.comment_count || 0)
+  };
+}
+
+router.post('/tasks', requirePermission('tasks.assign'), asyncHandler(async (req, res) => {
+  const { assigned_to_staff_id, title, description, priority, due_date, related_label } = req.body || {};
+  if (!assigned_to_staff_id || !title) return res.status(400).json({ error: 'assigned_to_staff_id and title are required.' });
+  const assignee = await get('SELECT id FROM staff WHERE id = $1 AND status = $2', [assigned_to_staff_id, 'active']);
+  if (!assignee) return res.status(400).json({ error: 'That staff member does not exist or is not active.' });
+  const validPriorities = ['low', 'medium', 'high'];
+  if (priority && !validPriorities.includes(priority)) return res.status(400).json({ error: `priority must be one of: ${validPriorities.join(', ')}.` });
+
+  const r = await run(
+    `INSERT INTO staff_tasks (assigned_to_staff_id, assigned_by_user_id, title, description, priority, due_date, related_label)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+    [assigned_to_staff_id, req.user.id, title, description || null, priority || 'medium', due_date || null, related_label || null]
+  );
+  await run('INSERT INTO staff_notifications (staff_id, type, message, target_page) VALUES ($1,$2,$3,$4)',
+    [assigned_to_staff_id, 'task.assigned', `New task assigned: "${title}".`, 'tasks']);
+  await logAudit(req, 'task.assigned', 'staff_task', r.rows[0].id, { assigned_to_staff_id, title });
+  res.status(201).json({ message: 'Task assigned.', taskId: r.rows[0].id });
+}));
+
+router.get('/tasks/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const task = await get('SELECT * FROM staff_tasks WHERE id = $1', [id]);
+  if (!task) return res.status(404).json({ error: 'Task not found.' });
+  const staffId = await getOwnStaffId(req);
+  const isOwner = staffId && task.assigned_to_staff_id === staffId;
+  const isAssigner = task.assigned_by_user_id === req.user.id;
+  if (!isOwner && !isAssigner && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'You do not have access to this task.' });
+  }
+  const comments = await all(
+    `SELECT c.id, c.body, c.created_at, c.author_user_id,
+            COALESCE(s.first_name || ' ' || s.last_name, a.first_name || ' ' || a.last_name) AS author_name
+     FROM staff_task_comments c
+     LEFT JOIN staff s ON s.user_id = c.author_user_id
+     LEFT JOIN admins a ON a.user_id = c.author_user_id
+     WHERE c.task_id = $1 ORDER BY c.created_at ASC`,
+    [id]
+  );
+  res.json({
+    task: formatTask({ ...task, comment_count: comments.length }),
+    comments: comments.map(c => ({ id: c.id, body: c.body, createdAt: c.created_at, authorName: c.author_name || 'Unknown', mine: c.author_user_id === req.user.id }))
+  });
+}));
+
+router.patch('/tasks/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const task = await get('SELECT * FROM staff_tasks WHERE id = $1', [id]);
+  if (!task) return res.status(404).json({ error: 'Task not found.' });
+  const staffId = await getOwnStaffId(req);
+  const isOwner = staffId && task.assigned_to_staff_id === staffId;
+  const isAssigner = task.assigned_by_user_id === req.user.id;
+  if (!isOwner && !isAssigner && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'You do not have access to this task.' });
+  }
+
+  const { status, title, description, priority, due_date } = req.body || {};
+  const validStatuses = ['pending', 'in_progress', 'completed', 'needs_review'];
+  if (status && !validStatuses.includes(status)) return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}.` });
+  // The assignee can only change status; only the assigner/admin can edit the task's details.
+  if ((title || description !== undefined || priority || due_date !== undefined) && !isAssigner && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Only the person who assigned this task can edit its details.' });
+  }
+
+  await run(
+    `UPDATE staff_tasks SET
+       status = COALESCE($1, status), title = COALESCE($2, title), description = COALESCE($3, description),
+       priority = COALESCE($4, priority), due_date = COALESCE($5, due_date),
+       completed_at = CASE WHEN $1 = 'completed' AND status != 'completed' THEN CURRENT_TIMESTAMP WHEN $1 IS NOT NULL AND $1 != 'completed' THEN NULL ELSE completed_at END
+     WHERE id = $6`,
+    [status || null, title || null, description || null, priority || null, due_date || null, id]
+  );
+  res.json({ message: 'Task updated.' });
+}));
+
+router.delete('/tasks/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const task = await get('SELECT * FROM staff_tasks WHERE id = $1', [id]);
+  if (!task) return res.status(404).json({ error: 'Task not found.' });
+  if (task.assigned_by_user_id !== req.user.id && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Only the person who assigned this task can delete it.' });
+  }
+  await run('DELETE FROM staff_tasks WHERE id = $1', [id]);
+  res.json({ message: 'Task removed.' });
+}));
+
+router.post('/tasks/:id/comments', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const task = await get('SELECT * FROM staff_tasks WHERE id = $1', [id]);
+  if (!task) return res.status(404).json({ error: 'Task not found.' });
+  const staffId = await getOwnStaffId(req);
+  const isOwner = staffId && task.assigned_to_staff_id === staffId;
+  const isAssigner = task.assigned_by_user_id === req.user.id;
+  if (!isOwner && !isAssigner && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'You do not have access to this task.' });
+  }
+  const { body } = req.body || {};
+  if (!body || !body.trim()) return res.status(400).json({ error: 'Comment cannot be empty.' });
+  await run('INSERT INTO staff_task_comments (task_id, author_user_id, body) VALUES ($1,$2,$3)', [id, req.user.id, body.trim()]);
+  // Notify the other party (assignee gets notified of assigner comments, and vice versa).
+  const notifyTargetStaffId = isAssigner ? task.assigned_to_staff_id : null;
+  if (notifyTargetStaffId) {
+    await run('INSERT INTO staff_notifications (staff_id, type, message, target_page) VALUES ($1,$2,$3,$4)',
+      [notifyTargetStaffId, 'task.comment', `New comment on task: "${task.title}".`, 'tasks']);
+  }
+  res.status(201).json({ message: 'Comment added.' });
+}));
+
+router.get('/assignable-staff', requirePermission('tasks.assign'), asyncHandler(async (req, res) => {
+  const rows = await all(`SELECT id, first_name, last_name FROM staff WHERE status = 'active' ORDER BY first_name`);
+  res.json({ staff: rows.map(r => ({ id: r.id, name: `${r.first_name} ${r.last_name}` })) });
+}));
+
 // ---------- Permission catalog (Super Admin only — this defines what
 // roles CAN be granted, so it isn't itself delegable) ----------
 

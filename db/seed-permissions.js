@@ -45,7 +45,9 @@ const PERMISSIONS = [
   ['staff.suspend', 'Staff', 'Suspend/reactivate staff'],
 
   ['settings.view', 'Settings', 'View system settings'],
-  ['settings.edit', 'Settings', 'Edit system settings']
+  ['settings.edit', 'Settings', 'Edit system settings'],
+
+  ['tasks.assign', 'Tasks', 'Assign tasks to other staff members']
 ];
 
 // [role_key, display name, [permission keys]]

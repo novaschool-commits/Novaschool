@@ -1077,6 +1077,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
         <a class="side-link" data-page="profile" onclick="showStaffPage('profile')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/></svg><span class="txt">My Profile</span></a>
         <a class="side-link" data-page="messages" onclick="showStaffPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
+        <a class="side-link" data-page="tasks" onclick="showStaffPage('tasks')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span class="txt">Tasks</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="staffAvatar">--</div><div><div class="u-name" id="staffName">—</div><div class="u-role" id="staffRoleLabel">—</div></div></div>
@@ -1180,6 +1181,31 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
               <div id="msgToolbar-staff"></div><div style="display:flex; gap:6px;"><textarea class="grade-input" style="flex:1; min-height:38px; max-height:90px; resize:vertical; font-family:inherit;" id="msgInput-staff" placeholder="Type a message… (Shift+Enter for a new line)" rows="1" onkeydown="handleChatKeydown(event,'staff')"></textarea><button class="btn btn-ink btn-sm" onclick="sendChatMessage('staff')">Send</button></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="tasks">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>My tasks</h3></div>
+          <div id="myTasksList"><p class="empty">Loading…</p></div>
+        </div>
+
+        <div class="card" id="assignTaskCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Assign a task</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select class="grade-input" style="width:100%;" id="taskAssignee"><option value="">Assign to…</option></select>
+            <select class="grade-input" style="width:100%;" id="taskPriority"><option value="low">Low priority</option><option value="medium" selected>Medium priority</option><option value="high">High priority</option></select>
+            <input class="grade-input" style="width:100%;" id="taskTitle" placeholder="Task title">
+            <input class="grade-input" style="width:100%;" type="date" id="taskDueDate">
+            <input class="grade-input" style="width:100%; grid-column:1/-1;" id="taskRelatedLabel" placeholder="Related to (optional, e.g. \"Student: Aiden Silva\")">
+          </div>
+          <textarea id="taskDescription" placeholder="Description (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="assignTask()">Assign task</button>
+        </div>
+
+        <div class="card" id="assignedTasksCard" style="display:none;">
+          <div class="card-head"><h3>Tasks I've assigned</h3></div>
+          <div id="assignedTasksList"><p class="empty">Loading…</p></div>
         </div>
       </div>
     </main>
@@ -2591,6 +2617,8 @@ async function loadStaffDashboard(){
     document.getElementById('staffStudentCreateCard').style.display = has('students.create') ? 'block' : 'none';
     document.getElementById('staffTeacherCreateCard').style.display = has('teachers.create') ? 'block' : 'none';
     document.getElementById('staffCourseCreateCard').style.display = has('courses.create') ? 'block' : 'none';
+    document.getElementById('assignTaskCard').style.display = has('tasks.assign') ? 'block' : 'none';
+    document.getElementById('assignedTasksCard').style.display = has('tasks.assign') ? 'block' : 'none';
 
     if (has('students.view')) loadStaffStudents();
     if (has('teachers.view')) loadStaffTeachers();
@@ -2599,6 +2627,8 @@ async function loadStaffDashboard(){
     loadStaffProfile();
     loadMessageContacts('staff');
     loadStaffNotifications();
+    loadMyTasks();
+    if (has('tasks.assign')) { loadAssignableStaff(); loadAssignedTasks(); }
   } catch (err) {
     toast(err.message);
   }
@@ -2844,6 +2874,137 @@ document.addEventListener('click', (e) => {
     if (el) el.style.display = 'none';
   }
 });
+
+/* ============================== Tasks (staff) ============================== */
+
+const PRIORITY_COLOR = { low: 'var(--ink-soft)', medium: 'var(--amber)', high: 'var(--magenta)' };
+const TASK_STATUS_LABEL = { pending: 'Pending', in_progress: 'In Progress', completed: 'Completed', needs_review: 'Needs Review' };
+
+function taskRowHtml(t, opts = {}){
+  return `<div class="list-row" style="flex-wrap:wrap; align-items:flex-start;">
+      <div class="l-main"><span class="tag" style="background:${PRIORITY_COLOR[t.priority]};">${t.priority}</span>
+        <div><div class="l-title">${escapeHtml(t.title)}${opts.assigneeName ? ' → ' + escapeHtml(opts.assigneeName) : ''}</div>
+          <div class="l-sub">${t.dueDate ? 'Due ' + t.dueDate : 'No due date'}${t.relatedLabel ? ' · ' + escapeHtml(t.relatedLabel) : ''} · ${t.commentCount} comment${t.commentCount===1?'':'s'}</div></div></div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        ${opts.editableStatus
+          ? `<select class="grade-input" style="width:auto;" onchange="updateTaskStatus(${t.id}, this.value)">
+              ${Object.keys(TASK_STATUS_LABEL).map(s => `<option value="${s}" ${s===t.status?'selected':''}>${TASK_STATUS_LABEL[s]}</option>`).join('')}
+            </select>`
+          : `<span class="tag" style="background:${t.status==='completed'?'var(--green)':'var(--ink-soft)'};">${TASK_STATUS_LABEL[t.status]}</span>`}
+        <button class="btn btn-outline btn-sm" onclick="toggleTaskDetail(${t.id})">Details</button>
+        ${opts.canDelete ? `<button class="btn btn-outline btn-sm" onclick="deleteTask(${t.id})">Delete</button>` : ''}
+      </div>
+    </div>
+    <div id="taskDetail-${t.id}" style="display:none; padding:10px 14px; background:var(--paper-alt); border-radius:10px; margin:4px 0 10px;"></div>`;
+}
+
+async function loadMyTasks(){
+  try {
+    const d = await api('/management/my-tasks');
+    document.getElementById('myTasksList').innerHTML = d.tasks.length
+      ? d.tasks.map(t => taskRowHtml(t, { editableStatus: true })).join('')
+      : '<p class="empty">No tasks assigned to you right now.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAssignedTasks(){
+  try {
+    const d = await api('/management/tasks/assigned-by-me');
+    document.getElementById('assignedTasksList').innerHTML = d.tasks.length
+      ? d.tasks.map(t => taskRowHtml(t, { assigneeName: t.assigneeName, canDelete: true })).join('')
+      : '<p class="empty">You haven\'t assigned any tasks yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadAssignableStaff(){
+  try {
+    const d = await api('/management/assignable-staff');
+    document.getElementById('taskAssignee').innerHTML = '<option value="">Assign to…</option>' + d.staff.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function assignTask(){
+  const assigned_to_staff_id = document.getElementById('taskAssignee').value;
+  const title = document.getElementById('taskTitle').value.trim();
+  const priority = document.getElementById('taskPriority').value;
+  const due_date = document.getElementById('taskDueDate').value;
+  const related_label = document.getElementById('taskRelatedLabel').value.trim();
+  const description = document.getElementById('taskDescription').value.trim();
+  if (!assigned_to_staff_id || !title) { toast('Choose an assignee and enter a title.'); return; }
+  try {
+    const res = await api('/management/tasks', { method: 'POST', body: JSON.stringify({
+      assigned_to_staff_id: Number(assigned_to_staff_id), title, priority, due_date: due_date || undefined, related_label: related_label || undefined, description: description || undefined
+    }) });
+    toast(res.message);
+    ['taskTitle','taskDueDate','taskRelatedLabel','taskDescription'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('taskAssignee').value = '';
+    document.getElementById('taskPriority').value = 'medium';
+    await loadAssignedTasks();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function updateTaskStatus(taskId, status){
+  try {
+    const res = await api(`/management/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast(res.message);
+    loadMyTasks();
+  } catch (err) {
+    toast(err.message);
+    loadMyTasks();
+  }
+}
+
+async function deleteTask(taskId){
+  if (!confirm('Delete this task? This cannot be undone.')) return;
+  try {
+    const res = await api(`/management/tasks/${taskId}`, { method: 'DELETE' });
+    toast(res.message);
+    await loadAssignedTasks();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleTaskDetail(taskId){
+  const el = document.getElementById(`taskDetail-${taskId}`);
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/management/tasks/${taskId}`);
+    el.innerHTML = `
+      ${d.task.description ? `<p style="font-size:12.5px; margin-bottom:10px;">${escapeHtml(d.task.description)}</p>` : ''}
+      <p style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;">Comments</p>
+      <div style="margin-bottom:10px;">${d.comments.length ? d.comments.map(c => `
+        <div style="margin-bottom:8px;"><span style="font-size:12px; font-weight:600;">${escapeHtml(c.authorName)}</span> <span style="font-size:10.5px; color:var(--ink-soft);">${fmtDate(c.createdAt)}</span>
+          <div style="font-size:12.5px;">${escapeHtml(c.body)}</div></div>`).join('') : '<p class="empty" style="font-size:12px;">No comments yet.</p>'}</div>
+      <div style="display:flex; gap:6px;"><input class="grade-input" style="flex:1;" id="taskComment-${taskId}" placeholder="Add a comment…" onkeydown="if(event.key==='Enter'){addTaskComment(${taskId});}"><button class="btn btn-ink btn-sm" onclick="addTaskComment(${taskId})">Send</button></div>`;
+  } catch (err) {
+    el.innerHTML = '<p class="empty">Could not load this task.</p>';
+  }
+}
+
+async function addTaskComment(taskId){
+  const input = document.getElementById(`taskComment-${taskId}`);
+  const body = input.value.trim();
+  if (!body) return;
+  try {
+    await api(`/management/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ body }) });
+    input.value = '';
+    toggleTaskDetail(taskId); // close
+    toggleTaskDetail(taskId); // reopen refreshed
+  } catch (err) {
+    toast(err.message);
+  }
+}
 
 /* ============================== Staff activation (invite link) ============================== */
 

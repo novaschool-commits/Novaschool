@@ -545,3 +545,30 @@ CREATE TABLE IF NOT EXISTS staff_notifications (
   read_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Lightweight staff task tracker. `related_label` is a free-text pointer
+-- (e.g. "Student: Aiden Silva") rather than a typed FK to
+-- students/teachers/courses — kept simple deliberately per the original
+-- spec's own "avoid unnecessary complexity" note; it's real data the
+-- assigner types, not a fabricated field.
+CREATE TABLE IF NOT EXISTS staff_tasks (
+  id SERIAL PRIMARY KEY,
+  assigned_to_staff_id INTEGER NOT NULL REFERENCES staff(id) ON DELETE CASCADE,
+  assigned_by_user_id INTEGER REFERENCES users(id),
+  title TEXT NOT NULL,
+  description TEXT,
+  priority TEXT NOT NULL DEFAULT 'medium' CHECK (priority IN ('low','medium','high')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','in_progress','completed','needs_review')),
+  due_date DATE,
+  related_label TEXT,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS staff_task_comments (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES staff_tasks(id) ON DELETE CASCADE,
+  author_user_id INTEGER REFERENCES users(id),
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
