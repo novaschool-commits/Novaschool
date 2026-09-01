@@ -9,11 +9,13 @@ const PERMISSIONS = [
   ['students.view', 'Students', 'View student records'],
   ['students.create', 'Students', 'Create student records'],
   ['students.edit', 'Students', 'Edit student records'],
+  ['students.suspend', 'Students', 'Suspend/reactivate student accounts'],
   ['students.archive', 'Students', 'Archive/deactivate students'],
 
   ['teachers.view', 'Teachers', 'View teacher records'],
   ['teachers.create', 'Teachers', 'Create teacher records'],
   ['teachers.edit', 'Teachers', 'Edit teacher records'],
+  ['teachers.suspend', 'Teachers', 'Suspend/reactivate teacher accounts'],
   ['teachers.archive', 'Teachers', 'Archive/deactivate teachers'],
 
   ['courses.view', 'Courses', 'View courses'],

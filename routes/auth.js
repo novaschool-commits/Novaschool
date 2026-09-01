@@ -47,6 +47,13 @@ router.post('/login', async (req, res) => {
         return res.status(403).json({ error: 'Your staff account is not active. Contact an administrator.' });
       }
     }
+    if (['student', 'teacher', 'parent'].includes(user.role)) {
+      const table = user.role === 'student' ? 'students' : user.role === 'teacher' ? 'teachers' : 'parents';
+      const profileRow = await get(`SELECT status FROM ${table} WHERE user_id = $1`, [user.id]);
+      if (profileRow && profileRow.status === 'suspended') {
+        return res.status(403).json({ error: 'This account has been suspended. Contact the school administration.' });
+      }
+    }
 
     const profile = await profileFor(user);
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET, { expiresIn: '12h' });

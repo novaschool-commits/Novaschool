@@ -866,7 +866,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     </aside>
     <main class="app-main">
       <div class="app-topbar"><div><h1>School overview</h1><p class="sub">Live counts from the database.</p></div>
-        <div class="top-actions"><button class="btn btn-outline btn-sm" onclick="toast('Demo: export would stream a CSV/PDF from the reporting endpoint.')">Export report</button></div></div>
+        <div class="top-actions"><button class="btn btn-outline btn-sm" onclick="exportAdminOverviewCsv()">Export report</button></div></div>
 
       <div class="admin-page active" data-page="overview">
       <div class="grid-4" style="margin-bottom:20px;" id="adminKpis">
@@ -874,6 +874,18 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="card kpi"><p class="k-label">Total teachers</p><p class="k-val">—</p></div>
         <div class="card kpi"><p class="k-label">Fee collection</p><p class="k-val">—</p></div>
         <div class="card kpi"><p class="k-label">Attendance (avg)</p><p class="k-val">—</p></div>
+      </div>
+      <div class="grid-4" style="margin-bottom:20px;" id="adminKpis2">
+        <div class="card kpi"><p class="k-label">Active / Suspended students</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Active / Suspended teachers</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Management staff</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Parents</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Courses (published/draft)</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Classes / Subjects</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Active exams / Assignments</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Pending submissions</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Results recorded</p><p class="k-val">—</p></div>
+        <div class="card kpi"><p class="k-label">Logged in today / this week</p><p class="k-val">—</p></div>
       </div>
 
       <div class="card" style="margin-bottom:20px;">
@@ -893,6 +905,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <input class="grade-input" style="width:100%;" id="newTeacherSubject" placeholder="Subject">
           </div>
           <button class="btn btn-primary btn-sm" onclick="createTeacherAccount()">Create teacher account</button>
+          <div id="teacherRecordsList" style="margin-top:16px;"><p class="empty">Loading…</p></div>
         </div>
 
         <div id="peopleFormStudent" style="display:none;">
@@ -906,6 +919,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           </div>
           <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">Leave email/password blank to add the student to rosters/timetables without giving them a login yet.</p>
           <button class="btn btn-primary btn-sm" onclick="createStudentAccount()">Add student</button>
+          <div id="studentRecordsList" style="margin-top:16px;"><p class="empty">Loading…</p></div>
         </div>
 
         <div id="peopleFormParent" style="display:none;">
@@ -917,7 +931,13 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <select class="grade-input" style="width:100%;" id="newParentStudent"><option value="">Link to student (optional)</option></select>
           </div>
           <button class="btn btn-primary btn-sm" onclick="createParentAccount()">Create parent account</button>
+          <div id="parentRecordsList" style="margin-top:16px;"><p class="empty">Loading…</p></div>
         </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;" id="approvalCenterCard">
+        <div class="card-head"><h3>Approval Center</h3></div>
+        <div id="approvalCenterList"><p class="empty">Loading…</p></div>
       </div>
 
       <div class="grid-2" style="margin-bottom:20px;">
@@ -4922,11 +4942,29 @@ async function loadAdminDashboard(){
 
   try {
     const o = await api('/admin/overview');
+    LAST_OVERVIEW = o;
     const kpis = document.getElementById('adminKpis').children;
     kpis[0].querySelector('.k-val').textContent = o.totalStudents;
     kpis[1].querySelector('.k-val').textContent = o.totalTeachers;
     kpis[2].querySelector('.k-val').textContent = o.feeCollectionPct + '%';
     kpis[3].querySelector('.k-val').textContent = o.attendancePct + '%';
+
+    const kpis2 = document.getElementById('adminKpis2').children;
+    kpis2[0].querySelector('.k-val').textContent = `${o.students.active} / ${o.students.suspended}`;
+    kpis2[1].querySelector('.k-val').textContent = `${o.teachers.active} / ${o.teachers.suspended}`;
+    kpis2[2].querySelector('.k-val').textContent = `${o.staff.active} active, ${o.staff.invited} invited`;
+    kpis2[3].querySelector('.k-val').textContent = `${o.parents.active} / ${o.parents.total}`;
+    kpis2[4].querySelector('.k-val').textContent = `${o.courses.published} / ${o.courses.draft}`;
+    kpis2[5].querySelector('.k-val').textContent = `${o.totalClasses} / ${o.courses.subjects}`;
+    kpis2[6].querySelector('.k-val').textContent = `${o.activeExams} / ${o.totalAssignments}`;
+    kpis2[7].querySelector('.k-val').textContent = o.pendingSubmissions;
+    kpis2[8].querySelector('.k-val').textContent = o.resultsRecorded;
+    kpis2[9].querySelector('.k-val').textContent = `${o.activity.dau} / ${o.activity.wau}`;
+
+    await loadApprovalCenter();
+    await loadTeacherRecords();
+    await loadStudentRecords();
+    await loadParentRecords();
 
     const maxCount = Math.max(1, ...o.enrollmentByGrade.map(g => g.count));
     document.getElementById('adminEnrollBars').innerHTML = o.enrollmentByGrade.length
@@ -5622,6 +5660,124 @@ function switchPeopleTab(tab){
     document.getElementById(`peopleTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('btn-ink', t === tab);
   });
   if (tab === 'parent') loadStudentsForLinking();
+}
+
+let LAST_OVERVIEW = null;
+
+function exportAdminOverviewCsv(){
+  if (!LAST_OVERVIEW) { toast('Nothing to export yet.'); return; }
+  const o = LAST_OVERVIEW;
+  const rows = [
+    ['Metric', 'Value'],
+    ['Total students', o.totalStudents], ['Total teachers', o.totalTeachers],
+    ['Fee collection %', o.feeCollectionPct], ['Attendance % (avg)', o.attendancePct],
+    ['Active students', o.students.active], ['Suspended students', o.students.suspended], ['New students (30d)', o.students.newThisMonth],
+    ['Active teachers', o.teachers.active], ['Suspended teachers', o.teachers.suspended],
+    ['Active staff', o.staff.active], ['Invited staff', o.staff.invited],
+    ['Active parents', o.parents.active], ['Total parents', o.parents.total],
+    ['Published courses', o.courses.published], ['Draft courses', o.courses.draft], ['Subjects', o.courses.subjects],
+    ['Classes', o.totalClasses], ['Active exams', o.activeExams], ['Total assignments', o.totalAssignments],
+    ['Pending submissions', o.pendingSubmissions], ['Results recorded', o.resultsRecorded],
+    ['Logged in today', o.activity.dau], ['Logged in this week', o.activity.wau]
+  ];
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'novaschool-overview.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function loadApprovalCenter(){
+  try {
+    const d = await api('/admin/approvals');
+    const card = document.getElementById('approvalCenterCard');
+    if (!d.items.length) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    document.getElementById('approvalCenterList').innerHTML = d.items.map(i => `
+      <div class="list-row"><div class="l-main"><span class="tag" style="background:var(--amber);">${i.count}</span><div class="l-title">${escapeHtml(i.label)}</div></div>
+        <button class="btn btn-outline btn-sm" onclick="showAdminPage('${i.page}')">Review</button></div>`).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadTeacherRecords(){
+  try {
+    const d = await api('/admin/teachers');
+    document.getElementById('teacherRecordsList').innerHTML = d.teachers.length
+      ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Name</th><th>Subject</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>${d.teachers.map(t => `
+          <tr><td>${escapeHtml(t.first_name)} ${escapeHtml(t.last_name)}</td><td>${escapeHtml(t.subject || '—')}</td><td>${escapeHtml(t.email)}</td>
+            <td><span class="tag" style="background:${t.status==='suspended'?'var(--magenta)':'var(--green)'};">${t.status}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="toggleTeacherStatus(${t.id}, '${t.status==='suspended'?'active':'suspended'}')">${t.status==='suspended'?'Reactivate':'Suspend'}</button></td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="empty">No teachers yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleTeacherStatus(id, status){
+  if (status === 'suspended' && !confirm('Suspend this teacher? They will immediately lose access.')) return;
+  try {
+    const res = await api(`/admin/teachers/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast(res.message);
+    loadTeacherRecords();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadStudentRecords(){
+  try {
+    const d = await api('/admin/students');
+    document.getElementById('studentRecordsList').innerHTML = d.students.length
+      ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Name</th><th>Admission #</th><th>Section</th><th>Status</th><th></th></tr></thead><tbody>${d.students.map(s => `
+          <tr><td>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</td><td>${escapeHtml(s.admission_no)}</td><td>${escapeHtml(s.section_code)}</td>
+            <td><span class="tag" style="background:${s.status==='suspended'?'var(--magenta)':'var(--green)'};">${s.status}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="toggleStudentStatus(${s.id}, '${s.status==='suspended'?'active':'suspended'}')">${s.status==='suspended'?'Reactivate':'Suspend'}</button></td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="empty">No students yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleStudentStatus(id, status){
+  if (status === 'suspended' && !confirm('Suspend this student? They will immediately lose access.')) return;
+  try {
+    const res = await api(`/admin/students/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast(res.message);
+    loadStudentRecords();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadParentRecords(){
+  try {
+    const d = await api('/admin/parents');
+    document.getElementById('parentRecordsList').innerHTML = d.parents.length
+      ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>Name</th><th>Children</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody>${d.parents.map(p => `
+          <tr><td>${escapeHtml(p.firstName)} ${escapeHtml(p.lastName)}</td><td>${escapeHtml(p.children || '—')}</td><td>${escapeHtml(p.email)}</td>
+            <td><span class="tag" style="background:${p.status==='suspended'?'var(--magenta)':'var(--green)'};">${p.status}</span></td>
+            <td><button class="btn btn-outline btn-sm" onclick="toggleParentStatus(${p.id}, '${p.status==='suspended'?'active':'suspended'}')">${p.status==='suspended'?'Reactivate':'Suspend'}</button></td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="empty">No parents yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function toggleParentStatus(id, status){
+  if (status === 'suspended' && !confirm('Suspend this parent account? They will immediately lose access.')) return;
+  try {
+    const res = await api(`/admin/parents/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+    toast(res.message);
+    loadParentRecords();
+  } catch (err) {
+    toast(err.message);
+  }
 }
 
 async function loadStudentsForLinking(){

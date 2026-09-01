@@ -596,3 +596,16 @@ CREATE TABLE IF NOT EXISTS support_ticket_replies (
   body TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Suspend/activate for students, teachers, parents (Super Admin dashboard).
+-- created_at is left NULL for pre-existing rows rather than backfilled to
+-- "now" — their true enrollment date was never recorded, and faking a
+-- recent timestamp would make every existing student look "new this month."
+-- Only rows created from here on get a real value.
+ALTER TABLE students ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended'));
+ALTER TABLE students ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
+ALTER TABLE students ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended'));
+ALTER TABLE teachers ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
+ALTER TABLE teachers ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE parents ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended'));

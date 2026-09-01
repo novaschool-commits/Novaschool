@@ -32,12 +32,55 @@ router.get('/overview', requirePermission('reports.view'), asyncHandler(async (r
      GROUP BY se.grade ORDER BY se.grade`
   )).map(r => ({ grade: r.grade, count: Number(r.count) }));
 
+  const studentStatus = await get("SELECT COUNT(*) FILTER (WHERE status='active') AS active, COUNT(*) FILTER (WHERE status='suspended') AS suspended, COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') AS new_this_month FROM students");
+  const teacherStatus = await get("SELECT COUNT(*) FILTER (WHERE status='active') AS active, COUNT(*) FILTER (WHERE status='suspended') AS suspended, COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days') AS new_this_month FROM teachers");
+  const parentStatus = await get("SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE status='active') AS active FROM parents");
+  const staffStatus = await get("SELECT COUNT(*) FILTER (WHERE status='active') AS active, COUNT(*) FILTER (WHERE status='invited') AS invited, COUNT(*) AS total FROM staff");
+  const pendingAdmissions = Number((await get("SELECT COUNT(*) AS c FROM admission_applications WHERE status = 'pending'")).c);
+  const pendingTeacherApps = Number((await get("SELECT COUNT(*) AS c FROM teacher_applications WHERE status = 'pending'")).c);
+  const courseStatus = await get("SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE status='published') AS published, COUNT(*) FILTER (WHERE status='draft') AS draft, COUNT(DISTINCT subject) AS subjects FROM courses");
+  const totalClasses = Number((await get('SELECT COUNT(*) AS c FROM sections')).c);
+  const activeExams = Number((await get("SELECT COUNT(*) AS c FROM exams WHERE is_published = TRUE")).c);
+  const totalAssignments = Number((await get('SELECT COUNT(*) AS c FROM assignments')).c);
+  const pendingSubmissions = Number((await get(
+    "SELECT (SELECT COUNT(*) FROM submissions WHERE status='submitted') + (SELECT COUNT(*) FROM exam_attempts WHERE status='submitted') AS c"
+  )).c);
+  const resultsRecorded = Number((await get('SELECT COUNT(*) AS c FROM grades')).c);
+  // DAU/WAU here means "logged in within the window" (from real last_login
+  // timestamps) — a fair, honest proxy given the app has no session/event
+  // tracking, not a claim of continuous activity.
+  const activityRow = await get(
+    "SELECT COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '1 day') AS dau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '7 days') AS wau FROM users"
+  );
+
   res.json({
-    totalStudents,
-    totalTeachers,
+    totalStudents, totalTeachers,
     feeCollectionPct,
     attendancePct: Number(attRow.pct) || 0,
-    enrollmentByGrade
+    enrollmentByGrade,
+    students: { active: Number(studentStatus.active), suspended: Number(studentStatus.suspended), newThisMonth: Number(studentStatus.new_this_month) },
+    teachers: { active: Number(teacherStatus.active), suspended: Number(teacherStatus.suspended), newThisMonth: Number(teacherStatus.new_this_month) },
+    parents: { total: Number(parentStatus.total), active: Number(parentStatus.active) },
+    staff: { total: Number(staffStatus.total), active: Number(staffStatus.active), invited: Number(staffStatus.invited) },
+    pendingAdmissions, pendingTeacherApps,
+    courses: { total: Number(courseStatus.total), published: Number(courseStatus.published), draft: Number(courseStatus.draft), subjects: Number(courseStatus.subjects) },
+    totalClasses, activeExams, totalAssignments, pendingSubmissions, resultsRecorded,
+    activity: { dau: Number(activityRow.dau), wau: Number(activityRow.wau) }
+  });
+}));
+
+router.get('/approvals', requirePermission('reports.view'), asyncHandler(async (req, res) => {
+  const pendingAdmissions = Number((await get("SELECT COUNT(*) AS c FROM admission_applications WHERE status = 'pending'")).c);
+  const pendingTeacherApps = Number((await get("SELECT COUNT(*) AS c FROM teacher_applications WHERE status = 'pending'")).c);
+  const pendingStaffInvites = Number((await get("SELECT COUNT(*) AS c FROM staff WHERE status = 'invited'")).c);
+  const pendingFeeConfirmations = Number((await get("SELECT COUNT(*) AS c FROM invoices WHERE status = 'pending_confirmation'")).c);
+  res.json({
+    items: [
+      { label: 'Student admissions', count: pendingAdmissions, page: 'overview', anchor: 'admissions' },
+      { label: 'Teacher applications', count: pendingTeacherApps, page: 'overview', anchor: 'teacher-applications' },
+      { label: 'Staff invitations pending activation', count: pendingStaffInvites, page: 'management', anchor: 'staff' },
+      { label: 'Fee payments awaiting confirmation', count: pendingFeeConfirmations, page: 'overview', anchor: 'fees' }
+    ].filter(i => i.count > 0)
   });
 }));
 
@@ -252,8 +295,19 @@ router.post('/teachers', requirePermission('teachers.create'), asyncHandler(asyn
 }));
 
 router.get('/teachers', requirePermission('teachers.view'), asyncHandler(async (req, res) => {
-  const rows = await all('SELECT t.id, t.first_name, t.last_name, t.subject, u.email FROM teachers t JOIN users u ON u.id = t.user_id ORDER BY t.last_name');
-  res.json({ teachers: rows });
+  const rows = await all('SELECT t.id, t.first_name, t.last_name, t.subject, t.status, t.created_at, u.email FROM teachers t JOIN users u ON u.id = t.user_id ORDER BY t.last_name');
+  res.json({ teachers: rows.map(r => ({ id: r.id, first_name: r.first_name, last_name: r.last_name, subject: r.subject, status: r.status, createdAt: r.created_at, email: r.email })) });
+}));
+
+router.patch('/teachers/:id/status', requirePermission('teachers.suspend'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body || {};
+  if (!['active', 'suspended'].includes(status)) return res.status(400).json({ error: 'status must be active or suspended.' });
+  const teacher = await get('SELECT * FROM teachers WHERE id = $1', [id]);
+  if (!teacher) return res.status(404).json({ error: 'Teacher not found.' });
+  await run('UPDATE teachers SET status = $1 WHERE id = $2', [status, id]);
+  await logAudit(req, status === 'suspended' ? 'teacher.suspended' : 'teacher.reactivated', 'teacher', id, { name: `${teacher.first_name} ${teacher.last_name}` });
+  res.json({ message: `${teacher.first_name} ${teacher.last_name} ${status === 'suspended' ? 'suspended' : 'reactivated'}.` });
 }));
 
 router.post('/students', requirePermission('students.create'), asyncHandler(async (req, res) => {
@@ -291,10 +345,21 @@ router.post('/students', requirePermission('students.create'), asyncHandler(asyn
 
 router.get('/students', requirePermission('students.view'), asyncHandler(async (req, res) => {
   const rows = await all(
-    `SELECT s.id, s.first_name, s.last_name, s.admission_no, s.section_code, u.email
+    `SELECT s.id, s.first_name, s.last_name, s.admission_no, s.section_code, s.status, s.created_at, u.email
      FROM students s LEFT JOIN users u ON u.id = s.user_id ORDER BY s.last_name`
   );
-  res.json({ students: rows });
+  res.json({ students: rows.map(r => ({ ...r, createdAt: r.created_at })) });
+}));
+
+router.patch('/students/:id/status', requirePermission('students.suspend'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body || {};
+  if (!['active', 'suspended'].includes(status)) return res.status(400).json({ error: 'status must be active or suspended.' });
+  const student = await get('SELECT * FROM students WHERE id = $1', [id]);
+  if (!student) return res.status(404).json({ error: 'Student not found.' });
+  await run('UPDATE students SET status = $1 WHERE id = $2', [status, id]);
+  await logAudit(req, status === 'suspended' ? 'student.suspended' : 'student.reactivated', 'student', id, { name: `${student.first_name} ${student.last_name}` });
+  res.json({ message: `${student.first_name} ${student.last_name} ${status === 'suspended' ? 'suspended' : 'reactivated'}.` });
 }));
 
 router.post('/parents', requirePermission('students.create'), asyncHandler(async (req, res) => {
@@ -316,6 +381,26 @@ router.post('/parents', requirePermission('students.create'), asyncHandler(async
 
   await logAudit(req, 'parent.created', 'parent', parentRow.rows[0].id, { email: email.toLowerCase().trim() });
   res.status(201).json({ message: `Parent account created for ${first_name} ${last_name}. They can log in with ${email}.` });
+}));
+
+router.get('/parents', requirePermission('students.view'), asyncHandler(async (req, res) => {
+  const rows = await all(
+    `SELECT p.id, p.first_name, p.last_name, p.status, u.email,
+            (SELECT string_agg(s.first_name || ' ' || s.last_name, ', ') FROM student_parent_map spm JOIN students s ON s.id = spm.student_id WHERE spm.parent_id = p.id) AS children
+     FROM parents p JOIN users u ON u.id = p.user_id ORDER BY p.last_name`
+  );
+  res.json({ parents: rows.map(r => ({ id: r.id, firstName: r.first_name, lastName: r.last_name, status: r.status, email: r.email, children: r.children || null })) });
+}));
+
+router.patch('/parents/:id/status', requirePermission('students.edit'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body || {};
+  if (!['active', 'suspended'].includes(status)) return res.status(400).json({ error: 'status must be active or suspended.' });
+  const parent = await get('SELECT * FROM parents WHERE id = $1', [id]);
+  if (!parent) return res.status(404).json({ error: 'Parent not found.' });
+  await run('UPDATE parents SET status = $1 WHERE id = $2', [status, id]);
+  await logAudit(req, status === 'suspended' ? 'parent.suspended' : 'parent.reactivated', 'parent', id, { name: `${parent.first_name} ${parent.last_name}` });
+  res.json({ message: `${parent.first_name} ${parent.last_name} ${status === 'suspended' ? 'suspended' : 'reactivated'}.` });
 }));
 
 // ---------- Sections / classes ----------
