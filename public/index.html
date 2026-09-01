@@ -856,6 +856,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <nav class="side-nav" id="adminSideNav">
         <a class="side-link active" data-page="overview" onclick="showAdminPage('overview')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a>
         <a class="side-link" data-page="management" onclick="showAdminPage('management')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/><path d="M17.5 3.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z"/></svg><span class="txt">Management</span></a>
+        <a class="side-link" data-page="organization" onclick="showAdminPage('organization')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span class="txt">Organization</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
@@ -1079,6 +1080,42 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
         <div id="adminCurriculumList"><p class="empty">Loading…</p></div>
       </div>
+      </div>
+
+      <div class="admin-page" data-page="organization">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Academic years</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="newYearName" placeholder="Name (e.g. 2026-2027)">
+            <input class="grade-input" style="width:100%;" type="date" id="newYearStart" placeholder="Start date">
+            <input class="grade-input" style="width:100%;" type="date" id="newYearEnd" placeholder="End date">
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-bottom:14px;" onclick="createAcademicYear()">Add academic year</button>
+          <div id="academicYearsList"><p class="empty">Loading…</p></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Terms / Semesters</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select class="grade-input" style="width:100%;" id="newTermYear"><option value="">Academic year…</option></select>
+            <input class="grade-input" style="width:100%;" id="newTermName" placeholder="Name (e.g. Term 1)">
+            <input class="grade-input" style="width:100%;" type="date" id="newTermStart">
+            <input class="grade-input" style="width:100%;" type="date" id="newTermEnd">
+          </div>
+          <button class="btn btn-primary btn-sm" style="margin-bottom:14px;" onclick="createTerm()">Add term</button>
+          <div id="termsList"><p class="empty">Loading…</p></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Campuses / Branches</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="newCampusName" placeholder="Campus name">
+            <input class="grade-input" style="width:100%;" id="newCampusAddress" placeholder="Address (optional)">
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-bottom:14px;" onclick="createCampus()">Add campus</button>
+          <div id="campusesList"><p class="empty">Loading…</p></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-top:10px;">Note: campuses aren't yet linked to sections/students — NovaSchool operates as a single campus today. This just gets the list ready.</p>
+        </div>
       </div>
     </main>
   </div>
@@ -5015,6 +5052,9 @@ async function loadManagementData(){
     await loadStaffList();
     await loadAuditLogs();
     await loadCurriculumList();
+    await loadAcademicYears();
+    await loadTerms();
+    await loadCampuses();
   } catch (err) {
     toast(err.message);
   }
@@ -5301,6 +5341,139 @@ async function createLevel(curriculumId){
     toast(res.message);
     input.value = '';
     await loadLevelsFor(curriculumId);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Organization: Academic Years, Terms, Campuses ============================== */
+
+let ACADEMIC_YEARS_CACHE = [];
+
+async function loadAcademicYears(){
+  try {
+    const d = await api('/admin/academic-years');
+    ACADEMIC_YEARS_CACHE = d.years;
+    document.getElementById('academicYearsList').innerHTML = d.years.length ? d.years.map(y => `
+      <div class="list-row"><div class="l-main"><div><div class="l-title">${escapeHtml(y.name)} ${y.isCurrent ? '<span class="tag" style="background:var(--green);">Current</span>' : ''}</div>
+        <div class="l-sub">${y.startDate || '—'} to ${y.endDate || '—'}</div></div></div>
+        <div style="display:flex; gap:6px;">
+          ${!y.isCurrent ? `<button class="btn btn-outline btn-sm" onclick="setCurrentYear(${y.id})">Set current</button>` : ''}
+          <button class="btn btn-outline btn-sm" onclick="deleteAcademicYear(${y.id})">Delete</button>
+        </div></div>`).join('') : '<p class="empty">No academic years yet.</p>';
+    document.getElementById('newTermYear').innerHTML = '<option value="">Academic year…</option>' + d.years.map(y => `<option value="${y.id}">${escapeHtml(y.name)}</option>`).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createAcademicYear(){
+  const name = document.getElementById('newYearName').value.trim();
+  const start_date = document.getElementById('newYearStart').value;
+  const end_date = document.getElementById('newYearEnd').value;
+  if (!name) { toast('Enter a name for the academic year.'); return; }
+  try {
+    const res = await api('/admin/academic-years', { method: 'POST', body: JSON.stringify({ name, start_date: start_date || undefined, end_date: end_date || undefined }) });
+    toast(res.message);
+    ['newYearName','newYearStart','newYearEnd'].forEach(id => document.getElementById(id).value = '');
+    await loadAcademicYears();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function setCurrentYear(id){
+  try {
+    const res = await api(`/admin/academic-years/${id}/set-current`, { method: 'POST' });
+    toast(res.message);
+    await loadAcademicYears();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteAcademicYear(id){
+  if (!confirm('Delete this academic year? Any terms under it will be removed too.')) return;
+  try {
+    const res = await api(`/admin/academic-years/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    await loadAcademicYears();
+    await loadTerms();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadTerms(){
+  try {
+    const d = await api('/admin/terms');
+    const yearName = (id) => (ACADEMIC_YEARS_CACHE.find(y => y.id === id) || {}).name || 'Unknown year';
+    document.getElementById('termsList').innerHTML = d.terms.length ? d.terms.map(t => `
+      <div class="list-row"><div class="l-main"><div><div class="l-title">${escapeHtml(t.name)}</div><div class="l-sub">${escapeHtml(yearName(t.academicYearId))} · ${t.startDate || '—'} to ${t.endDate || '—'}</div></div></div>
+        <button class="btn btn-outline btn-sm" onclick="deleteTerm(${t.id})">Delete</button></div>`).join('') : '<p class="empty">No terms yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createTerm(){
+  const academic_year_id = document.getElementById('newTermYear').value;
+  const name = document.getElementById('newTermName').value.trim();
+  const start_date = document.getElementById('newTermStart').value;
+  const end_date = document.getElementById('newTermEnd').value;
+  if (!academic_year_id || !name) { toast('Choose an academic year and enter a term name.'); return; }
+  try {
+    const res = await api('/admin/terms', { method: 'POST', body: JSON.stringify({ academic_year_id: Number(academic_year_id), name, start_date: start_date || undefined, end_date: end_date || undefined }) });
+    toast(res.message);
+    ['newTermName','newTermStart','newTermEnd'].forEach(id => document.getElementById(id).value = '');
+    await loadTerms();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteTerm(id){
+  try {
+    const res = await api(`/admin/terms/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    await loadTerms();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadCampuses(){
+  try {
+    const d = await api('/admin/campuses');
+    document.getElementById('campusesList').innerHTML = d.campuses.length ? d.campuses.map(c => `
+      <div class="list-row"><div class="l-main"><div><div class="l-title">${escapeHtml(c.name)}</div>${c.address ? `<div class="l-sub">${escapeHtml(c.address)}</div>` : ''}</div></div>
+        <button class="btn btn-outline btn-sm" onclick="deleteCampus(${c.id})">Delete</button></div>`).join('') : '<p class="empty">No campuses added yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createCampus(){
+  const name = document.getElementById('newCampusName').value.trim();
+  const address = document.getElementById('newCampusAddress').value.trim();
+  if (!name) { toast('Enter a campus name.'); return; }
+  try {
+    const res = await api('/admin/campuses', { method: 'POST', body: JSON.stringify({ name, address: address || undefined }) });
+    toast(res.message);
+    document.getElementById('newCampusName').value = '';
+    document.getElementById('newCampusAddress').value = '';
+    await loadCampuses();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteCampus(id){
+  if (!confirm('Delete this campus?')) return;
+  try {
+    const res = await api(`/admin/campuses/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    await loadCampuses();
   } catch (err) {
     toast(err.message);
   }

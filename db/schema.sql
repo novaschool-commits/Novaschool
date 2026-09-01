@@ -609,3 +609,30 @@ ALTER TABLE teachers ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'acti
 ALTER TABLE teachers ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ;
 ALTER TABLE teachers ALTER COLUMN created_at SET DEFAULT CURRENT_TIMESTAMP;
 ALTER TABLE parents ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended'));
+
+-- Organization management: Academic Years, Terms, Campuses. Deliberately
+-- NOT linked into students/sections/courses yet — the school is single-
+-- campus and single-year today, and forcing that link now would be a much
+-- larger, riskier schema change across many tables. This is the foundation
+-- only, per the spec's own "prepare architecture safely, don't overbuild."
+CREATE TABLE IF NOT EXISTS academic_years (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  start_date DATE,
+  end_date DATE,
+  is_current BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE TABLE IF NOT EXISTS terms (
+  id SERIAL PRIMARY KEY,
+  academic_year_id INTEGER NOT NULL REFERENCES academic_years(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  start_date DATE,
+  end_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS campuses (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  address TEXT
+);

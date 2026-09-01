@@ -274,6 +274,87 @@ router.post('/settings', requirePermission('settings.edit'), asyncHandler(async 
   res.json({ message: 'Settings updated.' });
 }));
 
+// ---------- Organization: Academic Years, Terms, Campuses ----------
+
+router.get('/academic-years', requirePermission('settings.view'), asyncHandler(async (req, res) => {
+  const years = await all('SELECT * FROM academic_years ORDER BY start_date DESC NULLS LAST, id DESC');
+  res.json({ years: years.map(y => ({ id: y.id, name: y.name, startDate: y.start_date, endDate: y.end_date, isCurrent: y.is_current })) });
+}));
+
+router.post('/academic-years', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const { name, start_date, end_date } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'name is required.' });
+  const r = await run('INSERT INTO academic_years (name, start_date, end_date) VALUES ($1,$2,$3) RETURNING id', [name, start_date || null, end_date || null]);
+  await logAudit(req, 'academic_year.created', 'academic_year', r.rows[0].id, { name });
+  res.status(201).json({ message: 'Academic year created.', yearId: r.rows[0].id });
+}));
+
+router.post('/academic-years/:id/set-current', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const year = await get('SELECT * FROM academic_years WHERE id = $1', [id]);
+  if (!year) return res.status(404).json({ error: 'Academic year not found.' });
+  await run('UPDATE academic_years SET is_current = FALSE WHERE is_current = TRUE');
+  await run('UPDATE academic_years SET is_current = TRUE WHERE id = $1', [id]);
+  await logAudit(req, 'academic_year.set_current', 'academic_year', id, { name: year.name });
+  res.json({ message: `${year.name} set as the current academic year.` });
+}));
+
+router.delete('/academic-years/:id', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const year = await get('SELECT * FROM academic_years WHERE id = $1', [id]);
+  if (!year) return res.status(404).json({ error: 'Academic year not found.' });
+  await run('DELETE FROM academic_years WHERE id = $1', [id]);
+  await logAudit(req, 'academic_year.deleted', 'academic_year', id, { name: year.name });
+  res.json({ message: 'Academic year removed (and any terms under it).' });
+}));
+
+router.get('/terms', requirePermission('settings.view'), asyncHandler(async (req, res) => {
+  const yearId = req.query.academic_year_id;
+  const terms = yearId
+    ? await all('SELECT * FROM terms WHERE academic_year_id = $1 ORDER BY start_date NULLS LAST, id', [Number(yearId)])
+    : await all('SELECT * FROM terms ORDER BY start_date NULLS LAST, id');
+  res.json({ terms: terms.map(t => ({ id: t.id, academicYearId: t.academic_year_id, name: t.name, startDate: t.start_date, endDate: t.end_date })) });
+}));
+
+router.post('/terms', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const { academic_year_id, name, start_date, end_date } = req.body || {};
+  if (!academic_year_id || !name) return res.status(400).json({ error: 'academic_year_id and name are required.' });
+  const year = await get('SELECT id FROM academic_years WHERE id = $1', [academic_year_id]);
+  if (!year) return res.status(400).json({ error: 'That academic year does not exist.' });
+  const r = await run('INSERT INTO terms (academic_year_id, name, start_date, end_date) VALUES ($1,$2,$3,$4) RETURNING id', [academic_year_id, name, start_date || null, end_date || null]);
+  res.status(201).json({ message: 'Term added.', termId: r.rows[0].id });
+}));
+
+router.delete('/terms/:id', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const term = await get('SELECT * FROM terms WHERE id = $1', [id]);
+  if (!term) return res.status(404).json({ error: 'Term not found.' });
+  await run('DELETE FROM terms WHERE id = $1', [id]);
+  res.json({ message: 'Term removed.' });
+}));
+
+router.get('/campuses', requirePermission('settings.view'), asyncHandler(async (req, res) => {
+  const campuses = await all('SELECT * FROM campuses ORDER BY name');
+  res.json({ campuses: campuses.map(c => ({ id: c.id, name: c.name, address: c.address })) });
+}));
+
+router.post('/campuses', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const { name, address } = req.body || {};
+  if (!name) return res.status(400).json({ error: 'name is required.' });
+  const r = await run('INSERT INTO campuses (name, address) VALUES ($1,$2) RETURNING id', [name, address || null]);
+  await logAudit(req, 'campus.created', 'campus', r.rows[0].id, { name });
+  res.status(201).json({ message: 'Campus added.', campusId: r.rows[0].id });
+}));
+
+router.delete('/campuses/:id', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const campus = await get('SELECT * FROM campuses WHERE id = $1', [id]);
+  if (!campus) return res.status(404).json({ error: 'Campus not found.' });
+  await run('DELETE FROM campuses WHERE id = $1', [id]);
+  await logAudit(req, 'campus.deleted', 'campus', id, { name: campus.name });
+  res.json({ message: 'Campus removed.' });
+}));
+
 // ---------- People management: create real accounts ----------
 
 router.post('/teachers', requirePermission('teachers.create'), asyncHandler(async (req, res) => {
