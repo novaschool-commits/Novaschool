@@ -636,3 +636,34 @@ CREATE TABLE IF NOT EXISTS campuses (
   name TEXT NOT NULL,
   address TEXT
 );
+
+-- Widen course status from draft/published to the full 4-state workflow
+-- the spec asks for. Existing rows keep whatever status they already have
+-- (draft or published) — nothing changes for them, the constraint just
+-- now also allows the two new values going forward.
+DO $$
+DECLARE
+  con_name TEXT;
+BEGIN
+  SELECT conname INTO con_name
+  FROM pg_constraint
+  WHERE conrelid = 'courses'::regclass AND contype = 'c'
+    AND pg_get_constraintdef(oid) ILIKE '%status%';
+  IF con_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE courses DROP CONSTRAINT %I', con_name);
+  END IF;
+END $$;
+ALTER TABLE courses ADD CONSTRAINT courses_status_check CHECK (status IN ('draft','under_review','published','archived'));
+
+-- Exam scheduling (was previously just duration_minutes, no actual date/time)
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
+
+-- Grade configuration (letter-grade bands, e.g. A+ = 90-100%). Kept as a
+-- standalone reference table for now — wiring it into every existing
+-- report/gradebook display is a larger follow-on, not done here.
+CREATE TABLE IF NOT EXISTS grade_bands (
+  id SERIAL PRIMARY KEY,
+  label TEXT NOT NULL,
+  min_pct NUMERIC NOT NULL,
+  max_pct NUMERIC NOT NULL
+);

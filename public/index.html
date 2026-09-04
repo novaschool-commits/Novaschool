@@ -857,6 +857,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link active" data-page="overview" onclick="showAdminPage('overview')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a>
         <a class="side-link" data-page="management" onclick="showAdminPage('management')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/><path d="M17.5 3.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z"/></svg><span class="txt">Management</span></a>
         <a class="side-link" data-page="organization" onclick="showAdminPage('organization')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span class="txt">Organization</span></a>
+        <a class="side-link" data-page="academics" onclick="showAdminPage('academics')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M6 10v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg><span class="txt">Academics</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
@@ -1246,6 +1247,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <input class="grade-input" style="width:100%;" id="staffExamSubject" placeholder="Subject">
             <input class="grade-input" style="width:100%;" id="staffExamSection" placeholder="Section code (e.g. 8B)">
             <input class="grade-input" style="width:100%;" type="number" id="staffExamDuration" placeholder="Duration (minutes)" value="30">
+            <input class="grade-input" style="width:100%;" type="datetime-local" id="staffExamScheduled" placeholder="Scheduled date/time (optional)">
             <select class="grade-input" style="width:100%; grid-column:1/-1;" id="staffExamTeacher"><option value="">Assign to teacher (optional)</option></select>
           </div>
           <button class="btn btn-primary btn-sm" onclick="createStaffExam()">Create test</button>
@@ -1254,7 +1256,20 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
 
       <div class="admin-page" data-page="results">
-        <div class="card"><div class="card-head"><h3>Results overview</h3></div><div id="staffResultsOverview"><p class="empty">Loading…</p></div></div>
+        <div class="card" style="margin-bottom:20px;"><div class="card-head"><h3>Results overview</h3></div><div id="staffResultsOverview"><p class="empty">Loading…</p></div></div>
+        <div class="card" id="gradeBandsCard" style="display:none;">
+          <div class="card-head"><h3>Grade configuration</h3></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">Letter-grade bands used for display alongside numeric scores (e.g. 90–100% = A+). Doesn't rewrite existing scores.</p>
+          <div id="gradeBandCreateControls">
+            <div id="gradeBandCreateFields" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:10px;">
+              <input class="grade-input" style="width:100%;" id="gradeBandLabel" placeholder="Label (e.g. A+)">
+              <input class="grade-input" style="width:100%;" type="number" id="gradeBandMin" placeholder="Min %">
+              <input class="grade-input" style="width:100%;" type="number" id="gradeBandMax" placeholder="Max %">
+            </div>
+            <button class="btn btn-outline btn-sm" style="margin-bottom:14px;" onclick="createGradeBand()">Add band</button>
+          </div>
+          <div id="gradeBandsList"><p class="empty">Loading…</p></div>
+        </div>
       </div>
 
       <div class="admin-page" data-page="reports">
@@ -2757,7 +2772,7 @@ async function loadStaffDashboard(){
     if (has('students.view')) { loadStaffStudents(); loadStaffAdmissions(); }
     if (has('teachers.view')) loadStaffTeachers();
     if (has('courses.view')) loadStaffCourses();
-    if (has('results.view')) loadStaffResults();
+    if (has('results.view')) { loadStaffResults(); document.getElementById('gradeBandsCard').style.display = 'block'; loadGradeBands(); }
     if (has('assignments.view')) { loadStaffExams(); if (has('assignments.create')) loadExamTeacherOptions(); }
     if (has('reports.view')) loadReports();
     loadMyTickets();
@@ -2857,16 +2872,21 @@ async function createStaffTeacher(){
   }
 }
 
+const COURSE_STATUS_LABEL = { draft: 'Draft', under_review: 'Under Review', published: 'Published', archived: 'Archived' };
+const COURSE_STATUS_COLOR = { draft: 'var(--ink-soft)', under_review: 'var(--amber)', published: 'var(--green)', archived: 'var(--magenta)' };
+
 async function loadStaffCourses(){
   try {
     const d = await api('/admin/courses');
+    const canEdit = STAFF_PERMISSIONS.includes('courses.edit');
     const canPublish = STAFF_PERMISSIONS.includes('courses.publish');
     document.getElementById('staffCoursesList').innerHTML = d.courses.length
-      ? d.courses.map(c => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${escapeHtml(c.subject)}</span>
-          <div><div class="l-title">${escapeHtml(c.title)} <span class="tag" style="background:${c.status === 'published' ? 'var(--green)' : 'var(--ink-soft)'}; font-size:10.5px;">${c.status === 'published' ? 'Published' : 'Draft'}</span></div><div class="l-sub">${escapeHtml(c.curriculum)} · ${escapeHtml(c.level)}${c.teacher && c.teacher !== 'Unassigned' ? ' · ' + escapeHtml(c.teacher) : ''}</div></div></div>
-          ${canPublish ? (c.status === 'published'
-            ? `<button class="btn btn-outline btn-sm" onclick="unpublishStaffCourse(${c.id})">Unpublish</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="publishStaffCourse(${c.id})">Publish</button>`) : ''}</div>`).join('')
+      ? d.courses.map(c => `<div class="list-row" style="flex-wrap:wrap; align-items:flex-start;"><div class="l-main"><span class="tag" style="background:${subjectColor(c.subject)};">${escapeHtml(c.subject)}</span>
+          <div><div class="l-title">${escapeHtml(c.title)} <span class="tag" style="background:${COURSE_STATUS_COLOR[c.status]}; font-size:10.5px;">${COURSE_STATUS_LABEL[c.status]}</span></div>
+            <div class="l-sub">${escapeHtml(c.curriculum)} · ${escapeHtml(c.level)}${c.teacher && c.teacher !== 'Unassigned' ? ' · ' + escapeHtml(c.teacher) : ''} · ${c.studentsEngaged} student${c.studentsEngaged===1?'':'s'} engaged${c.completionPct !== null ? ` · ${c.completionPct}% avg completion` : ''}</div></div></div>
+          ${(canEdit || canPublish) ? `<select class="grade-input" style="width:auto;" onchange="setCourseStatus(${c.id}, this.value)">
+              ${Object.keys(COURSE_STATUS_LABEL).map(s => `<option value="${s}" ${s===c.status?'selected':''} ${s==='published' && !canPublish ? 'disabled' : ''}>${COURSE_STATUS_LABEL[s]}</option>`).join('')}
+            </select>` : ''}</div>`).join('')
       : '<p class="empty">No courses yet.</p>';
   } catch (err) {
     toast(err.message);
@@ -2890,24 +2910,15 @@ async function createStaffCourse(){
   }
 }
 
-async function publishStaffCourse(courseId){
+async function setCourseStatus(courseId, status){
+  if (status === 'archived' && !confirm('Archive this course? It will be hidden from the public catalog and marked inactive.')) { loadStaffCourses(); return; }
   try {
-    const res = await api(`/admin/courses/${courseId}/publish-check`, { method: 'POST' });
+    const res = await api(`/admin/courses/${courseId}/set-status`, { method: 'POST', body: JSON.stringify({ status }) });
     toast(res.message);
     await loadStaffCourses();
   } catch (err) {
     toast(err.message);
-  }
-}
-
-async function unpublishStaffCourse(courseId){
-  if (!confirm('Move this course back to draft? It will be removed from the public course catalog.')) return;
-  try {
-    const res = await api(`/admin/courses/${courseId}/unpublish`, { method: 'POST' });
-    toast(res.message);
-    await loadStaffCourses();
-  } catch (err) {
-    toast(err.message);
+    loadStaffCourses();
   }
 }
 
@@ -2918,6 +2929,47 @@ async function loadStaffResults(){
       <p style="font-size:13px; margin-bottom:12px;"><b>${d.pendingGrading}</b> submissions across the school are still awaiting grading.</p>
       <div class="table-scroll"><table class="table-simple"><thead><tr><th>Section</th><th>Grade</th><th>Recorded grades</th></tr></thead><tbody>${d.bySection.map(r => `
         <tr><td>${escapeHtml(r.sectionCode)}</td><td>${escapeHtml(String(r.grade))}</td><td>${r.recordedGrades}</td></tr>`).join('')}</tbody></table></div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadGradeBands(){
+  try {
+    const d = await api('/admin/grade-bands');
+    const canEdit = STAFF_PERMISSIONS.includes('results.edit');
+    document.getElementById('gradeBandCreateControls').style.display = canEdit ? 'block' : 'none';
+    document.getElementById('gradeBandsList').innerHTML = d.bands.length
+      ? d.bands.map(b => `<div class="list-row"><div class="l-main"><span class="tag" style="background:var(--indigo);">${escapeHtml(b.label)}</span><div class="l-title">${b.minPct}% – ${b.maxPct}%</div></div>
+          ${canEdit ? `<button class="btn btn-outline btn-sm" onclick="deleteGradeBand(${b.id})">Delete</button>` : ''}</div>`).join('')
+      : '<p class="empty">No grade bands configured yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createGradeBand(){
+  const label = document.getElementById('gradeBandLabel').value.trim();
+  const min_pct = document.getElementById('gradeBandMin').value;
+  const max_pct = document.getElementById('gradeBandMax').value;
+  if (!label || min_pct === '' || max_pct === '') { toast('Enter a label, min %, and max %.'); return; }
+  try {
+    const res = await api('/admin/grade-bands', { method: 'POST', body: JSON.stringify({ label, min_pct: Number(min_pct), max_pct: Number(max_pct) }) });
+    toast(res.message);
+    document.getElementById('gradeBandLabel').value = '';
+    document.getElementById('gradeBandMin').value = '';
+    document.getElementById('gradeBandMax').value = '';
+    await loadGradeBands();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function deleteGradeBand(id){
+  try {
+    const res = await api(`/admin/grade-bands/${id}`, { method: 'DELETE' });
+    toast(res.message);
+    await loadGradeBands();
   } catch (err) {
     toast(err.message);
   }
@@ -2942,7 +2994,7 @@ async function loadStaffExams(){
       ? d.exams.map(e => `<div class="list-row" style="flex-wrap:wrap; align-items:flex-start;">
           <div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
             <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${e.isPublished?'var(--green)':'var(--ink-soft)'}; font-size:10.5px;">${e.isPublished?'Published':'Draft'}</span></div>
-              <div class="l-sub">Section ${escapeHtml(e.sectionCode)} · ${escapeHtml(e.teacher)} · ${e.questionCount} question${e.questionCount===1?'':'s'}${e.pendingGrading?' · ' + e.pendingGrading + ' to grade':''}</div></div></div>
+              <div class="l-sub">Section ${escapeHtml(e.sectionCode)} · ${escapeHtml(e.teacher)} · ${e.questionCount} question${e.questionCount===1?'':'s'}${e.pendingGrading?' · ' + e.pendingGrading + ' to grade':''}${e.scheduledAt ? ' · Scheduled ' + fmtDate(e.scheduledAt) : ' · Not scheduled'}</div></div></div>
           <button class="btn btn-outline btn-sm" onclick="toggleExamDetail(${e.id}, ${canEdit})">Manage</button>
         </div>
         <div id="examDetail-${e.id}" style="display:none; padding:12px; background:var(--paper-alt); border-radius:10px; margin:4px 0 10px;"></div>`).join('')
@@ -2957,12 +3009,13 @@ async function createStaffExam(){
   const subject = document.getElementById('staffExamSubject').value.trim();
   const section_code = document.getElementById('staffExamSection').value.trim();
   const duration_minutes = document.getElementById('staffExamDuration').value;
+  const scheduled_at = document.getElementById('staffExamScheduled').value;
   const teacher_id = document.getElementById('staffExamTeacher').value;
   if (!title || !subject || !section_code) { toast('Title, subject, and section are required.'); return; }
   try {
-    const res = await api('/admin/exams', { method: 'POST', body: JSON.stringify({ title, subject, section_code, duration_minutes: Number(duration_minutes) || 30, teacher_id: teacher_id || undefined }) });
+    const res = await api('/admin/exams', { method: 'POST', body: JSON.stringify({ title, subject, section_code, duration_minutes: Number(duration_minutes) || 30, scheduled_at: scheduled_at || undefined, teacher_id: teacher_id || undefined }) });
     toast(res.message);
-    ['staffExamTitle','staffExamSubject','staffExamSection'].forEach(id => document.getElementById(id).value = '');
+    ['staffExamTitle','staffExamSubject','staffExamSection','staffExamScheduled'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('staffExamDuration').value = '30';
     document.getElementById('staffExamTeacher').value = '';
     await loadStaffExams();
@@ -2988,6 +3041,15 @@ async function toggleExamDetail(examId, canEdit){
           ${q.questionType==='mcq' ? `<div style="font-size:11.5px; color:var(--ink-soft);">Options: ${(q.options||[]).map(o=>escapeHtml(o)).join(', ')} · Correct: ${escapeHtml(q.correctAnswer)}</div>` : ''}
           ${canEdit && !d.exam.isPublished ? `<button class="btn btn-outline btn-sm" style="margin-top:4px;" onclick="deleteExamQuestion(${examId},${q.id})">Remove</button>` : ''}
         </div>`).join('') : '<p class="empty">No questions yet.</p>'}</div>
+      ${canEdit ? `
+      <div style="margin-bottom:12px; padding:10px; background:#fff; border-radius:8px;">
+        <p style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;">Schedule</p>
+        <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+          <input class="grade-input" type="datetime-local" id="examSchedule-${examId}" value="${d.exam.scheduledAt ? d.exam.scheduledAt.slice(0,16) : ''}">
+          <button class="btn btn-outline btn-sm" onclick="rescheduleExam(${examId})">Save</button>
+          ${d.exam.scheduledAt ? `<button class="btn btn-outline btn-sm" onclick="clearExamSchedule(${examId})">Clear</button>` : ''}
+        </div>
+      </div>` : ''}
       ${canEdit && !d.exam.isPublished ? `
       <div style="margin-bottom:12px; padding:10px; background:#fff; border-radius:8px;">
         <input class="grade-input" style="width:100%; margin-bottom:6px;" id="qText-${examId}" placeholder="Question text">
@@ -3046,6 +3108,29 @@ async function deleteExamQuestion(examId, questionId){
 async function publishStaffExam(examId){
   try {
     const res = await api(`/admin/exams/${examId}/publish`, { method: 'POST' });
+    toast(res.message);
+    toggleExamDetail(examId); toggleExamDetail(examId, true);
+    loadStaffExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function rescheduleExam(examId){
+  const value = document.getElementById(`examSchedule-${examId}`).value;
+  try {
+    const res = await api(`/admin/exams/${examId}/schedule`, { method: 'POST', body: JSON.stringify({ scheduled_at: value || undefined }) });
+    toast(res.message);
+    toggleExamDetail(examId); toggleExamDetail(examId, true);
+    loadStaffExams();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function clearExamSchedule(examId){
+  try {
+    const res = await api(`/admin/exams/${examId}/schedule`, { method: 'POST', body: JSON.stringify({}) });
     toast(res.message);
     toggleExamDetail(examId); toggleExamDetail(examId, true);
     loadStaffExams();

@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { get, all, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { requirePermission, logAudit } = require('../middleware/permissions');
+const { requirePermission, logAudit, userHasPermission } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
@@ -604,16 +604,28 @@ router.get('/courses', requirePermission('courses.view'), asyncHandler(async (re
     `SELECT c.id, c.subject, c.curriculum, c.level, c.title, c.description, c.created_at, c.status, c.published_at,
             t.first_name AS teacher_first, t.last_name AS teacher_last,
             (SELECT COUNT(*) FROM course_topics WHERE course_id = c.id) AS topic_count,
-            (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count
+            (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count,
+            (SELECT COUNT(DISTINCT cp.student_id) FROM course_progress cp
+               JOIN course_lessons cl2 ON cl2.id = cp.lesson_id JOIN course_topics ct2 ON ct2.id = cl2.topic_id
+               WHERE ct2.course_id = c.id) AS students_engaged,
+            (SELECT COUNT(*) FROM course_progress cp3
+               JOIN course_lessons cl3 ON cl3.id = cp3.lesson_id JOIN course_topics ct3 ON ct3.id = cl3.topic_id
+               WHERE ct3.course_id = c.id) AS total_completions
      FROM courses c LEFT JOIN teachers t ON t.id = c.owner_teacher_id
      ORDER BY c.subject, c.curriculum, c.level`
   );
-  res.json({ courses: rows.map(r => ({
-    id: r.id, subject: r.subject, curriculum: r.curriculum, level: r.level, title: r.title, description: r.description,
-    teacher: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned',
-    topicCount: Number(r.topic_count), lessonCount: Number(r.lesson_count), createdAt: r.created_at,
-    status: r.status, publishedAt: r.published_at
-  })) });
+  res.json({ courses: rows.map(r => {
+    const lessonCount = Number(r.lesson_count);
+    const studentsEngaged = Number(r.students_engaged);
+    const possibleCompletions = lessonCount * studentsEngaged;
+    const completionPct = possibleCompletions > 0 ? Math.round((Number(r.total_completions) / possibleCompletions) * 1000) / 10 : null;
+    return {
+      id: r.id, subject: r.subject, curriculum: r.curriculum, level: r.level, title: r.title, description: r.description,
+      teacher: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned',
+      topicCount: Number(r.topic_count), lessonCount, createdAt: r.created_at,
+      status: r.status, publishedAt: r.published_at, studentsEngaged, completionPct
+    };
+  }) });
 }));
 
 router.post('/courses', requirePermission('courses.create'), asyncHandler(async (req, res) => {
@@ -669,6 +681,27 @@ router.post('/courses/:id/unpublish', requirePermission('courses.publish'), asyn
   res.json({ message: `"${course.title}" moved back to draft and removed from the public course catalog.` });
 }));
 
+// Generic 4-state transition (draft/under_review/published/archived). The
+// older publish-check/unpublish endpoints above still work unchanged for
+// anything already calling them — this is additive, not a replacement.
+router.post('/courses/:id/set-status', requirePermission('courses.edit', 'courses.publish'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const { status } = req.body || {};
+  const validStatuses = ['draft', 'under_review', 'published', 'archived'];
+  if (!validStatuses.includes(status)) return res.status(400).json({ error: `status must be one of: ${validStatuses.join(', ')}.` });
+  if (status === 'published' && !(await userHasPermission(req, 'courses.publish'))) {
+    return res.status(403).json({ error: 'Only someone with courses.publish can publish a course.' });
+  }
+  const course = await get('SELECT id, title, status FROM courses WHERE id = $1', [id]);
+  if (!course) return res.status(404).json({ error: 'Course not found.' });
+  await run(
+    `UPDATE courses SET status = $1, published_at = CASE WHEN $1 = 'published' AND status != 'published' THEN CURRENT_TIMESTAMP ELSE published_at END WHERE id = $2`,
+    [status, id]
+  );
+  await logAudit(req, 'course.status_changed', 'course', id, { title: course.title, from: course.status, to: status });
+  res.json({ message: `"${course.title}" moved to ${status.replace('_', ' ')}.` });
+}));
+
 // ---------- Results oversight (Exam Manager / Admin) ----------
 
 router.get('/results/overview', requirePermission('results.view'), asyncHandler(async (req, res) => {
@@ -716,28 +749,50 @@ router.get('/reports/admissions-summary', requirePermission('students.view'), as
   res.json({ byStatus: rows.map(r => ({ status: r.status, count: Number(r.c) })) });
 }));
 
+// ---------- Grade configuration (letter-grade bands) ----------
+
+router.get('/grade-bands', requirePermission('results.view'), asyncHandler(async (req, res) => {
+  const rows = await all('SELECT * FROM grade_bands ORDER BY min_pct DESC');
+  res.json({ bands: rows.map(b => ({ id: b.id, label: b.label, minPct: Number(b.min_pct), maxPct: Number(b.max_pct) })) });
+}));
+
+router.post('/grade-bands', requirePermission('results.edit'), asyncHandler(async (req, res) => {
+  const { label, min_pct, max_pct } = req.body || {};
+  if (!label || min_pct === undefined || max_pct === undefined) {
+    return res.status(400).json({ error: 'label, min_pct, and max_pct are required.' });
+  }
+  if (Number(min_pct) > Number(max_pct)) return res.status(400).json({ error: 'min_pct cannot be greater than max_pct.' });
+  const r = await run('INSERT INTO grade_bands (label, min_pct, max_pct) VALUES ($1,$2,$3) RETURNING id', [label, min_pct, max_pct]);
+  res.status(201).json({ message: 'Grade band added.', bandId: r.rows[0].id });
+}));
+
+router.delete('/grade-bands/:id', requirePermission('results.edit'), asyncHandler(async (req, res) => {
+  await run('DELETE FROM grade_bands WHERE id = $1', [Number(req.params.id)]);
+  res.json({ message: 'Grade band removed.' });
+}));
+
 // ---------- Exams & question banks (school-wide — every teacher's exams,
 // not just one teacher's own, matching the pre-seeded Exam Manager role
 // which already pairs assignments.* with results.* permissions) ----------
 
 router.get('/exams', requirePermission('assignments.view'), asyncHandler(async (req, res) => {
   const exams = await all(
-    `SELECT e.id, e.title, e.subject, e.section_code, e.duration_minutes, e.is_published,
+    `SELECT e.id, e.title, e.subject, e.section_code, e.duration_minutes, e.is_published, e.scheduled_at,
             t.first_name AS teacher_first, t.last_name AS teacher_last,
             (SELECT COUNT(*) FROM exam_questions WHERE exam_id = e.id) AS question_count,
             (SELECT COUNT(*) FROM exam_attempts WHERE exam_id = e.id AND status = 'submitted') AS pending_grading
-     FROM exams e LEFT JOIN teachers t ON t.id = e.teacher_id ORDER BY e.created_at DESC`
+     FROM exams e LEFT JOIN teachers t ON t.id = e.teacher_id ORDER BY e.scheduled_at NULLS LAST, e.created_at DESC`
   );
   res.json({ exams: exams.map(e => ({
     id: e.id, title: e.title, subject: e.subject, sectionCode: e.section_code,
-    durationMinutes: e.duration_minutes, isPublished: e.is_published,
+    durationMinutes: e.duration_minutes, isPublished: e.is_published, scheduledAt: e.scheduled_at,
     teacher: e.teacher_first ? `${e.teacher_first} ${e.teacher_last}` : 'Unassigned',
     questionCount: Number(e.question_count), pendingGrading: Number(e.pending_grading)
   })) });
 }));
 
 router.post('/exams', requirePermission('assignments.create'), asyncHandler(async (req, res) => {
-  const { title, subject, section_code, duration_minutes, teacher_id } = req.body || {};
+  const { title, subject, section_code, duration_minutes, teacher_id, scheduled_at } = req.body || {};
   if (!title || !subject || !section_code) {
     return res.status(400).json({ error: 'title, subject, and section_code are required.' });
   }
@@ -748,11 +803,20 @@ router.post('/exams', requirePermission('assignments.create'), asyncHandler(asyn
     if (!teacher) return res.status(400).json({ error: 'That teacher does not exist.' });
   }
   const r = await run(
-    'INSERT INTO exams (title, subject, section_code, teacher_id, duration_minutes) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-    [title, subject, section_code, teacher_id || null, Number(duration_minutes) || 30]
+    'INSERT INTO exams (title, subject, section_code, teacher_id, duration_minutes, scheduled_at) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id',
+    [title, subject, section_code, teacher_id || null, Number(duration_minutes) || 30, scheduled_at || null]
   );
   await logAudit(req, 'exam.created', 'exam', r.rows[0].id, { title, subject, section_code });
   res.status(201).json({ message: 'Test created. Add questions, then publish it.', examId: r.rows[0].id });
+}));
+
+router.post('/exams/:id/schedule', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
+  const examId = Number(req.params.id);
+  const exam = await get('SELECT * FROM exams WHERE id = $1', [examId]);
+  if (!exam) return res.status(404).json({ error: 'Test not found.' });
+  const { scheduled_at } = req.body || {};
+  await run('UPDATE exams SET scheduled_at = $1 WHERE id = $2', [scheduled_at || null, examId]);
+  res.json({ message: scheduled_at ? 'Test scheduled.' : 'Schedule cleared.' });
 }));
 
 router.post('/exams/:id/questions', requirePermission('assignments.edit'), asyncHandler(async (req, res) => {
@@ -784,7 +848,7 @@ router.get('/exams/:id', requirePermission('assignments.view'), asyncHandler(asy
   if (!exam) return res.status(404).json({ error: 'Test not found.' });
   const questions = await all('SELECT * FROM exam_questions WHERE exam_id = $1 ORDER BY position, id', [examId]);
   res.json({
-    exam: { id: exam.id, title: exam.title, subject: exam.subject, sectionCode: exam.section_code, durationMinutes: exam.duration_minutes, isPublished: exam.is_published },
+    exam: { id: exam.id, title: exam.title, subject: exam.subject, sectionCode: exam.section_code, durationMinutes: exam.duration_minutes, isPublished: exam.is_published, scheduledAt: exam.scheduled_at },
     questions: questions.map(q => ({ id: q.id, questionText: q.question_text, questionType: q.question_type, options: q.options, correctAnswer: q.correct_answer, marks: q.marks }))
   });
 }));
