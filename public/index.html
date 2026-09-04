@@ -857,6 +857,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link active" data-page="overview" onclick="showAdminPage('overview')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a>
         <a class="side-link" data-page="management" onclick="showAdminPage('management')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/><path d="M17.5 3.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z"/></svg><span class="txt">Management</span></a>
         <a class="side-link" data-page="organization" onclick="showAdminPage('organization')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span class="txt">Organization</span></a>
+        <a class="side-link" data-page="analytics" onclick="showAdminPage('analytics')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="txt">Analytics</span></a>
         <a class="side-link" data-page="academics" onclick="showAdminPage('academics')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M6 10v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg><span class="txt">Academics</span></a>
       </nav>
       <div class="side-foot">
@@ -1116,6 +1117,36 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <button class="btn btn-outline btn-sm" style="margin-bottom:14px;" onclick="createCampus()">Add campus</button>
           <div id="campusesList"><p class="empty">Loading…</p></div>
           <p style="font-size:11.5px; color:var(--ink-soft); margin-top:10px;">Note: campuses aren't yet linked to sections/students — NovaSchool operates as a single campus today. This just gets the list ready.</p>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="analytics">
+        <div class="grid-4" style="margin-bottom:20px;" id="analyticsActivityKpis">
+          <div class="card kpi"><p class="k-label">Logged in today</p><p class="k-val">—</p></div>
+          <div class="card kpi"><p class="k-label">Logged in this week</p><p class="k-val">—</p></div>
+          <div class="card kpi"><p class="k-label">Logged in this month</p><p class="k-val">—</p></div>
+        </div>
+        <p style="font-size:11px; color:var(--ink-soft); margin:-14px 0 20px;">Based on each account's most recent login — the app doesn't log a full login history yet, so trend-over-time isn't available.</p>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card"><div class="card-head"><h3>Attendance by section</h3></div><div id="analyticsAttendance"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Exam performance by subject</h3></div><div id="analyticsExamPerf"><p class="empty">Loading…</p></div></div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card"><div class="card-head"><h3>Assignment performance by subject</h3></div><div id="analyticsAssignmentPerf"><p class="empty">Loading…</p></div></div>
+          <div class="card"><div class="card-head"><h3>Course completion</h3></div><div id="analyticsCourseCompletion"><p class="empty">Loading…</p></div></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Teacher activity</h3></div>
+          <div class="table-scroll"><table class="table-simple"><thead><tr><th>Teacher</th><th>Courses</th><th>Exams created</th><th>Assignments created</th></tr></thead><tbody id="analyticsTeacherActivity"></tbody></table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>New student enrollment by month</h3></div>
+          <div id="analyticsEnrollmentTrend"><p class="empty">Loading…</p></div>
+          <p style="font-size:11px; color:var(--ink-soft); margin-top:10px;">Only counts students added since this tracking began — earlier enrollments have no recorded date and aren't included.</p>
         </div>
       </div>
     </main>
@@ -5119,6 +5150,7 @@ async function loadAdminDashboard(){
     await loadSchoolSettings();
     switchPeopleTab('teacher');
     await loadManagementData();
+    await loadAnalytics();
   } catch (err) {
     toast(err.message);
   }
@@ -5144,6 +5176,46 @@ async function loadManagementData(){
     toast(err.message);
   }
 }
+
+async function loadAnalytics(){
+  try {
+    const d = await api('/admin/analytics');
+
+    const kpis = document.getElementById('analyticsActivityKpis').children;
+    kpis[0].querySelector('.k-val').textContent = d.activity.dau;
+    kpis[1].querySelector('.k-val').textContent = d.activity.wau;
+    kpis[2].querySelector('.k-val').textContent = d.activity.mau;
+
+    document.getElementById('analyticsAttendance').innerHTML = d.attendanceBySection.length
+      ? d.attendanceBySection.map(r => `<div class="bar-row"><span class="b-label">${escapeHtml(r.sectionCode)}</span><div class="bar-track"><div class="bar-fill" style="width:${r.pct || 0}%;"></div></div><span class="b-val mono">${r.pct !== null ? r.pct + '%' : '—'}</span></div>`).join('')
+      : '<p class="empty">No attendance data yet.</p>';
+
+    const examD = await api('/admin/reports/exam-summary').catch(() => ({ bySubject: [] }));
+    document.getElementById('analyticsExamPerf').innerHTML = examD.bySubject.length
+      ? examD.bySubject.map(r => `<div class="bar-row"><span class="b-label">${escapeHtml(r.subject)}</span><div class="bar-track"><div class="bar-fill" style="width:${r.avgPct || 0}%;"></div></div><span class="b-val mono">${r.avgPct !== null ? r.avgPct + '%' : '—'}</span></div>`).join('')
+      : '<p class="empty">No graded exams yet.</p>';
+
+    document.getElementById('analyticsAssignmentPerf').innerHTML = d.assignmentPerfBySubject.length
+      ? d.assignmentPerfBySubject.map(r => `<div class="bar-row"><span class="b-label">${escapeHtml(r.subject)}</span><div class="bar-track"><div class="bar-fill" style="width:${r.avgMarks || 0}%;"></div></div><span class="b-val mono">${r.avgMarks !== null ? r.avgMarks : '—'}</span></div>`).join('')
+      : '<p class="empty">No graded assignments yet.</p>';
+
+    document.getElementById('analyticsCourseCompletion').innerHTML = d.courseCompletion.length
+      ? d.courseCompletion.slice(0, 8).map(c => `<div class="bar-row"><span class="b-label" style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(c.title)}</span><div class="bar-track"><div class="bar-fill" style="width:${c.completionPct}%;"></div></div><span class="b-val mono">${c.completionPct}%</span></div>`).join('')
+      : '<p class="empty">No course engagement data yet.</p>';
+
+    document.getElementById('analyticsTeacherActivity').innerHTML = d.teacherActivity.map(t =>
+      `<tr><td>${escapeHtml(t.name)}</td><td>${t.courseCount}</td><td>${t.examCount}</td><td>${t.assignmentCount}</td></tr>`
+    ).join('') || '<tr><td colspan="4">No teachers yet.</td></tr>';
+
+    const maxMonthly = Math.max(1, ...d.enrollmentTrend.map(m => m.count));
+    document.getElementById('analyticsEnrollmentTrend').innerHTML = d.enrollmentTrend.length
+      ? d.enrollmentTrend.map(m => `<div class="bar-row"><span class="b-label">${escapeHtml(m.month)}</span><div class="bar-track"><div class="bar-fill" style="width:${(m.count/maxMonthly)*100}%;"></div></div><span class="b-val mono">${m.count}</span></div>`).join('')
+      : '<p class="empty">No dated enrollments recorded yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 
 async function loadPermissionCatalog(){
   const d = await api('/management/permissions');

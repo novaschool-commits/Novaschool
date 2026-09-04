@@ -749,6 +749,71 @@ router.get('/reports/admissions-summary', requirePermission('students.view'), as
   res.json({ byStatus: rows.map(r => ({ status: r.status, count: Number(r.c) })) });
 }));
 
+// ---------- Analytics Command Center ----------
+// Every number here comes from a real query — no synthetic trend lines.
+// Some spec-requested metrics (feature usage, virtual classroom/lab usage,
+// AI usage, true login-history trends) have no event tracking in the
+// current schema, so they're intentionally left out rather than faked.
+router.get('/analytics', requirePermission('reports.view'), asyncHandler(async (req, res) => {
+  const activity = await get(
+    "SELECT COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '1 day') AS dau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '7 days') AS wau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '30 days') AS mau FROM users"
+  );
+
+  const attendanceBySection = await all(
+    `SELECT s.section_code,
+            ROUND(100.0 * SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) / NULLIF(COUNT(a.id),0), 1) AS pct
+     FROM sections s LEFT JOIN students st ON st.section_code = s.section_code
+     LEFT JOIN attendance a ON a.student_id = st.id
+     GROUP BY s.section_code ORDER BY s.section_code`
+  );
+
+  const assignmentPerfBySubject = await all(
+    `SELECT a.subject, ROUND(AVG(s.marks),1) AS avg_marks, COUNT(s.id) AS graded_count
+     FROM submissions s JOIN assignments a ON a.id = s.assignment_id
+     WHERE s.status = 'graded' AND s.marks IS NOT NULL
+     GROUP BY a.subject ORDER BY a.subject`
+  );
+
+  const courseCompletionRaw = await all(
+    `SELECT c.title,
+            (SELECT COUNT(*) FROM course_lessons cl JOIN course_topics ct ON ct.id = cl.topic_id WHERE ct.course_id = c.id) AS lesson_count,
+            (SELECT COUNT(DISTINCT cp.student_id) FROM course_progress cp JOIN course_lessons cl2 ON cl2.id = cp.lesson_id JOIN course_topics ct2 ON ct2.id = cl2.topic_id WHERE ct2.course_id = c.id) AS students_engaged,
+            (SELECT COUNT(*) FROM course_progress cp3 JOIN course_lessons cl3 ON cl3.id = cp3.lesson_id JOIN course_topics ct3 ON ct3.id = cl3.topic_id WHERE ct3.course_id = c.id) AS total_completions
+     FROM courses c WHERE c.status != 'draft'`
+  );
+
+  const teacherActivity = await all(
+    `SELECT t.id, t.first_name, t.last_name,
+            (SELECT COUNT(*) FROM courses WHERE owner_teacher_id = t.id) AS course_count,
+            (SELECT COUNT(*) FROM exams WHERE teacher_id = t.id) AS exam_count,
+            (SELECT COUNT(*) FROM assignments WHERE teacher_id = t.id) AS assignment_count
+     FROM teachers t ORDER BY t.last_name`
+  );
+
+  const enrollmentTrend = await all(
+    `SELECT TO_CHAR(created_at, 'YYYY-MM') AS month, COUNT(*) AS c
+     FROM students WHERE created_at IS NOT NULL
+     GROUP BY month ORDER BY month`
+  );
+
+  const courseCompletion = courseCompletionRaw.map(c => {
+    const lessonCount = Number(c.lesson_count);
+    const studentsEngaged = Number(c.students_engaged);
+    const possible = lessonCount * studentsEngaged;
+    const pct = possible > 0 ? Math.round((Number(c.total_completions) / possible) * 1000) / 10 : null;
+    return { title: c.title, completionPct: pct };
+  }).filter(c => c.completionPct !== null).sort((a, b) => b.completionPct - a.completionPct);
+
+  res.json({
+    activity: { dau: Number(activity.dau), wau: Number(activity.wau), mau: Number(activity.mau) },
+    attendanceBySection: attendanceBySection.map(r => ({ sectionCode: r.section_code, pct: r.pct !== null ? Number(r.pct) : null })),
+    assignmentPerfBySubject: assignmentPerfBySubject.map(r => ({ subject: r.subject, avgMarks: r.avg_marks !== null ? Number(r.avg_marks) : null, gradedCount: Number(r.graded_count) })),
+    courseCompletion,
+    teacherActivity: teacherActivity.map(t => ({ id: t.id, name: `${t.first_name} ${t.last_name}`, courseCount: Number(t.course_count), examCount: Number(t.exam_count), assignmentCount: Number(t.assignment_count) })),
+    enrollmentTrend: enrollmentTrend.map(r => ({ month: r.month, count: Number(r.c) }))
+  });
+}));
+
 // ---------- Grade configuration (letter-grade bands) ----------
 
 router.get('/grade-bands', requirePermission('results.view'), asyncHandler(async (req, res) => {
