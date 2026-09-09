@@ -859,6 +859,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="organization" onclick="showAdminPage('organization')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg><span class="txt">Organization</span></a>
         <a class="side-link" data-page="analytics" onclick="showAdminPage('analytics')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="txt">Analytics</span></a>
         <a class="side-link" data-page="system" onclick="showAdminPage('system')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/><circle cx="8" cy="14" r="1.5"/><path d="M12 14h6"/></svg><span class="txt">System</span></a>
+        <a class="side-link" data-page="security" onclick="showAdminPage('security')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9.5 12l1.8 1.8L14.5 10"/></svg><span class="txt">Security</span></a>
         <a class="side-link" data-page="academics" onclick="showAdminPage('academics')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M6 10v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg><span class="txt">Academics</span></a>
       </nav>
       <div class="side-foot">
@@ -1161,6 +1162,26 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div class="card">
           <div class="card-head"><h3>System health</h3><button class="btn btn-outline btn-sm" onclick="loadSystemHealth()">Refresh</button></div>
           <div id="systemHealthList"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="security">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Suspicious login activity</h3></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">Emails with 3 or more failed login attempts in the last 24 hours.</p>
+          <div id="securitySuspicious"><p class="empty">Loading…</p></div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Recent logins</h3></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">Each account's most recent login. "Sign out" ends all of that person's current sessions everywhere — the app doesn't track individual devices, so this isn't per-device.</p>
+          <div id="securityRecentLogins"><p class="empty">Loading…</p></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Security-relevant activity</h3></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">The same audit trail shown in Management → Audit log.</p>
+          <div id="securityAuditFeed"><p class="empty">Loading…</p></div>
         </div>
       </div>
     </main>
@@ -5166,6 +5187,7 @@ async function loadAdminDashboard(){
     await loadManagementData();
     await loadAnalytics();
     await loadAtRiskStudents();
+    await loadSecurityCenter();
     await loadSystemHealth();
   } catch (err) {
     toast(err.message);
@@ -5241,6 +5263,41 @@ async function loadAtRiskStudents(){
             <ul style="margin:6px 0 0 16px; font-size:12px; color:var(--ink-soft);">${s.reasons.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul></div></div>
         </div>`).join('')
       : '<p class="empty">No students currently match any of the tracked signals.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadSecurityCenter(){
+  try {
+    const d = await api('/admin/security/overview');
+    document.getElementById('securitySuspicious').innerHTML = d.suspiciousLogins.length
+      ? d.suspiciousLogins.map(s => `<div class="list-row"><div class="l-main"><span class="tag" style="background:var(--magenta);">${s.attempts} attempts</span><div class="l-title">${escapeHtml(s.email)}</div></div><span class="mono" style="font-size:11.5px; color:var(--ink-soft);">Last: ${fmtDate(s.lastAttempt)}</span></div>`).join('')
+      : '<p class="empty">No suspicious login activity in the last 24 hours.</p>';
+
+    document.getElementById('securityRecentLogins').innerHTML = d.recentLogins.length
+      ? d.recentLogins.map(u => `<div class="list-row"><div class="l-main"><span class="tag" style="background:var(--teal);">${escapeHtml(u.role)}</span><div><div class="l-title">${escapeHtml(u.email)}</div><div class="l-sub">${fmtDate(u.lastLogin)}</div></div></div><button class="btn btn-outline btn-sm" onclick="forceLogoutUser(${u.id}, '${escapeHtml(u.email)}')">Sign out</button></div>`).join('')
+      : '<p class="empty">No login activity recorded yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+
+  try {
+    const auditD = await api('/management/audit-logs?limit=30');
+    document.getElementById('securityAuditFeed').innerHTML = auditD.logs.length
+      ? `<div class="table-scroll"><table class="table-simple"><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th></tr></thead><tbody>${auditD.logs.map(l => `
+        <tr><td class="mono" style="white-space:nowrap;">${fmtDate(l.createdAt)}</td><td>${escapeHtml(l.actorEmail || l.actorRole || '—')}</td><td>${escapeHtml(l.action)}</td><td>${escapeHtml(l.targetType || '')}${l.targetId ? ' #' + escapeHtml(String(l.targetId)) : ''}</td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="empty">No activity logged yet.</p>';
+  } catch (err) {
+    // non-fatal — the audit feed is a convenience duplicate of the Management tab's
+  }
+}
+
+async function forceLogoutUser(userId, email){
+  if (!confirm(`Sign ${email} out of all sessions? They'll need to log in again.`)) return;
+  try {
+    const res = await api(`/admin/security/force-logout/${userId}`, { method: 'POST' });
+    toast(res.message);
   } catch (err) {
     toast(err.message);
   }

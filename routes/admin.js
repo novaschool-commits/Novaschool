@@ -873,6 +873,37 @@ router.get('/at-risk-students', requirePermission('students.view'), asyncHandler
 // architecture — never a fabricated "99.9% uptime" style number. Where the
 // app genuinely doesn't track something (error rate, background jobs),
 // that's stated plainly instead of invented.
+// ---------- Security Center (Super Admin only) ----------
+// "Active sessions" here means each account's most recent login — the app
+// has no per-device/per-session tracking, only one token_version per user.
+// "Terminate session" therefore ends ALL of that user's current sessions at
+// once (forces re-login everywhere), not one specific device — a real,
+// working action, just coarser-grained than per-device revocation.
+
+router.get('/security/overview', requireRole('admin'), asyncHandler(async (req, res) => {
+  const recentLogins = await all(
+    `SELECT id, email, role, last_login FROM users WHERE last_login IS NOT NULL ORDER BY last_login DESC LIMIT 20`
+  );
+  const suspiciousLogins = await all(
+    `SELECT email, COUNT(*) AS attempts, MAX(attempted_at) AS last_attempt
+     FROM failed_login_attempts WHERE attempted_at >= NOW() - INTERVAL '24 hours'
+     GROUP BY email HAVING COUNT(*) >= 3 ORDER BY attempts DESC`
+  );
+  res.json({
+    recentLogins: recentLogins.map(u => ({ id: u.id, email: u.email, role: u.role, lastLogin: u.last_login })),
+    suspiciousLogins: suspiciousLogins.map(s => ({ email: s.email, attempts: Number(s.attempts), lastAttempt: s.last_attempt }))
+  });
+}));
+
+router.post('/security/force-logout/:userId', requireRole('admin'), asyncHandler(async (req, res) => {
+  const userId = Number(req.params.userId);
+  const user = await get('SELECT id, email FROM users WHERE id = $1', [userId]);
+  if (!user) return res.status(404).json({ error: 'User not found.' });
+  await run('UPDATE users SET token_version = token_version + 1 WHERE id = $1', [userId]);
+  await logAudit(req, 'security.force_logout', 'user', userId, { email: user.email });
+  res.json({ message: `${user.email} has been signed out of all sessions and will need to log in again.` });
+}));
+
 router.get('/system-health', requireRole('admin'), asyncHandler(async (req, res) => {
   const checks = [];
 

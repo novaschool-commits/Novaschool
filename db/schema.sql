@@ -667,3 +667,15 @@ CREATE TABLE IF NOT EXISTS grade_bands (
   min_pct NUMERIC NOT NULL,
   max_pct NUMERIC NOT NULL
 );
+
+-- Security Center foundation. The app uses stateless JWTs with no session
+-- table, so there was previously no way to actually end a user's session —
+-- token_version makes that real: bumping it invalidates every token already
+-- issued to that user, without needing to track individual sessions/devices.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS failed_login_attempts (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  attempted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);

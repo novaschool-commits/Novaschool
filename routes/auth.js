@@ -38,6 +38,7 @@ router.post('/login', async (req, res) => {
 
     const user = await get('SELECT * FROM users WHERE email = $1', [String(email).toLowerCase().trim()]);
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
+      await run('INSERT INTO failed_login_attempts (email) VALUES ($1)', [String(email).toLowerCase().trim()]);
       return res.status(401).json({ error: 'Incorrect email or password.' });
     }
 
@@ -56,7 +57,7 @@ router.post('/login', async (req, res) => {
     }
 
     const profile = await profileFor(user);
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, SECRET, { expiresIn: '12h' });
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role, tokenVersion: user.token_version || 0 }, SECRET, { expiresIn: '12h' });
     await run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
     res.json({
