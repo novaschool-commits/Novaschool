@@ -871,7 +871,13 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     </aside>
     <main class="app-main">
       <div class="app-topbar"><div><h1>School overview</h1><p class="sub">Live counts from the database.</p></div>
-        <div class="top-actions"><button class="btn btn-outline btn-sm" onclick="exportAdminOverviewCsv()">Export report</button></div></div>
+        <div class="top-actions" style="display:flex; align-items:center; gap:8px;">
+          <div style="position:relative;">
+            <button class="btn btn-outline btn-sm" onclick="toggleAdminNotifPanel()">Notifications <span id="adminNotifBadge" class="tag" style="display:none; background:var(--magenta); margin-left:4px;">0</span></button>
+            <div id="adminNotifPanel" style="display:none; position:absolute; right:0; top:38px; width:300px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); z-index:60; max-height:360px; overflow-y:auto; padding:10px;"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="exportAdminOverviewCsv()">Export report</button>
+        </div></div>
 
       <div class="admin-page active" data-page="overview">
       <div class="grid-4" style="margin-bottom:20px;" id="adminKpis">
@@ -5188,6 +5194,7 @@ async function loadAdminDashboard(){
     await loadAnalytics();
     await loadAtRiskStudents();
     await loadSecurityCenter();
+    await loadAdminNotifications();
     await loadSystemHealth();
   } catch (err) {
     toast(err.message);
@@ -5302,6 +5309,58 @@ async function forceLogoutUser(userId, email){
     toast(err.message);
   }
 }
+
+/* ============================== Admin notifications ============================== */
+
+const ADMIN_NOTIF_PRIORITY_COLOR = { normal: 'var(--ink-soft)', important: 'var(--amber)', critical: 'var(--magenta)' };
+
+async function loadAdminNotifications(){
+  try {
+    const d = await api('/admin/my-notifications');
+    const badge = document.getElementById('adminNotifBadge');
+    if (d.unreadCount > 0) { badge.style.display = 'inline-block'; badge.textContent = d.unreadCount; }
+    else { badge.style.display = 'none'; }
+    const panel = document.getElementById('adminNotifPanel');
+    panel.innerHTML = d.notifications.length
+      ? `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b style="font-size:12.5px;">Notifications</b>${d.unreadCount > 0 ? `<button class="btn btn-outline btn-sm" style="padding:3px 8px; font-size:11px;" onclick="markAllAdminNotificationsRead()">Mark all read</button>` : ''}</div>
+        ${d.notifications.map(n => `
+          <div onclick="openAdminNotification(${n.id}, '${n.targetPage || ''}')" style="padding:8px; border-radius:8px; margin-bottom:4px; cursor:pointer; background:${n.read ? 'transparent' : 'var(--gold-bg)'};">
+            <div style="display:flex; align-items:center; gap:6px;"><span class="tag" style="background:${ADMIN_NOTIF_PRIORITY_COLOR[n.priority]}; font-size:10px;">${n.priority}</span><div style="font-size:12px;">${escapeHtml(n.message)}</div></div>
+            <div style="font-size:10.5px; color:var(--ink-soft); margin-top:2px;">${fmtDate(n.createdAt)}</div>
+          </div>`).join('')}`
+      : '<p class="empty" style="font-size:12px;">No notifications yet.</p>';
+  } catch (err) {
+    // silent — notifications are a convenience, not core functionality
+  }
+}
+
+function toggleAdminNotifPanel(){
+  const panel = document.getElementById('adminNotifPanel');
+  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+}
+
+async function openAdminNotification(id, targetPage){
+  try { await api(`/admin/notifications/${id}/read`, { method: 'POST' }); } catch (err) { /* non-fatal */ }
+  document.getElementById('adminNotifPanel').style.display = 'none';
+  if (targetPage) showAdminPage(targetPage);
+  loadAdminNotifications();
+}
+
+async function markAllAdminNotificationsRead(){
+  try {
+    await api('/admin/notifications/read-all', { method: 'POST' });
+    loadAdminNotifications();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#adminNotifPanel') && !e.target.closest('[onclick="toggleAdminNotifPanel()"]')) {
+    const el = document.getElementById('adminNotifPanel');
+    if (el) el.style.display = 'none';
+  }
+});
 
 const HEALTH_STATUS_COLOR = { healthy: 'var(--green)', warning: 'var(--amber)', error: 'var(--magenta)', info: 'var(--ink-soft)' };
 const HEALTH_STATUS_LABEL = { healthy: 'Healthy', warning: 'Warning', error: 'Error', info: 'Info' };

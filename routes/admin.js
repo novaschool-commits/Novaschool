@@ -2,7 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { get, all, run } = require('../db');
 const { authenticate, requireRole, SECRET } = require('../middleware/auth');
-const { requirePermission, logAudit, userHasPermission } = require('../middleware/permissions');
+const { requirePermission, logAudit, userHasPermission, notifyAdmin } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
@@ -699,6 +699,9 @@ router.post('/courses/:id/set-status', requirePermission('courses.edit', 'course
     [status, id]
   );
   await logAudit(req, 'course.status_changed', 'course', id, { title: course.title, from: course.status, to: status });
+  if (status === 'published' && course.status !== 'published') {
+    await notifyAdmin('course.published', `"${course.title}" was published to the public course catalog.`, 'important', 'overview');
+  }
   res.json({ message: `"${course.title}" moved to ${status.replace('_', ' ')}.` });
 }));
 
@@ -879,6 +882,27 @@ router.get('/at-risk-students', requirePermission('students.view'), asyncHandler
 // "Terminate session" therefore ends ALL of that user's current sessions at
 // once (forces re-login everywhere), not one specific device — a real,
 // working action, just coarser-grained than per-device revocation.
+
+// ---------- Admin Notification Center ----------
+
+router.get('/my-notifications', requireRole('admin'), asyncHandler(async (req, res) => {
+  const rows = await all('SELECT id, type, message, priority, target_page, read_at, created_at FROM admin_notifications ORDER BY created_at DESC LIMIT 30');
+  const unreadCount = rows.filter(r => !r.read_at).length;
+  res.json({
+    notifications: rows.map(r => ({ id: r.id, type: r.type, message: r.message, priority: r.priority, targetPage: r.target_page, read: !!r.read_at, createdAt: r.created_at })),
+    unreadCount
+  });
+}));
+
+router.post('/notifications/:id/read', requireRole('admin'), asyncHandler(async (req, res) => {
+  await run('UPDATE admin_notifications SET read_at = CURRENT_TIMESTAMP WHERE id = $1 AND read_at IS NULL', [Number(req.params.id)]);
+  res.json({ message: 'Marked as read.' });
+}));
+
+router.post('/notifications/read-all', requireRole('admin'), asyncHandler(async (req, res) => {
+  await run('UPDATE admin_notifications SET read_at = CURRENT_TIMESTAMP WHERE read_at IS NULL');
+  res.json({ message: 'All notifications marked as read.' });
+}));
 
 router.get('/security/overview', requireRole('admin'), asyncHandler(async (req, res) => {
   const recentLogins = await all(
@@ -1063,6 +1087,7 @@ router.post('/exams/:id/publish', requirePermission('assignments.edit'), asyncHa
   if (Number(countRow.c) === 0) return res.status(400).json({ error: 'Add at least one question before publishing.' });
   await run('UPDATE exams SET is_published = TRUE WHERE id = $1', [examId]);
   await logAudit(req, 'exam.published', 'exam', examId, { title: exam.title });
+  await notifyAdmin('exam.published', `"${exam.title}" was published for section ${exam.section_code}.`, 'important', 'overview');
   res.json({ message: 'Test published — students in this section can now see and take it.' });
 }));
 

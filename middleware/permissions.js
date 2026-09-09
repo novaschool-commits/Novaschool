@@ -82,4 +82,15 @@ async function notifyStaffWithPermission(permissionKey, type, message, targetPag
   }
 }
 
-module.exports = { requirePermission, logAudit, userHasPermission, notifyStaffWithPermission };
+// Notify admins of a real event. Since admin has no per-role permission
+// targeting, this is simply "visible to any admin" rather than routed to
+// specific people, unlike notifyStaffWithPermission above.
+async function notifyAdmin(type, message, priority, targetPage) {
+  const { run } = require('../db');
+  await run(
+    'INSERT INTO admin_notifications (type, message, priority, target_page) VALUES ($1,$2,$3,$4)',
+    [type, message, priority || 'normal', targetPage || null]
+  );
+}
+
+module.exports = { requirePermission, logAudit, userHasPermission, notifyStaffWithPermission, notifyAdmin };

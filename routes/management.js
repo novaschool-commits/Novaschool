@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { all, get, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
-const { requirePermission, logAudit, userHasPermission } = require('../middleware/permissions');
+const { requirePermission, logAudit, userHasPermission, notifyAdmin } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
 
 const router = express.Router();
@@ -425,6 +425,9 @@ router.post('/staff/invite', requirePermission('staff.invite'), asyncHandler(asy
   );
 
   await logAudit(req, 'staff.invited', 'staff', staffRow.id, { email: normalizedEmail });
+  if (req.user.role === 'staff') {
+    await notifyAdmin('staff.invited', `A staff member invited a new staff account: ${normalizedEmail}.`, 'normal', 'management');
+  }
 
   // No email-sending is wired up yet — return the activation token so the
   // admin can share the link manually. Wire this to a real mailer before

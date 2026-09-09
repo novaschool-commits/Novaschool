@@ -679,3 +679,33 @@ CREATE TABLE IF NOT EXISTS failed_login_attempts (
   email TEXT NOT NULL,
   attempted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Admin Notification Center. Kept as its own table rather than merging into
+-- staff_notifications (which is keyed to a specific staff_id) — this app
+-- can have multiple Super Admin accounts, and there's no per-admin
+-- read-tracking need here, so notifications broadcast to all admins and a
+-- single read_at covers everyone (whichever admin sees it first).
+CREATE TABLE IF NOT EXISTS admin_notifications (
+  id SERIAL PRIMARY KEY,
+  type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','important','critical')),
+  target_page TEXT,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admin-facing notifications. Kept as its own table rather than reusing
+-- staff_notifications: admin has no per-role permission targeting to route
+-- against, so these are simply "visible to any admin," with read_at shared
+-- across admins rather than tracked per-account — a deliberate
+-- simplification given this app typically has very few admin accounts.
+CREATE TABLE IF NOT EXISTS admin_notifications (
+  id SERIAL PRIMARY KEY,
+  type TEXT NOT NULL,
+  message TEXT NOT NULL,
+  priority TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('normal','important','critical')),
+  target_page TEXT,
+  read_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);

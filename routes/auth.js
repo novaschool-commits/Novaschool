@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { get, run } = require('../db');
 const { authenticate, SECRET } = require('../middleware/auth');
+const { notifyAdmin } = require('../middleware/permissions');
 
 const router = express.Router();
 
@@ -38,7 +39,17 @@ router.post('/login', async (req, res) => {
 
     const user = await get('SELECT * FROM users WHERE email = $1', [String(email).toLowerCase().trim()]);
     if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-      await run('INSERT INTO failed_login_attempts (email) VALUES ($1)', [String(email).toLowerCase().trim()]);
+      const normalizedEmail = String(email).toLowerCase().trim();
+      await run('INSERT INTO failed_login_attempts (email) VALUES ($1)', [normalizedEmail]);
+      const recentFails = await get(
+        "SELECT COUNT(*) AS c FROM failed_login_attempts WHERE email = $1 AND attempted_at >= NOW() - INTERVAL '24 hours'",
+        [normalizedEmail]
+      );
+      // Fire once, exactly when the count crosses the threshold — not on
+      // every subsequent failure — so this doesn't spam the admin inbox.
+      if (Number(recentFails.c) === 3) {
+        await notifyAdmin('security.suspicious_login', `3+ failed login attempts for ${normalizedEmail} in the last 24 hours.`, 'critical', 'security');
+      }
       return res.status(401).json({ error: 'Incorrect email or password.' });
     }
 
