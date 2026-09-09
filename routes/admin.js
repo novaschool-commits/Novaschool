@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { get, all, run } = require('../db');
-const { authenticate, requireRole } = require('../middleware/auth');
+const { authenticate, requireRole, SECRET } = require('../middleware/auth');
 const { requirePermission, logAudit, userHasPermission } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
 
@@ -812,6 +812,103 @@ router.get('/analytics', requirePermission('reports.view'), asyncHandler(async (
     teacherActivity: teacherActivity.map(t => ({ id: t.id, name: `${t.first_name} ${t.last_name}`, courseCount: Number(t.course_count), examCount: Number(t.exam_count), assignmentCount: Number(t.assignment_count) })),
     enrollmentTrend: enrollmentTrend.map(r => ({ month: r.month, count: Number(r.c) }))
   });
+}));
+
+// ---------- At-Risk Student Insights ----------
+// Every flag here is a specific, measurable fact with a stated threshold —
+// never a summary judgment like "weak" or "struggling." Small sample sizes
+// are excluded (e.g. a student with only 2 attendance records isn't flagged
+// on a single absence) so this doesn't overreach from thin data. This is
+// informational only — it does not affect any student's account or grades.
+router.get('/at-risk-students', requirePermission('students.view'), asyncHandler(async (req, res) => {
+  const flagsByStudent = new Map();
+  const addFlag = (id, name, sectionCode, text) => {
+    if (!flagsByStudent.has(id)) flagsByStudent.set(id, { id, name, sectionCode, reasons: [] });
+    flagsByStudent.get(id).reasons.push(text);
+  };
+
+  const lowAttendance = await all(
+    `SELECT st.id, st.first_name, st.last_name, st.section_code,
+            ROUND(100.0 * SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) / COUNT(a.id), 1) AS pct,
+            COUNT(a.id) AS record_count
+     FROM students st JOIN attendance a ON a.student_id = st.id
+     GROUP BY st.id HAVING COUNT(a.id) >= 5
+        AND ROUND(100.0 * SUM(CASE WHEN a.status='present' THEN 1 ELSE 0 END) / COUNT(a.id), 1) < 75`
+  );
+  lowAttendance.forEach(r => addFlag(r.id, `${r.first_name} ${r.last_name}`, r.section_code, `Attendance is ${r.pct}% over the last ${r.record_count} recorded days (below 75%).`));
+
+  const lowAssignmentScores = await all(
+    `SELECT st.id, st.first_name, st.last_name, st.section_code, COUNT(*) AS low_count
+     FROM submissions s JOIN assignments a ON a.id = s.assignment_id JOIN students st ON st.id = s.student_id
+     WHERE s.status = 'graded' AND s.marks IS NOT NULL AND s.marks < 0.5 * a.max_marks
+     GROUP BY st.id HAVING COUNT(*) >= 2`
+  );
+  lowAssignmentScores.forEach(r => addFlag(r.id, `${r.first_name} ${r.last_name}`, r.section_code, `Scored below half marks on ${r.low_count} graded assignments.`));
+
+  const lowExamAvg = await all(
+    `SELECT st.id, st.first_name, st.last_name, st.section_code,
+            ROUND(AVG(100.0 * ea.total_score / mx.max_marks), 1) AS avg_pct, COUNT(*) AS attempt_count
+     FROM exam_attempts ea
+     JOIN students st ON st.id = ea.student_id
+     JOIN (SELECT exam_id, SUM(marks) AS max_marks FROM exam_questions GROUP BY exam_id) mx ON mx.exam_id = ea.exam_id
+     WHERE ea.status = 'graded'
+     GROUP BY st.id HAVING COUNT(*) >= 2 AND AVG(100.0 * ea.total_score / mx.max_marks) < 50`
+  );
+  lowExamAvg.forEach(r => addFlag(r.id, `${r.first_name} ${r.last_name}`, r.section_code, `Averaging ${r.avg_pct}% across ${r.attempt_count} graded tests (below 50%).`));
+
+  const inactive = await all(
+    `SELECT st.id, st.first_name, st.last_name, st.section_code, u.last_login
+     FROM students st JOIN users u ON u.id = st.user_id
+     WHERE u.last_login IS NOT NULL AND u.last_login < NOW() - INTERVAL '14 days'`
+  );
+  inactive.forEach(r => addFlag(r.id, `${r.first_name} ${r.last_name}`, r.section_code, `Hasn't logged in since ${new Date(r.last_login).toISOString().slice(0, 10)}.`));
+
+  const students = Array.from(flagsByStudent.values()).sort((a, b) => b.reasons.length - a.reasons.length);
+  res.json({ students, note: 'These are measurable signals only — not a conclusion about any student. Please use judgment and follow up directly before drawing conclusions.' });
+}));
+
+
+// ---------- System Health (Super Admin only) ----------
+// Every check here is a real, live probe or a factual statement about the
+// architecture — never a fabricated "99.9% uptime" style number. Where the
+// app genuinely doesn't track something (error rate, background jobs),
+// that's stated plainly instead of invented.
+router.get('/system-health', requireRole('admin'), asyncHandler(async (req, res) => {
+  const checks = [];
+
+  const dbStart = Date.now();
+  try {
+    await get('SELECT 1 AS ok');
+    const ms = Date.now() - dbStart;
+    checks.push({ name: 'Database connectivity', status: ms < 300 ? 'healthy' : ms < 1500 ? 'warning' : 'error', detail: `Responded in ${ms}ms` });
+  } catch (err) {
+    checks.push({ name: 'Database connectivity', status: 'error', detail: 'Could not reach the database.' });
+  }
+
+  checks.push({ name: 'API server', status: 'healthy', detail: 'Responding (this request completed).' });
+
+  const usingDefaultSecret = SECRET === 'novaschool-dev-secret-change-me';
+  checks.push({
+    name: 'Authentication', status: usingDefaultSecret ? 'warning' : 'healthy',
+    detail: usingDefaultSecret ? 'JWT_SECRET is not set — running on the insecure default. Set it in the environment.' : 'JWT_SECRET is configured.'
+  });
+
+  let dbSizeText = 'Unknown';
+  try {
+    const sizeRow = await get('SELECT pg_size_pretty(pg_database_size(current_database())) AS size');
+    dbSizeText = sizeRow.size;
+  } catch (err) { /* non-fatal — informational only */ }
+  checks.push({ name: 'Database storage used', status: 'info', detail: dbSizeText });
+
+  checks.push({ name: 'Background jobs', status: 'info', detail: 'None configured — this app has no queue or scheduled-job system.' });
+  checks.push({ name: 'Email/SMS integration', status: 'info', detail: 'Not connected.' });
+  checks.push({ name: 'Payment gateway integration', status: 'info', detail: 'Not connected — fee payments are claimed by parents and confirmed manually by staff.' });
+  checks.push({ name: 'Error rate', status: 'info', detail: 'Not tracked — no request/error logging is configured yet.' });
+
+  const uptimeSeconds = Math.floor(process.uptime());
+  checks.push({ name: 'Server process uptime', status: 'info', detail: `${Math.floor(uptimeSeconds / 3600)}h ${Math.floor((uptimeSeconds % 3600) / 60)}m (since last deploy or restart)` });
+
+  res.json({ checks });
 }));
 
 // ---------- Grade configuration (letter-grade bands) ----------
