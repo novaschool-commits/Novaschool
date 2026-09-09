@@ -680,6 +680,16 @@ CREATE TABLE IF NOT EXISTS failed_login_attempts (
   attempted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Real, editable school settings for the Settings reorganization. Logo/
+-- color branding is intentionally NOT made dynamic here — the site's visual
+-- identity is baked into the HTML/CSS, and rebuilding that as a live-
+-- configurable theming system is a much larger change than this warrants.
+ALTER TABLE school_settings ADD COLUMN IF NOT EXISTS school_name TEXT;
+ALTER TABLE school_settings ADD COLUMN IF NOT EXISTS contact_email TEXT;
+ALTER TABLE school_settings ADD COLUMN IF NOT EXISTS contact_phone TEXT;
+ALTER TABLE school_settings ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE school_settings ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'Asia/Karachi';
+
 -- Admin Notification Center. Kept as its own table rather than merging into
 -- staff_notifications (which is keyed to a specific staff_id) — this app
 -- can have multiple Super Admin accounts, and there's no per-admin

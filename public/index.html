@@ -860,6 +860,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="analytics" onclick="showAdminPage('analytics')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="txt">Analytics</span></a>
         <a class="side-link" data-page="system" onclick="showAdminPage('system')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/><circle cx="8" cy="14" r="1.5"/><path d="M12 14h6"/></svg><span class="txt">System</span></a>
         <a class="side-link" data-page="security" onclick="showAdminPage('security')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9.5 12l1.8 1.8L14.5 10"/></svg><span class="txt">Security</span></a>
+        <a class="side-link" data-page="settings" onclick="showAdminPage('settings')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="txt">Settings</span></a>
         <a class="side-link" data-page="academics" onclick="showAdminPage('academics')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M6 10v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg><span class="txt">Academics</span></a>
       </nav>
       <div class="side-foot">
@@ -993,20 +994,6 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <select class="grade-input" style="width:100%; grid-column:1/-1;" id="atTeacher"><option value="">Teacher (optional)</option></select>
         </div>
         <button class="btn btn-ink btn-sm" onclick="addAdminTimetablePeriod()">Add period</button>
-      </div>
-
-      <div class="card" style="margin-top:20px;">
-        <div class="card-head"><h3>Examination authority status</h3></div>
-        <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Controls whether higher-grade (9–12, O/A Level) report cards are marked official-from-Nova-School or arranged through an external board. Grades 1–8 are always published online by the school regardless of this setting.</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-          <select class="grade-input" style="width:100%;" id="settingsStatus">
-            <option value="not_registered">Not registered — results arranged manually via boards</option>
-            <option value="pending">Registration pending</option>
-            <option value="registered">Registered — Novaschool.pk issues official results</option>
-          </select>
-          <input class="grade-input" style="width:100%;" id="settingsAuthorityName" placeholder="Board/authority name (optional)">
-        </div>
-        <button class="btn btn-ink btn-sm" onclick="saveSchoolSettings()">Save</button>
       </div>
 
       <div class="card" style="margin-top:20px;">
@@ -1188,6 +1175,68 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <div class="card-head"><h3>Security-relevant activity</h3></div>
           <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">The same audit trail shown in Management → Audit log.</p>
           <div id="securityAuditFeed"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="settings">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>School settings</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="settingsSchoolName" placeholder="School name">
+            <input class="grade-input" style="width:100%;" id="settingsContactEmail" placeholder="Contact email">
+            <input class="grade-input" style="width:100%;" id="settingsContactPhone" placeholder="Contact phone">
+            <input class="grade-input" style="width:100%;" id="settingsTimezone" placeholder="Timezone (e.g. Asia/Karachi)">
+            <input class="grade-input" style="width:100%; grid-column:1/-1;" id="settingsAddress" placeholder="Address">
+          </div>
+          <p style="font-size:11px; color:var(--ink-soft); margin-bottom:12px;">Logo and color branding aren't configurable from here yet — they're built into the site's design directly.</p>
+          <button class="btn btn-ink btn-sm" onclick="saveSchoolSettings()">Save</button>
+        </div>
+
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Examination authority status</h3></div>
+          <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">Controls whether higher-grade (9–12, O/A Level) report cards are marked official-from-Nova-School or arranged through an external board. Grades 1–8 are always published online by the school regardless of this setting.</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select class="grade-input" style="width:100%;" id="settingsStatus">
+              <option value="not_registered">Not registered — results arranged manually via boards</option>
+              <option value="pending">Registration pending</option>
+              <option value="registered">Registered — Novaschool.pk issues official results</option>
+            </select>
+            <input class="grade-input" style="width:100%;" id="settingsAuthorityName" placeholder="Board/authority name (optional)">
+          </div>
+          <button class="btn btn-ink btn-sm" onclick="saveSchoolSettings()">Save</button>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card">
+            <div class="card-head"><h3>Academic settings</h3></div>
+            <p style="font-size:12.5px; color:var(--ink-soft);">Academic years and terms are managed in the <a href="javascript:void(0)" onclick="showAdminPage('organization')" style="color:var(--indigo);">Organization</a> tab. Grade bands are managed from the staff dashboard's Results page.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>User settings</h3></div>
+            <p style="font-size:12.5px; color:var(--ink-soft);">Roles, permissions, and staff accounts are managed in the <a href="javascript:void(0)" onclick="showAdminPage('management')" style="color:var(--indigo);">Management</a> tab.</p>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card">
+            <div class="card-head"><h3>Notification settings</h3></div>
+            <p style="font-size:12.5px; color:var(--ink-soft);">Notifications are in-app only right now (bell icons for staff and admins). No email or SMS delivery is connected yet, so there's nothing to configure here beyond what already happens automatically.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Integration settings</h3></div>
+            <p style="font-size:12.5px; color:var(--ink-soft);">No payment gateway, email service, or SMS provider is connected. Fees are tracked as claim-and-confirm (no live payment processing).</p>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>AI settings</h3></div>
+            <p style="font-size:12.5px; color:var(--ink-soft);">No AI features (tutor, content generation, assessments) are built into NovaSchool yet. This is a placeholder for when that's planned.</p>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>Security settings</h3></div>
+            <p style="font-size:12.5px; color:var(--ink-soft);">Session activity, suspicious logins, and force-logout live in the <a href="javascript:void(0)" onclick="showAdminPage('security')" style="color:var(--indigo);">Security</a> tab. Granular policy controls (password rules, session length) aren't configurable yet — they're fixed in the code.</p>
+          </div>
         </div>
       </div>
     </main>
@@ -6344,6 +6393,11 @@ async function loadSchoolSettings(){
     const d = await api('/admin/settings');
     document.getElementById('settingsStatus').value = d.examAuthorityStatus;
     document.getElementById('settingsAuthorityName').value = d.examAuthorityName || '';
+    document.getElementById('settingsSchoolName').value = d.schoolName || '';
+    document.getElementById('settingsContactEmail').value = d.contactEmail || '';
+    document.getElementById('settingsContactPhone').value = d.contactPhone || '';
+    document.getElementById('settingsAddress').value = d.address || '';
+    document.getElementById('settingsTimezone').value = d.timezone || '';
   } catch (err) {
     toast(err.message);
   }
@@ -6352,8 +6406,13 @@ async function loadSchoolSettings(){
 async function saveSchoolSettings(){
   const exam_authority_status = document.getElementById('settingsStatus').value;
   const exam_authority_name = document.getElementById('settingsAuthorityName').value.trim();
+  const school_name = document.getElementById('settingsSchoolName').value.trim();
+  const contact_email = document.getElementById('settingsContactEmail').value.trim();
+  const contact_phone = document.getElementById('settingsContactPhone').value.trim();
+  const address = document.getElementById('settingsAddress').value.trim();
+  const timezone = document.getElementById('settingsTimezone').value.trim();
   try {
-    const res = await api('/admin/settings', { method: 'POST', body: JSON.stringify({ exam_authority_status, exam_authority_name }) });
+    const res = await api('/admin/settings', { method: 'POST', body: JSON.stringify({ exam_authority_status, exam_authority_name, school_name, contact_email, contact_phone, address, timezone }) });
     toast(res.message);
   } catch (err) {
     toast(err.message);

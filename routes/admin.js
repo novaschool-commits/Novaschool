@@ -261,16 +261,25 @@ router.get('/messages', requirePermission('settings.view'), asyncHandler(async (
 // ---------- School settings (exam authority status) ----------
 
 router.get('/settings', requirePermission('settings.view'), asyncHandler(async (req, res) => {
-  const row = await get('SELECT exam_authority_status, exam_authority_name FROM school_settings WHERE id = 1');
-  res.json({ examAuthorityStatus: row.exam_authority_status, examAuthorityName: row.exam_authority_name });
+  const row = await get('SELECT * FROM school_settings WHERE id = 1');
+  res.json({
+    examAuthorityStatus: row.exam_authority_status, examAuthorityName: row.exam_authority_name,
+    schoolName: row.school_name, contactEmail: row.contact_email, contactPhone: row.contact_phone,
+    address: row.address, timezone: row.timezone
+  });
 }));
 
 router.post('/settings', requirePermission('settings.edit'), asyncHandler(async (req, res) => {
-  const { exam_authority_status, exam_authority_name } = req.body || {};
+  const { exam_authority_status, exam_authority_name, school_name, contact_email, contact_phone, address, timezone } = req.body || {};
   if (!['not_registered', 'pending', 'registered'].includes(exam_authority_status)) {
     return res.status(400).json({ error: 'exam_authority_status must be not_registered, pending, or registered.' });
   }
-  await run('UPDATE school_settings SET exam_authority_status = $1, exam_authority_name = $2 WHERE id = 1', [exam_authority_status, exam_authority_name || null]);
+  await run(
+    `UPDATE school_settings SET exam_authority_status = $1, exam_authority_name = $2,
+       school_name = $3, contact_email = $4, contact_phone = $5, address = $6, timezone = $7
+     WHERE id = 1`,
+    [exam_authority_status, exam_authority_name || null, school_name || null, contact_email || null, contact_phone || null, address || null, timezone || null]
+  );
   res.json({ message: 'Settings updated.' });
 }));
 
