@@ -107,6 +107,13 @@ router.get('/search', asyncHandler(async (req, res) => {
   const like = `%${q}%`;
   const results = [];
   const can = async (perm) => req.user.role === 'admin' || (await userHasPermission(req, perm));
+  const isAdmin = req.user.role === 'admin';
+  // Page targets differ by viewer: the admin screen's own tabs are
+  // overview/management/organization/analytics/system/security/settings,
+  // while the staff dashboard has its own separate set (students/teachers/
+  // courses/exams/support/etc). A category only appears in results if the
+  // requesting viewer's own dashboard actually has somewhere to send them —
+  // otherwise the click would go nowhere, which is worse than omitting it.
 
   if (await can('students.view')) {
     const rows = await all(
@@ -114,21 +121,53 @@ router.get('/search', asyncHandler(async (req, res) => {
        WHERE first_name ILIKE $1 OR last_name ILIKE $1 OR admission_no ILIKE $1 LIMIT 5`,
       [like]
     );
-    rows.forEach(r => results.push({ category: 'Students', label: `${r.first_name} ${r.last_name} — ${r.admission_no}`, sub: `Section ${r.section_code}`, page: 'students' }));
+    rows.forEach(r => results.push({ category: 'Students', label: `${r.first_name} ${r.last_name} — ${r.admission_no}`, sub: `Section ${r.section_code}`, page: isAdmin ? 'overview' : 'students' }));
   }
   if (await can('teachers.view')) {
     const rows = await all(
       `SELECT id, first_name, last_name, subject FROM teachers WHERE first_name ILIKE $1 OR last_name ILIKE $1 LIMIT 5`,
       [like]
     );
-    rows.forEach(r => results.push({ category: 'Teachers', label: `${r.first_name} ${r.last_name}`, sub: r.subject || '', page: 'teachers' }));
+    rows.forEach(r => results.push({ category: 'Teachers', label: `${r.first_name} ${r.last_name}`, sub: r.subject || '', page: isAdmin ? 'overview' : 'teachers' }));
   }
-  if (await can('courses.view')) {
+  if (!isAdmin && await can('courses.view')) {
     const rows = await all(
       `SELECT id, title, subject, curriculum FROM courses WHERE title ILIKE $1 OR subject ILIKE $1 LIMIT 5`,
       [like]
     );
     rows.forEach(r => results.push({ category: 'Courses', label: r.title, sub: `${r.subject} · ${r.curriculum}`, page: 'courses' }));
+  }
+  if (isAdmin && (await can('students.view'))) {
+    const rows = await all(
+      `SELECT p.id, p.first_name, p.last_name FROM parents p WHERE p.first_name ILIKE $1 OR p.last_name ILIKE $1 LIMIT 5`,
+      [like]
+    );
+    rows.forEach(r => results.push({ category: 'Parents', label: `${r.first_name} ${r.last_name}`, sub: '', page: 'overview' }));
+  }
+  if (isAdmin && (await can('staff.view'))) {
+    const rows = await all(
+      `SELECT id, first_name, last_name FROM staff WHERE first_name ILIKE $1 OR last_name ILIKE $1 LIMIT 5`,
+      [like]
+    );
+    rows.forEach(r => results.push({ category: 'Staff', label: `${r.first_name} ${r.last_name}`, sub: '', page: 'management' }));
+  }
+  if (isAdmin && (await can('reports.view'))) {
+    const rows = await all(
+      `SELECT section_code, grade FROM sections WHERE section_code ILIKE $1 LIMIT 5`,
+      [like]
+    );
+    rows.forEach(r => results.push({ category: 'Classes', label: `Section ${r.section_code}`, sub: `Grade ${r.grade}`, page: 'overview' }));
+  }
+  if (!isAdmin && await can('assignments.view')) {
+    const examRows = await all(`SELECT id, title, subject, section_code FROM exams WHERE title ILIKE $1 LIMIT 5`, [like]);
+    examRows.forEach(r => results.push({ category: 'Exams', label: r.title, sub: `${r.subject} · Section ${r.section_code}`, page: 'exams' }));
+    // Homework assignments have no dedicated management page in either
+    // dashboard yet (only exams do) — omitted rather than sent to the
+    // wrong tab. Flagging as a real gap, not a decision to leave silent.
+  }
+  if (!isAdmin && await can('support.manage')) {
+    const rows = await all(`SELECT id, subject, status FROM support_tickets WHERE subject ILIKE $1 LIMIT 5`, [like]);
+    rows.forEach(r => results.push({ category: 'Support requests', label: r.subject, sub: r.status, page: 'support' }));
   }
   res.json({ results });
 }));

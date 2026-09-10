@@ -874,6 +874,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="app-topbar"><div><h1>School overview</h1><p class="sub">Live counts from the database.</p></div>
         <div class="top-actions" style="display:flex; align-items:center; gap:8px;">
           <div style="position:relative;">
+            <input class="grade-input" style="width:170px;" id="adminSearchInput" placeholder="Search…" oninput="handleAdminSearch(this.value)" onfocus="handleAdminSearch(this.value)">
+            <div id="adminSearchResults" style="display:none; position:absolute; right:0; top:38px; width:280px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); z-index:60; max-height:340px; overflow-y:auto; padding:6px;"></div>
+          </div>
+          <div style="position:relative;">
             <button class="btn btn-outline btn-sm" onclick="toggleAdminNotifPanel()">Notifications <span id="adminNotifBadge" class="tag" style="display:none; background:var(--magenta); margin-left:4px;">0</span></button>
             <div id="adminNotifPanel" style="display:none; position:absolute; right:0; top:38px; width:300px; background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); z-index:60; max-height:360px; overflow-y:auto; padding:10px;"></div>
           </div>
@@ -3608,6 +3612,44 @@ function goToSearchResult(page){
   showStaffPage(page);
 }
 
+let adminSearchDebounce = null;
+
+function handleAdminSearch(query){
+  clearTimeout(adminSearchDebounce);
+  const panel = document.getElementById('adminNotifPanel');
+  if (panel) panel.style.display = 'none';
+  const resultsEl = document.getElementById('adminSearchResults');
+  if (!query || query.trim().length < 2) { resultsEl.style.display = 'none'; return; }
+  adminSearchDebounce = setTimeout(async () => {
+    try {
+      const d = await api(`/management/search?q=${encodeURIComponent(query.trim())}`);
+      resultsEl.style.display = 'block';
+      resultsEl.innerHTML = d.results.length
+        ? d.results.map(r => `<div onclick="goToAdminSearchResult('${r.page}')" style="padding:7px 8px; border-radius:8px; cursor:pointer;">
+            <div style="font-size:11px; color:var(--ink-soft); text-transform:uppercase;">${escapeHtml(r.category)}</div>
+            <div style="font-size:12.5px;">${escapeHtml(r.label)}</div>
+            ${r.sub ? `<div style="font-size:11px; color:var(--ink-soft);">${escapeHtml(r.sub)}</div>` : ''}
+          </div>`).join('')
+        : '<p class="empty" style="font-size:12px; padding:6px;">No matches.</p>';
+    } catch (err) {
+      resultsEl.style.display = 'none';
+    }
+  }, 300);
+}
+
+function goToAdminSearchResult(page){
+  document.getElementById('adminSearchResults').style.display = 'none';
+  document.getElementById('adminSearchInput').value = '';
+  showAdminPage(page);
+}
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#adminSearchInput') && !e.target.closest('#adminSearchResults')) {
+    const el = document.getElementById('adminSearchResults');
+    if (el) el.style.display = 'none';
+  }
+});
+
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#staffSearchInput') && !e.target.closest('#staffSearchResults')) {
     const el = document.getElementById('staffSearchResults');
@@ -5385,6 +5427,8 @@ async function loadAdminNotifications(){
 
 function toggleAdminNotifPanel(){
   const panel = document.getElementById('adminNotifPanel');
+  const searchEl = document.getElementById('adminSearchResults');
+  if (searchEl) searchEl.style.display = 'none';
   panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
 }
 
