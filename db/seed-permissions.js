@@ -51,7 +51,10 @@ const PERMISSIONS = [
 
   ['tasks.assign', 'Tasks', 'Assign tasks to other staff members'],
 
-  ['support.manage', 'Support', 'View, assign, and resolve support tickets']
+  ['support.manage', 'Support', 'View, assign, and resolve support tickets'],
+
+  ['labs.view', 'Virtual Lab', 'View the Virtual Lab experiment catalog'],
+  ['labs.manage', 'Virtual Lab', 'Create, edit, and publish Virtual Lab experiments']
 ];
 
 // [role_key, display name, [permission keys]]
@@ -72,7 +75,7 @@ const DEFAULT_ROLES = [
     'courses.view', 'courses.create', 'courses.edit', 'courses.publish'
   ]],
   ['content_manager', 'Content Manager', [
-    'courses.edit', 'lessons.view', 'lessons.create', 'lessons.edit', 'lessons.publish'
+    'courses.edit', 'lessons.view', 'lessons.create', 'lessons.edit', 'lessons.publish', 'labs.view', 'labs.manage'
   ]],
   ['exam_manager', 'Exam Manager', [
     'assignments.view', 'assignments.create', 'assignments.edit', 'assignments.grade',

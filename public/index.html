@@ -525,6 +525,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <nav class="side-nav" id="studentSideNav">
         <a class="side-link active" data-page="dashboard" onclick="showStudentPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
         <a class="side-link" data-page="courses" onclick="showStudentPage('courses')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">My Courses</span></a>
+        <a class="side-link" data-page="lab" onclick="showStudentPage('lab')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6M10 2v6l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-10V2"/><path d="M8.5 14h7"/></svg><span class="txt">Virtual Lab</span></a>
         <a class="side-link" data-page="materials" onclick="showStudentPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
         <a class="side-link" data-page="assignments" onclick="showStudentPage('assignments')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h1"/><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg><span class="txt">Assignments</span></a>
         <a class="side-link" data-page="exams" onclick="showStudentPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
@@ -579,6 +580,23 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <select class="grade-input" style="width:100%;" id="courseLevelFilter" onchange="loadStudentCourses()"><option value="">All levels</option></select>
           </div>
           <div id="studentCourses"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="student-page" data-page="lab">
+        <div class="card" id="labCatalogCard">
+          <div class="card-head"><h3>Virtual Lab</h3></div>
+          <div id="labCatalog"><p class="empty">Loading…</p></div>
+        </div>
+
+        <div class="card" id="labDetailCard" style="display:none;">
+          <button class="btn btn-outline btn-sm" style="margin-bottom:12px;" onclick="labBackToCatalog()">← Back to Virtual Lab</button>
+          <div id="labDetail"></div>
+        </div>
+
+        <div class="card" id="labPlayCard" style="display:none;">
+          <button class="btn btn-outline btn-sm" style="margin-bottom:12px;" onclick="labAbandonAndReturn()">← Exit experiment</button>
+          <div id="labPlayArea"></div>
         </div>
       </div>
 
@@ -1259,6 +1277,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="teachers" data-perm="teachers.view" onclick="showStaffPage('teachers')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 4h13l3 3v13H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg><span class="txt">Teachers</span></a>
         <a class="side-link" data-page="courses" data-perm="courses.view" onclick="showStaffPage('courses')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="exams" data-perm="assignments.view" onclick="showStaffPage('exams')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6l1 4H8z"/><path d="M8 6h8v14a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2z"/><path d="M9 11l2 2 4-4"/></svg><span class="txt">Exams</span></a>
+        <a class="side-link" data-page="lab" data-perm="labs.view" onclick="showStaffPage('lab')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6M10 2v6l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-10V2"/><path d="M8.5 14h7"/></svg><span class="txt">Virtual Lab</span></a>
         <a class="side-link" data-page="results" data-perm="results.view" onclick="showStaffPage('results')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Results</span></a>
         <a class="side-link" data-page="reports" data-perm="reports.view" onclick="showStaffPage('reports')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg><span class="txt">Reports</span></a>
         <a class="side-link" data-page="support" onclick="showStaffPage('support')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-1c0-1 1-1.5 1.8-2.2A2.5 2.5 0 1 0 9.5 9.8"/><circle cx="12" cy="19" r=".3"/></svg><span class="txt">Support</span></a>
@@ -1378,6 +1397,27 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <button class="btn btn-primary btn-sm" onclick="createStaffExam()">Create test</button>
         </div>
         <div class="card"><div class="card-head"><h3>Tests</h3></div><div id="staffExamsList"><p class="empty">Loading…</p></div></div>
+      </div>
+
+      <div class="admin-page" data-page="lab">
+        <div class="card" id="labCreateCard" style="margin-bottom:20px; display:none;">
+          <div class="card-head"><h3>Create an experiment</h3></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Currently supported type: <span class="mono">circuit</span> (series circuit — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array).</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="labSlug" placeholder="Slug (unique, e.g. series-circuit-2)">
+            <input class="grade-input" style="width:100%;" id="labType" placeholder="Type (e.g. circuit)" value="circuit">
+            <input class="grade-input" style="width:100%;" id="labTitle" placeholder="Title">
+            <input class="grade-input" style="width:100%;" id="labSubject" placeholder="Subject">
+            <input class="grade-input" style="width:100%;" id="labCurriculum" placeholder="Curriculum (optional)">
+            <input class="grade-input" style="width:100%;" id="labGrade" placeholder="Grade (optional)">
+            <input class="grade-input" style="width:100%;" id="labTopic" placeholder="Topic (optional)">
+            <select class="grade-input" style="width:100%;" id="labDifficulty"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+            <input class="grade-input" style="width:100%; grid-column:1/-1;" id="labObjective" placeholder="Objective">
+          </div>
+          <textarea id="labConfig" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="createLabExperiment()">Create as draft</button>
+        </div>
+        <div class="card"><div class="card-head"><h3>Experiments</h3></div><div id="labExperimentsList"><p class="empty">Loading…</p></div></div>
       </div>
 
       <div class="admin-page" data-page="results">
@@ -2899,6 +2939,7 @@ async function loadStaffDashboard(){
     if (has('courses.view')) loadStaffCourses();
     if (has('results.view')) { loadStaffResults(); document.getElementById('gradeBandsCard').style.display = 'block'; loadGradeBands(); }
     if (has('assignments.view')) { loadStaffExams(); if (has('assignments.create')) loadExamTeacherOptions(); }
+    if (has('labs.view')) { loadLabExperimentsList(); document.getElementById('labCreateCard').style.display = has('labs.manage') ? 'block' : 'none'; }
     if (has('reports.view')) loadReports();
     loadMyTickets();
     if (has('support.manage')) loadAllTickets();
@@ -3317,6 +3358,68 @@ async function saveExamGrades(attemptId, questionIds){
   try {
     const res = await api(`/admin/exams/attempts/${attemptId}/grade`, { method: 'POST', body: JSON.stringify({ grades }) });
     toast(res.message);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+/* ============================== Virtual Lab authoring (staff) ============================== */
+
+async function loadLabExperimentsList(){
+  try {
+    const d = await api('/lab/experiments');
+    const canManage = STAFF_PERMISSIONS.includes('labs.manage');
+    document.getElementById('labExperimentsList').innerHTML = d.experiments.length
+      ? d.experiments.map(e => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
+          <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${e.status==='published'?'var(--green)':'var(--ink-soft)'}; font-size:10.5px;">${e.status}</span></div>
+            <div class="l-sub">${escapeHtml(e.type)} · ${escapeHtml(e.difficulty)} · v${e.currentVersion} · ${e.attemptCount} attempt${e.attemptCount===1?'':'s'}</div></div></div>
+          ${canManage ? `<button class="btn ${e.status==='published'?'btn-outline':'btn-primary'} btn-sm" onclick="${e.status==='published'?'unpublishLabExperiment':'publishLabExperiment'}(${e.id})">${e.status==='published'?'Unpublish':'Publish'}</button>` : ''}</div>`).join('')
+      : '<p class="empty">No experiments yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createLabExperiment(){
+  const slug = document.getElementById('labSlug').value.trim();
+  const type = document.getElementById('labType').value.trim();
+  const title = document.getElementById('labTitle').value.trim();
+  const subject = document.getElementById('labSubject').value.trim();
+  const curriculum = document.getElementById('labCurriculum').value.trim();
+  const grade = document.getElementById('labGrade').value.trim();
+  const topic = document.getElementById('labTopic').value.trim();
+  const difficulty = document.getElementById('labDifficulty').value;
+  const objective = document.getElementById('labObjective').value.trim();
+  const configRaw = document.getElementById('labConfig').value.trim();
+  if (!slug || !type || !title || !subject || !configRaw) { toast('Slug, type, title, subject, and config are required.'); return; }
+  let config;
+  try { config = JSON.parse(configRaw); } catch (e) { toast('Config must be valid JSON.'); return; }
+  try {
+    const res = await api('/lab/experiments', { method: 'POST', body: JSON.stringify({ slug, type, title, subject, curriculum: curriculum || undefined, grade: grade || undefined, topic: topic || undefined, difficulty, objective: objective || undefined, config }) });
+    toast(res.message);
+    ['labSlug','labTitle','labSubject','labCurriculum','labGrade','labTopic','labObjective','labConfig'].forEach(id => document.getElementById(id).value = '');
+    await loadLabExperimentsList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function publishLabExperiment(id){
+  try {
+    const res = await api(`/lab/experiments/${id}/publish`, { method: 'POST' });
+    toast(res.message);
+    await loadLabExperimentsList();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function unpublishLabExperiment(id){
+  if (!confirm('Move this experiment back to draft? Students will no longer be able to find or attempt it.')) return;
+  try {
+    const res = await api(`/lab/experiments/${id}/unpublish`, { method: 'POST' });
+    toast(res.message);
+    await loadLabExperimentsList();
   } catch (err) {
     toast(err.message);
   }
@@ -3930,6 +4033,7 @@ async function loadStudentDashboard(){
     await loadStudentWhiteboards();
     await loadMessageContacts('student');
     await loadReportCard();
+    await loadLabCatalog();
   } catch (err) {
     toast(err.message);
   }
@@ -3999,6 +4103,226 @@ async function confirmLessonWatched(lessonId, btnEl){
     btnEl.disabled = false; btnEl.textContent = 'I watched this — mark me present';
   }
 }
+
+/* ============================== Virtual Lab (student) ============================== */
+
+const LAB_DIFFICULTY_COLOR = { beginner: 'var(--green)', intermediate: 'var(--amber)', advanced: 'var(--magenta)' };
+let CURRENT_LAB_ATTEMPT = null; // { id, experimentType, config, mode }
+
+async function loadLabCatalog(){
+  try {
+    const d = await api('/lab/catalog');
+    document.getElementById('labCatalog').innerHTML = d.experiments.length
+      ? d.experiments.map(e => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${LAB_DIFFICULTY_COLOR[e.difficulty]};">${e.difficulty}</span>
+          <div><div class="l-title">${escapeHtml(e.title)}</div><div class="l-sub">${escapeHtml(e.subject)}${e.topic ? ' · ' + escapeHtml(e.topic) : ''} · ~${e.estimatedMinutes} min${e.bestScore !== null ? ` · Best score: ${e.bestScore}` : ''}${e.attemptCount ? ` · ${e.attemptCount} attempt${e.attemptCount===1?'':'s'}` : ''}</div></div></div>
+          <button class="btn btn-outline btn-sm" onclick="openLabDetail(${e.id})">${e.attemptCount ? 'Try again' : 'Start'}</button></div>`).join('')
+      : '<p class="empty">No experiments published yet — check back soon.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function openLabDetail(experimentId){
+  try {
+    const d = await api(`/lab/experiments/${experimentId}/detail`);
+    const e = d.experiment;
+    document.getElementById('labCatalogCard').style.display = 'none';
+    document.getElementById('labDetailCard').style.display = 'block';
+    document.getElementById('labDetail').innerHTML = `
+      <h3 style="margin-bottom:6px;">${escapeHtml(e.title)}</h3>
+      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:14px;">${escapeHtml(e.subject)}${e.topic ? ' · ' + escapeHtml(e.topic) : ''} · ${escapeHtml(e.difficulty)} · ~${e.estimatedMinutes} min</p>
+      <p style="font-size:13.5px; margin-bottom:10px;"><b>Objective:</b> ${escapeHtml(e.objective || '—')}</p>
+      ${e.learnPoints ? `<p style="font-size:13px; margin-bottom:10px;"><b>What you'll learn:</b> ${escapeHtml(e.learnPoints)}</p>` : ''}
+      ${e.equipmentSummary ? `<p style="font-size:13px; margin-bottom:10px;"><b>Equipment:</b> ${escapeHtml(e.equipmentSummary)}</p>` : ''}
+      ${e.safetyInfo ? `<p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;"><b>Note:</b> ${escapeHtml(e.safetyInfo)}</p>` : ''}
+      ${e.backgroundTheory ? `<p style="font-size:13px; margin-bottom:10px;"><b>Background:</b> ${escapeHtml(e.backgroundTheory)}</p>` : ''}
+      ${e.instructions ? `<p style="font-size:13px; margin-bottom:16px;"><b>Instructions:</b> ${escapeHtml(e.instructions)}</p>` : ''}
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-ink btn-sm" onclick="startLabAttempt(${e.id}, 'guided')">Start — Guided</button>
+        <button class="btn btn-primary btn-sm" onclick="startLabAttempt(${e.id}, 'challenge')">Start — Challenge</button>
+      </div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function labBackToCatalog(){
+  document.getElementById('labDetailCard').style.display = 'none';
+  document.getElementById('labPlayCard').style.display = 'none';
+  document.getElementById('labCatalogCard').style.display = 'block';
+  loadLabCatalog();
+}
+
+async function labAbandonAndReturn(){
+  if (CURRENT_LAB_ATTEMPT && CURRENT_LAB_ATTEMPT.status !== 'completed') {
+    try { await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/abandon`, { method: 'POST' }); } catch (err) { /* non-fatal */ }
+  }
+  CURRENT_LAB_ATTEMPT = null;
+  labBackToCatalog();
+}
+
+async function startLabAttempt(experimentId, mode){
+  try {
+    const d = await api('/lab/attempts', { method: 'POST', body: JSON.stringify({ experiment_id: experimentId, mode }) });
+    CURRENT_LAB_ATTEMPT = { id: d.attemptId, experimentType: d.experimentType, config: d.config, mode, status: 'in_progress' };
+    document.getElementById('labDetailCard').style.display = 'none';
+    document.getElementById('labPlayCard').style.display = 'block';
+    const renderer = LAB_RENDERERS[d.experimentType];
+    if (!renderer) {
+      document.getElementById('labPlayArea').innerHTML = '<p class="empty">This experiment type isn\'t supported yet.</p>';
+      return;
+    }
+    renderer(document.getElementById('labPlayArea'), d.config, d.attemptId, mode);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function labLogEvent(eventType, detail, state){
+  if (!CURRENT_LAB_ATTEMPT) return;
+  try {
+    await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/event`, { method: 'POST', body: JSON.stringify({ event_type: eventType, detail, state }) });
+  } catch (err) { /* non-fatal — don't interrupt the student's flow over a logging failure */ }
+}
+
+async function labComplete(){
+  if (!CURRENT_LAB_ATTEMPT) return;
+  try {
+    const res = await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/complete`, { method: 'POST' });
+    CURRENT_LAB_ATTEMPT.status = 'completed';
+    return res.score;
+  } catch (err) {
+    toast(err.message);
+    return null;
+  }
+}
+
+// Registry — a new experiment "type" is added by registering a renderer
+// function here, keyed by the `type` field on lab_experiments. The config
+// JSON drives the specific values (voltage, resistance, etc.) so most new
+// experiments of an existing type need no new code at all.
+const LAB_RENDERERS = {};
+
+LAB_RENDERERS.circuit = function renderCircuitExperiment(container, config, attemptId, mode){
+  const wires = {}; // connectionId -> boolean
+  config.connections.forEach(c => { wires[c.id] = false; });
+  let switchClosed = false;
+  let mistakes = 0;
+  let hintsUsed = 0;
+  let completed = false;
+
+  function missingPieces(){
+    const missingWires = config.connections.filter(c => !wires[c.id]);
+    const issues = [];
+    missingWires.forEach(c => issues.push(`The wire between ${c.from} and ${c.to} isn't connected yet.`));
+    if (missingWires.length === 0 && !switchClosed) issues.push('All wires are connected, but the switch is still open — close it to let current flow.');
+    return issues;
+  }
+
+  function isComplete(){ return config.connections.every(c => wires[c.id]) && switchClosed; }
+
+  function render(){
+    const complete = isComplete();
+    const current = complete ? (config.voltage / config.resistance) : 0;
+    container.innerHTML = `
+      <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+        <svg viewBox="0 0 400 260" style="width:100%; max-width:400px; background:var(--paper-alt); border-radius:12px;">
+          <!-- Battery -->
+          <g>
+            <rect x="30" y="150" width="60" height="40" rx="6" fill="${complete ? 'var(--green)' : 'var(--ink-soft)'}"/>
+            <text x="60" y="175" text-anchor="middle" fill="#fff" font-size="11" font-family="sans-serif">Battery</text>
+          </g>
+          <!-- Switch -->
+          <g style="cursor:pointer;" onclick="window.__labToggleSwitch()">
+            <rect x="170" y="20" width="60" height="40" rx="6" fill="${switchClosed ? 'var(--green)' : 'var(--amber)'}"/>
+            <text x="200" y="36" text-anchor="middle" fill="#fff" font-size="10" font-family="sans-serif">Switch</text>
+            <text x="200" y="50" text-anchor="middle" fill="#fff" font-size="9" font-family="sans-serif">${switchClosed ? '(closed)' : '(open — tap)'}</text>
+          </g>
+          <!-- Bulb -->
+          <g>
+            <circle cx="340" cy="170" r="30" fill="${complete ? '#ffe58a' : '#d9d9d9'}" stroke="${complete ? 'var(--amber)' : 'var(--ink-soft)'}" stroke-width="3"/>
+            <text x="340" y="175" text-anchor="middle" fill="${complete ? '#5a4300' : '#666'}" font-size="11" font-family="sans-serif">Bulb</text>
+          </g>
+          <!-- Wire: battery-switch -->
+          <line x1="90" y1="160" x2="170" y2="45" stroke="${wires['battery-switch'] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires['battery-switch'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('battery-switch')"/>
+          <!-- Wire: switch-bulb -->
+          <line x1="230" y1="45" x2="340" y2="140" stroke="${wires['switch-bulb'] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires['switch-bulb'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('switch-bulb')"/>
+          <!-- Wire: bulb-battery -->
+          <line x1="340" y1="200" x2="60" y2="190" stroke="${wires['bulb-battery'] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires['bulb-battery'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('bulb-battery')"/>
+        </svg>
+        <div style="flex:1; min-width:200px;">
+          <p style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">Tap a dashed line to connect that wire. Tap the switch to open/close it.</p>
+          <div style="padding:10px; background:${complete ? 'var(--gold-bg)' : 'var(--paper-alt)'}; border-radius:10px; margin-bottom:10px;">
+            <p style="font-size:12px; color:var(--ink-soft); margin-bottom:2px;">Ammeter reading</p>
+            <p style="font-size:20px; font-weight:700;">${complete ? current.toFixed(2) + ' A' : '— A'}</p>
+          </div>
+          <div id="labFeedback" style="margin-bottom:10px;"></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="window.__labHint()">Hint</button>
+            <button class="btn btn-primary btn-sm" onclick="window.__labCheck()">Check my circuit</button>
+          </div>
+        </div>
+      </div>`;
+
+    if (mode === 'guided') {
+      const issues = missingPieces();
+      const guidance = document.createElement('p');
+      guidance.style.cssText = 'font-size:12.5px; color:var(--indigo); margin-top:10px;';
+      guidance.textContent = issues.length ? `Next step: ${issues[0]}` : 'Everything looks connected — click "Check my circuit" to confirm.';
+      container.appendChild(guidance);
+    }
+  }
+
+  window.__labToggleWire = (id) => {
+    if (completed) return;
+    wires[id] = !wires[id];
+    labLogEvent(wires[id] ? 'connect' : 'disconnect', { wire: id }, { wires, switchClosed });
+    render();
+  };
+
+  window.__labToggleSwitch = () => {
+    if (completed) return;
+    switchClosed = !switchClosed;
+    labLogEvent('toggle_switch', { closed: switchClosed }, { wires, switchClosed });
+    render();
+  };
+
+  window.__labHint = () => {
+    hintsUsed++;
+    labLogEvent('hint', { hintNumber: hintsUsed });
+    const issues = missingPieces();
+    const msg = issues.length
+      ? issues[0]
+      : 'Your circuit is complete! The current is calculated using Ohm\'s law: I = V / R.';
+    document.getElementById('labFeedback').innerHTML = `<p style="font-size:12.5px; padding:8px; background:var(--paper-alt); border-radius:8px;">💡 ${escapeHtml(msg)}</p>`;
+  };
+
+  window.__labCheck = async () => {
+    const issues = missingPieces();
+    if (issues.length > 0) {
+      mistakes++;
+      labLogEvent('mistake', { issues });
+      document.getElementById('labFeedback').innerHTML = `<div style="font-size:12.5px; padding:10px; background:var(--paper-alt); border-radius:8px;">
+        <p style="font-weight:600; margin-bottom:4px;">Not quite yet:</p>
+        <ul style="margin:0 0 6px 16px;">${issues.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+        <p>A series circuit needs a complete loop — every connection matters, and the switch must be closed for current to flow.</p>
+      </div>`;
+      return;
+    }
+    completed = true;
+    const score = await labComplete();
+    const current = config.voltage / config.resistance;
+    document.getElementById('labFeedback').innerHTML = `<div style="font-size:12.5px; padding:10px; background:var(--gold-bg); border-radius:8px;">
+      <p style="font-weight:600; margin-bottom:4px;">🎉 Excellent! Circuit completed successfully.</p>
+      <p>Current = V ÷ R = ${config.voltage}V ÷ ${config.resistance}Ω = <b>${current.toFixed(2)} A</b></p>
+      <p style="margin-top:6px;">Because every component was connected in a single loop and the switch was closed, current could flow continuously through the bulb.</p>
+      ${score !== null ? `<p style="margin-top:6px;">Score: <b>${score}</b>/100</p>` : ''}
+      <button class="btn btn-ink btn-sm" style="margin-top:8px;" onclick="labBackToCatalog()">Back to Virtual Lab</button>
+    </div>`;
+  };
+
+  render();
+};
 
 function assignStatusBadge(status){
   const map = {

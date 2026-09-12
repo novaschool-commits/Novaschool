@@ -719,3 +719,64 @@ CREATE TABLE IF NOT EXISTS admin_notifications (
   read_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Virtual Lab engine (v1 foundation only — see routes/lab.js). A generic
+-- catalog + attempt-tracking engine, config-driven so a new experiment is
+-- added as data (a JSON config + a matching frontend renderer keyed by
+-- `type`), not new backend code. Versioned so editing a published
+-- experiment never rewrites the config a student's past attempt was
+-- actually scored against.
+CREATE TABLE IF NOT EXISTS lab_experiments (
+  id SERIAL PRIMARY KEY,
+  slug TEXT UNIQUE NOT NULL,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  curriculum TEXT,
+  grade TEXT,
+  topic TEXT,
+  objective TEXT,
+  learn_points TEXT,
+  equipment_summary TEXT,
+  safety_info TEXT,
+  background_theory TEXT,
+  instructions TEXT,
+  estimated_minutes INTEGER DEFAULT 15,
+  difficulty TEXT NOT NULL DEFAULT 'beginner' CHECK (difficulty IN ('beginner','intermediate','advanced')),
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published')),
+  current_version INTEGER NOT NULL DEFAULT 1,
+  created_by_user_id INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS lab_experiment_versions (
+  id SERIAL PRIMARY KEY,
+  experiment_id INTEGER NOT NULL REFERENCES lab_experiments(id) ON DELETE CASCADE,
+  version_number INTEGER NOT NULL,
+  config JSONB NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(experiment_id, version_number)
+);
+
+CREATE TABLE IF NOT EXISTS lab_attempts (
+  id SERIAL PRIMARY KEY,
+  experiment_id INTEGER NOT NULL REFERENCES lab_experiments(id),
+  experiment_version_id INTEGER NOT NULL REFERENCES lab_experiment_versions(id),
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  mode TEXT NOT NULL DEFAULT 'challenge' CHECK (mode IN ('guided','challenge')),
+  status TEXT NOT NULL DEFAULT 'in_progress' CHECK (status IN ('in_progress','completed','abandoned')),
+  state JSONB,
+  mistakes_count INTEGER NOT NULL DEFAULT 0,
+  hints_used INTEGER NOT NULL DEFAULT 0,
+  score INTEGER,
+  started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  completed_at TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS lab_attempt_events (
+  id SERIAL PRIMARY KEY,
+  attempt_id INTEGER NOT NULL REFERENCES lab_attempts(id) ON DELETE CASCADE,
+  event_type TEXT NOT NULL,
+  detail JSONB,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
