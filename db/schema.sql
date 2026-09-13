@@ -780,3 +780,25 @@ CREATE TABLE IF NOT EXISTS lab_attempt_events (
   detail JSONB,
   created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Virtual Lab teacher assignments (Phase 2). Links an experiment+version to
+-- a section with a teacher-set mode/deadline/attempt-limit, all enforced
+-- server-side. assignment_id on lab_attempts is nullable — a student can
+-- still freely try any published experiment from the general catalog
+-- without an assignment; only assignment-linked attempts are subject to
+-- attempt limits and deadlines.
+CREATE TABLE IF NOT EXISTS lab_assignments (
+  id SERIAL PRIMARY KEY,
+  experiment_id INTEGER NOT NULL REFERENCES lab_experiments(id),
+  experiment_version_id INTEGER NOT NULL REFERENCES lab_experiment_versions(id),
+  teacher_id INTEGER REFERENCES teachers(id),
+  created_by_user_id INTEGER REFERENCES users(id),
+  section_code TEXT NOT NULL REFERENCES sections(section_code),
+  mode TEXT NOT NULL DEFAULT 'challenge' CHECK (mode IN ('guided','challenge')),
+  due_at TIMESTAMPTZ,
+  attempt_limit INTEGER,
+  instructions TEXT,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE lab_attempts ADD COLUMN IF NOT EXISTS assignment_id INTEGER REFERENCES lab_assignments(id);

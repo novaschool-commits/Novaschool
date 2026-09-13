@@ -584,6 +584,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
 
       <div class="student-page" data-page="lab">
+        <div class="card" id="labAssignedCard" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Assigned Labs</h3></div>
+          <div id="labAssignedList"><p class="empty">Loading…</p></div>
+        </div>
         <div class="card" id="labCatalogCard">
           <div class="card-head"><h3>Virtual Lab</h3></div>
           <div id="labCatalog"><p class="empty">Loading…</p></div>
@@ -713,6 +717,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="materials" onclick="showTeacherPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
         <a class="side-link" data-page="courses" onclick="showTeacherPage('courses')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
         <a class="side-link" data-page="exams" onclick="showTeacherPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
+        <a class="side-link" data-page="lab" onclick="showTeacherPage('lab')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6M10 2v6l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-10V2"/><path d="M8.5 14h7"/></svg><span class="txt">Virtual Lab</span></a>
         <a class="side-link" data-page="gradebook" onclick="showTeacherPage('gradebook')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Gradebook</span></a>
         <a class="side-link" data-page="messages" onclick="showTeacherPage('messages')"><svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><span class="txt">Messages</span></a>
       </nav>
@@ -805,6 +810,29 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <button class="btn btn-primary btn-sm" onclick="createExam()">Create</button>
           </div>
           <div id="teacherExams"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
+      <div class="teacher-page" data-page="lab">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Assign a Virtual Lab experiment</h3></div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <select class="grade-input" style="width:100%;" id="labAssignExperiment"><option value="">Experiment…</option></select>
+            <select class="grade-input" style="width:100%;" id="labAssignSection"></select>
+            <select class="grade-input" style="width:100%;" id="labAssignMode"><option value="challenge">Challenge mode</option><option value="guided">Guided mode</option></select>
+            <input class="grade-input" style="width:100%;" type="datetime-local" id="labAssignDue" placeholder="Due date (optional)">
+            <input class="grade-input" style="width:100%;" type="number" id="labAssignAttemptLimit" placeholder="Attempt limit (blank = unlimited)">
+          </div>
+          <textarea id="labAssignInstructions" placeholder="Instructions for students (optional)" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; margin-bottom:10px; resize:vertical; min-height:44px;"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="createLabAssignment()">Assign lab</button>
+        </div>
+        <div class="card" id="labAssignmentsListCard">
+          <div class="card-head"><h3>My Virtual Lab assignments</h3></div>
+          <div id="labAssignmentsList"><p class="empty">Loading…</p></div>
+        </div>
+        <div class="card" id="labResultsCard" style="display:none; margin-top:20px;">
+          <button class="btn btn-outline btn-sm" style="margin-bottom:12px;" onclick="closeLabResults()">← Back to assignments</button>
+          <div id="labResultsContent"></div>
         </div>
       </div>
 
@@ -4034,6 +4062,7 @@ async function loadStudentDashboard(){
     await loadMessageContacts('student');
     await loadReportCard();
     await loadLabCatalog();
+    await loadLabAssignedList();
   } catch (err) {
     toast(err.message);
   }
@@ -4122,11 +4151,30 @@ async function loadLabCatalog(){
   }
 }
 
+async function loadLabAssignedList(){
+  try {
+    const d = await api('/lab/my-assignments');
+    document.getElementById('labAssignedList').innerHTML = d.assignments.length
+      ? d.assignments.map(a => {
+          const canAttempt = (a.status === 'not_started' || a.status === 'in_progress')
+            || (a.status === 'completed' && (a.attemptLimit === null || a.attemptsUsed < a.attemptLimit));
+          const buttonLabel = a.status === 'completed' ? 'Try again' : (a.status === 'in_progress' ? 'Continue' : 'Start');
+          return `<div class="list-row" style="flex-wrap:wrap;"><div class="l-main"><span class="tag" style="background:${LAB_ASSIGNMENT_STATUS_COLOR[a.status]};">${LAB_ASSIGNMENT_STATUS_LABEL[a.status]}</span>
+              <div><div class="l-title">${escapeHtml(a.experimentTitle)}</div><div class="l-sub">${escapeHtml(a.subject)}${a.teacherName ? ' · ' + escapeHtml(a.teacherName) : ''}${a.dueAt ? ' · Due ' + fmtDate(a.dueAt) : ''} · ${a.mode} mode${a.bestScore !== null ? ` · Best score: ${a.bestScore}` : ''}${a.attemptLimit ? ` · ${a.attemptsUsed}/${a.attemptLimit} attempts used` : ''}</div></div></div>
+              ${canAttempt ? `<button class="btn btn-primary btn-sm" onclick="startLabAssignment(${a.id})">${buttonLabel}</button>` : ''}</div>`;
+        }).join('')
+      : '<p class="empty">No labs have been assigned to your section yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
 async function openLabDetail(experimentId){
   try {
     const d = await api(`/lab/experiments/${experimentId}/detail`);
     const e = d.experiment;
     document.getElementById('labCatalogCard').style.display = 'none';
+    document.getElementById('labAssignedCard').style.display = 'none';
     document.getElementById('labDetailCard').style.display = 'block';
     document.getElementById('labDetail').innerHTML = `
       <h3 style="margin-bottom:6px;">${escapeHtml(e.title)}</h3>
@@ -4150,7 +4198,9 @@ function labBackToCatalog(){
   document.getElementById('labDetailCard').style.display = 'none';
   document.getElementById('labPlayCard').style.display = 'none';
   document.getElementById('labCatalogCard').style.display = 'block';
+  document.getElementById('labAssignedCard').style.display = 'block';
   loadLabCatalog();
+  loadLabAssignedList();
 }
 
 async function labAbandonAndReturn(){
@@ -4162,9 +4212,22 @@ async function labAbandonAndReturn(){
 }
 
 async function startLabAttempt(experimentId, mode){
+  await beginLabAttempt({ experiment_id: experimentId, mode });
+}
+
+async function startLabAssignment(assignmentId){
+  await beginLabAttempt({ assignment_id: assignmentId });
+}
+
+async function beginLabAttempt(body){
   try {
-    const d = await api('/lab/attempts', { method: 'POST', body: JSON.stringify({ experiment_id: experimentId, mode }) });
-    CURRENT_LAB_ATTEMPT = { id: d.attemptId, experimentType: d.experimentType, config: d.config, mode, status: 'in_progress' };
+    const d = await api('/lab/attempts', { method: 'POST', body: JSON.stringify(body) });
+    // The server may override the requested mode (a teacher-set Challenge
+    // assignment can't be turned into Guided by the client) — always use
+    // whatever mode the server actually granted.
+    CURRENT_LAB_ATTEMPT = { id: d.attemptId, experimentType: d.experimentType, config: d.config, mode: d.mode, status: 'in_progress' };
+    document.getElementById('labCatalogCard').style.display = 'none';
+    document.getElementById('labAssignedCard').style.display = 'none';
     document.getElementById('labDetailCard').style.display = 'none';
     document.getElementById('labPlayCard').style.display = 'block';
     const renderer = LAB_RENDERERS[d.experimentType];
@@ -4172,7 +4235,7 @@ async function startLabAttempt(experimentId, mode){
       document.getElementById('labPlayArea').innerHTML = '<p class="empty">This experiment type isn\'t supported yet.</p>';
       return;
     }
-    renderer(document.getElementById('labPlayArea'), d.config, d.attemptId, mode);
+    renderer(document.getElementById('labPlayArea'), d.config, d.attemptId, d.mode);
   } catch (err) {
     toast(err.message);
   }
@@ -4866,6 +4929,100 @@ async function loadTeacherGradebook(){
   }
 }
 
+/* ============================== Virtual Lab assignments (teacher) ============================== */
+
+const LAB_ASSIGNMENT_STATUS_LABEL = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed', overdue: 'Overdue', locked: 'Locked' };
+const LAB_ASSIGNMENT_STATUS_COLOR = { not_started: 'var(--ink-soft)', in_progress: 'var(--amber)', completed: 'var(--green)', overdue: 'var(--magenta)', locked: 'var(--ink-soft)' };
+
+async function loadLabAssignExperimentOptions(){
+  try {
+    const d = await api('/lab/experiments');
+    const published = d.experiments.filter(e => e.status === 'published');
+    document.getElementById('labAssignExperiment').innerHTML = '<option value="">Experiment…</option>' + published.map(e => `<option value="${e.id}">${escapeHtml(e.title)} (${escapeHtml(e.subject)})</option>`).join('');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function createLabAssignment(){
+  const experiment_id = document.getElementById('labAssignExperiment').value;
+  const section_code = document.getElementById('labAssignSection').value;
+  const mode = document.getElementById('labAssignMode').value;
+  const due_at = document.getElementById('labAssignDue').value;
+  const attemptLimitRaw = document.getElementById('labAssignAttemptLimit').value;
+  const instructions = document.getElementById('labAssignInstructions').value.trim();
+  if (!experiment_id || !section_code) { toast('Choose an experiment and a section.'); return; }
+  try {
+    const res = await api('/lab/assignments', { method: 'POST', body: JSON.stringify({
+      experiment_id: Number(experiment_id), section_code, mode, due_at: due_at || undefined,
+      attempt_limit: attemptLimitRaw ? Number(attemptLimitRaw) : undefined, instructions: instructions || undefined
+    }) });
+    toast(res.message);
+    document.getElementById('labAssignExperiment').value = '';
+    document.getElementById('labAssignDue').value = '';
+    document.getElementById('labAssignAttemptLimit').value = '';
+    document.getElementById('labAssignInstructions').value = '';
+    await loadTeacherLabAssignments();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function loadTeacherLabAssignments(){
+  try {
+    const d = await api('/lab/assignments');
+    document.getElementById('labAssignmentsList').innerHTML = d.assignments.length
+      ? d.assignments.map(a => `<div class="list-row" style="flex-wrap:wrap;"><div class="l-main"><span class="tag" style="background:${subjectColor(a.subject)};">${escapeHtml(a.subject)}</span>
+          <div><div class="l-title">${escapeHtml(a.experimentTitle)}</div><div class="l-sub">Section ${escapeHtml(a.sectionCode)} · ${a.mode} · ${a.dueAt ? 'Due ' + fmtDate(a.dueAt) : 'No due date'} · ${a.attemptLimit ? a.attemptLimit + ' attempt' + (a.attemptLimit===1?'':'s') : 'Unlimited attempts'} · ${a.studentsCompleted}/${a.studentsAttempted||0} completed</div></div></div>
+          <button class="btn btn-outline btn-sm" onclick="openLabResults(${a.id})">View results</button></div>`).join('')
+      : '<p class="empty">No Virtual Lab assignments yet.</p>';
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function openLabResults(assignmentId){
+  try {
+    const d = await api(`/lab/assignments/${assignmentId}/results`);
+    document.getElementById('labAssignmentsListCard').style.display = 'none';
+    document.getElementById('labResultsCard').style.display = 'block';
+    document.getElementById('labResultsContent').innerHTML = `
+      <h3 style="margin-bottom:4px;">${escapeHtml(d.assignment.experimentTitle)}</h3>
+      <p style="font-size:12px; color:var(--ink-soft); margin-bottom:16px;">Section ${escapeHtml(d.assignment.sectionCode)} · ${d.assignment.mode} mode${d.assignment.dueAt ? ' · Due ' + fmtDate(d.assignment.dueAt) : ''}</p>
+      <div class="table-scroll"><table class="table-simple"><thead><tr><th>Student</th><th>Status</th><th>Attempts</th><th>Best score</th><th>Mistakes</th><th>Hints</th><th></th></tr></thead><tbody>
+        ${d.results.map(r => `<tr>
+          <td>${escapeHtml(r.studentName)}</td>
+          <td><span class="tag" style="background:${LAB_ASSIGNMENT_STATUS_COLOR[r.status]};">${LAB_ASSIGNMENT_STATUS_LABEL[r.status]}</span></td>
+          <td>${r.attemptsUsed}</td><td>${r.bestScore ?? '—'}</td><td>${r.mistakes}</td><td>${r.hints}</td>
+          <td>${r.attemptsUsed > 0 ? `<button class="btn btn-outline btn-sm" onclick="openLabStudentDetail(${assignmentId},${r.studentId})">Details</button>` : ''}</td>
+        </tr>`).join('')}
+      </tbody></table></div>
+      <div id="labStudentDetail" style="margin-top:16px;"></div>`;
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function closeLabResults(){
+  document.getElementById('labResultsCard').style.display = 'none';
+  document.getElementById('labAssignmentsListCard').style.display = 'block';
+}
+
+async function openLabStudentDetail(assignmentId, studentId){
+  const el = document.getElementById('labStudentDetail');
+  el.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/lab/assignments/${assignmentId}/results/${studentId}`);
+    el.innerHTML = `
+      <p style="font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; margin-bottom:8px;">Event sequence (most recent attempt)</p>
+      <div style="max-height:240px; overflow-y:auto; padding:10px; background:var(--paper-alt); border-radius:10px;">
+        ${d.events.length ? d.events.map((e, i) => `<div style="font-size:12.5px; margin-bottom:4px;">${i+1}. <b>${escapeHtml(e.eventType)}</b>${e.detail ? ' — ' + escapeHtml(JSON.stringify(e.detail)) : ''} <span style="color:var(--ink-soft); font-size:11px;">${fmtDate(e.createdAt)}</span></div>`).join('') : '<p class="empty">No events recorded.</p>'}
+      </div>`;
+  } catch (err) {
+    el.innerHTML = '<p class="empty">Could not load this student\'s detail.</p>';
+  }
+}
+
 let gradebookSearchTimer = null;
 function debouncedGradebookSearch(){
   clearTimeout(gradebookSearchTimer);
@@ -4898,6 +5055,7 @@ async function loadTeacherDashboard(){
     sectionSelect.innerHTML = (d.mySections || []).map(s => `<option value="${s}">${s}</option>`).join('') || '<option value="">No sections yet</option>';
     document.getElementById('examSection').innerHTML = sectionSelect.innerHTML;
     document.getElementById('ttSection').innerHTML = sectionSelect.innerHTML;
+    document.getElementById('labAssignSection').innerHTML = sectionSelect.innerHTML;
     window._teacherSections = d.mySections || [];
     if ((d.mySections || []).length) { await loadTimetableManager(); await refreshLiveClassButton(); }
 
@@ -4920,6 +5078,8 @@ async function loadTeacherDashboard(){
     await loadTeacherMaterials();
     await loadTeacherGradebook();
     await loadMessageContacts('teacher');
+    await loadLabAssignExperimentOptions();
+    await loadTeacherLabAssignments();
   } catch (err) {
     toast(err.message);
   }
