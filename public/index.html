@@ -1430,7 +1430,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="admin-page" data-page="lab">
         <div class="card" id="labCreateCard" style="margin-bottom:20px; display:none;">
           <div class="card-head"><h3>Create an experiment</h3></div>
-          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Currently supported type: <span class="mono">circuit</span> (series circuit — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array).</p>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array).</p>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
             <input class="grade-input" style="width:100%;" id="labSlug" placeholder="Slug (unique, e.g. series-circuit-2)">
             <input class="grade-input" style="width:100%;" id="labType" placeholder="Type (e.g. circuit)" value="circuit">
@@ -4266,6 +4266,34 @@ async function labComplete(){
 // experiments of an existing type need no new code at all.
 const LAB_RENDERERS = {};
 
+// Shared feedback contract — every renderer uses these three so mistakes,
+// hints, and success messages look and behave consistently across
+// completely different experiments (a series circuit and a parallel
+// circuit and, eventually, a chemistry or biology experiment should all
+// feel like the same platform). Extracted from the original circuit
+// renderer without changing its output, then reused for new experiment
+// types below.
+function labMistakeBoxHtml(issues, explanation){
+  return `<div style="font-size:12.5px; padding:10px; background:var(--paper-alt); border-radius:8px;">
+    <p style="font-weight:600; margin-bottom:4px;">Not quite yet:</p>
+    <ul style="margin:0 0 6px 16px;">${issues.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+    <p>${escapeHtml(explanation)}</p>
+  </div>`;
+}
+
+function labHintBoxHtml(msg){
+  return `<p style="font-size:12.5px; padding:8px; background:var(--paper-alt); border-radius:8px;">💡 ${escapeHtml(msg)}</p>`;
+}
+
+function labSuccessBoxHtml(headline, detailsHtml, score){
+  return `<div style="font-size:12.5px; padding:10px; background:var(--gold-bg); border-radius:8px;">
+      <p style="font-weight:600; margin-bottom:4px;">🎉 ${escapeHtml(headline)}</p>
+      ${detailsHtml}
+      ${score !== null ? `<p style="margin-top:6px;">Score: <b>${score}</b>/100</p>` : ''}
+      <button class="btn btn-ink btn-sm" style="margin-top:8px;" onclick="labBackToCatalog()">Back to Virtual Lab</button>
+    </div>`;
+}
+
 LAB_RENDERERS.circuit = function renderCircuitExperiment(container, config, attemptId, mode){
   const wires = {}; // connectionId -> boolean
   config.connections.forEach(c => { wires[c.id] = false; });
@@ -4357,7 +4385,7 @@ LAB_RENDERERS.circuit = function renderCircuitExperiment(container, config, atte
     const msg = issues.length
       ? issues[0]
       : 'Your circuit is complete! The current is calculated using Ohm\'s law: I = V / R.';
-    document.getElementById('labFeedback').innerHTML = `<p style="font-size:12.5px; padding:8px; background:var(--paper-alt); border-radius:8px;">💡 ${escapeHtml(msg)}</p>`;
+    document.getElementById('labFeedback').innerHTML = labHintBoxHtml(msg);
   };
 
   window.__labCheck = async () => {
@@ -4365,23 +4393,136 @@ LAB_RENDERERS.circuit = function renderCircuitExperiment(container, config, atte
     if (issues.length > 0) {
       mistakes++;
       labLogEvent('mistake', { issues });
-      document.getElementById('labFeedback').innerHTML = `<div style="font-size:12.5px; padding:10px; background:var(--paper-alt); border-radius:8px;">
-        <p style="font-weight:600; margin-bottom:4px;">Not quite yet:</p>
-        <ul style="margin:0 0 6px 16px;">${issues.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
-        <p>A series circuit needs a complete loop — every connection matters, and the switch must be closed for current to flow.</p>
-      </div>`;
+      document.getElementById('labFeedback').innerHTML = labMistakeBoxHtml(issues, 'A series circuit needs a complete loop — every connection matters, and the switch must be closed for current to flow.');
       return;
     }
     completed = true;
     const score = await labComplete();
     const current = config.voltage / config.resistance;
-    document.getElementById('labFeedback').innerHTML = `<div style="font-size:12.5px; padding:10px; background:var(--gold-bg); border-radius:8px;">
-      <p style="font-weight:600; margin-bottom:4px;">🎉 Excellent! Circuit completed successfully.</p>
-      <p>Current = V ÷ R = ${config.voltage}V ÷ ${config.resistance}Ω = <b>${current.toFixed(2)} A</b></p>
-      <p style="margin-top:6px;">Because every component was connected in a single loop and the switch was closed, current could flow continuously through the bulb.</p>
-      ${score !== null ? `<p style="margin-top:6px;">Score: <b>${score}</b>/100</p>` : ''}
-      <button class="btn btn-ink btn-sm" style="margin-top:8px;" onclick="labBackToCatalog()">Back to Virtual Lab</button>
-    </div>`;
+    const details = `<p>Current = V ÷ R = ${config.voltage}V ÷ ${config.resistance}Ω = <b>${current.toFixed(2)} A</b></p>
+      <p style="margin-top:6px;">Because every component was connected in a single loop and the switch was closed, current could flow continuously through the bulb.</p>`;
+    document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Circuit completed successfully.', details, score);
+  };
+
+  render();
+};
+
+LAB_RENDERERS.circuit_parallel = function renderParallelCircuitExperiment(container, config, attemptId, mode){
+  const wires = {};
+  config.branches.forEach(b => b.connections.forEach(c => { wires[c.id] = false; }));
+  let switchClosed = false;
+  let mistakes = 0;
+  let hintsUsed = 0;
+  let completed = false;
+
+  function branchComplete(b){ return b.connections.every(c => wires[c.id]); }
+  function branchLive(b){ return switchClosed && branchComplete(b); }
+  function branchCurrent(b){ return branchLive(b) ? (config.voltage / b.resistance) : 0; }
+  function totalCurrent(){ return config.branches.reduce((sum, b) => sum + branchCurrent(b), 0); }
+
+  function missingPieces(){
+    const issues = [];
+    config.branches.forEach((b, i) => {
+      const missing = b.connections.filter(c => !wires[c.id]);
+      if (missing.length) issues.push(`Branch ${i + 1} (${b.label || 'Bulb ' + (i + 1)}) is missing ${missing.length} connection${missing.length === 1 ? '' : 's'}.`);
+    });
+    if (issues.length === 0 && !switchClosed) issues.push('All branches are wired, but the switch is still open — close it to let current flow.');
+    return issues;
+  }
+
+  function isComplete(){ return config.branches.every(branchComplete) && switchClosed; }
+
+  // Fixed visual layout supports up to 2 branches — this is a v1 layout
+  // constraint, not a simulation limit. The per-branch current calculation
+  // below already works for any number of branches.
+  const branchY = [70, 190];
+
+  function render(){
+    const complete = isComplete();
+    const total = totalCurrent();
+    let svgBranches = '';
+    config.branches.forEach((b, i) => {
+      const y = branchY[i] ?? (70 + i * 120);
+      const live = branchLive(b);
+      const conn1 = b.connections[0], conn2 = b.connections[1];
+      svgBranches += `
+        <line x1="100" y1="${y}" x2="220" y2="${y}" stroke="${wires[conn1.id] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires[conn1.id] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('${conn1.id}')"/>
+        <circle cx="250" cy="${y}" r="26" fill="${live ? '#ffe58a' : '#d9d9d9'}" stroke="${live ? 'var(--amber)' : 'var(--ink-soft)'}" stroke-width="3"/>
+        <text x="250" y="${y + 4}" text-anchor="middle" fill="${live ? '#5a4300' : '#666'}" font-size="10" font-family="sans-serif">${escapeHtml(b.label || 'Bulb ' + (i + 1))}</text>
+        <line x1="280" y1="${y}" x2="380" y2="${y}" stroke="${wires[conn2.id] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires[conn2.id] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('${conn2.id}')"/>`;
+    });
+    container.innerHTML = `
+      <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+        <svg viewBox="0 0 420 260" style="width:100%; max-width:420px; background:var(--paper-alt); border-radius:12px;">
+          <rect x="20" y="100" width="60" height="60" rx="6" fill="${complete ? 'var(--green)' : 'var(--ink-soft)'}"/>
+          <text x="50" y="135" text-anchor="middle" fill="#fff" font-size="10" font-family="sans-serif">Battery</text>
+          <g style="cursor:pointer;" onclick="window.__labToggleSwitch()">
+            <rect x="20" y="10" width="60" height="30" rx="6" fill="${switchClosed ? 'var(--green)' : 'var(--amber)'}"/>
+            <text x="50" y="29" text-anchor="middle" fill="#fff" font-size="9" font-family="sans-serif">${switchClosed ? 'Closed' : 'Open (tap)'}</text>
+          </g>
+          ${svgBranches}
+        </svg>
+        <div style="flex:1; min-width:200px;">
+          <p style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">Each row is its own independent branch — tap a dashed line to connect it. Tap the switch to open/close it.</p>
+          <div style="padding:10px; background:${complete ? 'var(--gold-bg)' : 'var(--paper-alt)'}; border-radius:10px; margin-bottom:10px;">
+            <p style="font-size:12px; color:var(--ink-soft); margin-bottom:2px;">Total current (ammeter)</p>
+            <p style="font-size:20px; font-weight:700;">${total > 0 ? total.toFixed(2) + ' A' : '— A'}</p>
+            ${total > 0 ? `<p style="font-size:11px; color:var(--ink-soft); margin-top:4px;">${config.branches.map((b, i) => `Branch ${i + 1}: ${branchCurrent(b).toFixed(2)} A`).join(' · ')}</p>` : ''}
+          </div>
+          <div id="labFeedback" style="margin-bottom:10px;"></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" onclick="window.__labHint()">Hint</button>
+            <button class="btn btn-primary btn-sm" onclick="window.__labCheck()">Check my circuit</button>
+          </div>
+        </div>
+      </div>`;
+
+    if (mode === 'guided') {
+      const issues = missingPieces();
+      const guidance = document.createElement('p');
+      guidance.style.cssText = 'font-size:12.5px; color:var(--indigo); margin-top:10px;';
+      guidance.textContent = issues.length ? `Next step: ${issues[0]}` : 'Everything looks connected — click "Check my circuit" to confirm.';
+      container.appendChild(guidance);
+    }
+  }
+
+  window.__labToggleWire = (id) => {
+    if (completed) return;
+    wires[id] = !wires[id];
+    labLogEvent(wires[id] ? 'connect' : 'disconnect', { wire: id }, { wires, switchClosed });
+    render();
+  };
+
+  window.__labToggleSwitch = () => {
+    if (completed) return;
+    switchClosed = !switchClosed;
+    labLogEvent('toggle_switch', { closed: switchClosed }, { wires, switchClosed });
+    render();
+  };
+
+  window.__labHint = () => {
+    hintsUsed++;
+    labLogEvent('hint', { hintNumber: hintsUsed });
+    const issues = missingPieces();
+    const msg = issues.length ? issues[0] : 'Each branch works independently — current divides between them based on their own resistance.';
+    document.getElementById('labFeedback').innerHTML = labHintBoxHtml(msg);
+  };
+
+  window.__labCheck = async () => {
+    const issues = missingPieces();
+    if (issues.length > 0) {
+      mistakes++;
+      labLogEvent('mistake', { issues });
+      document.getElementById('labFeedback').innerHTML = labMistakeBoxHtml(issues, "In a parallel circuit, each branch needs its own complete connection — the branches don't depend on each other, but every one still needs to be wired correctly.");
+      return;
+    }
+    completed = true;
+    const score = await labComplete();
+    const total = totalCurrent();
+    const breakdown = config.branches.map((b, i) => `Branch ${i + 1}: ${config.voltage}V ÷ ${b.resistance}Ω = ${branchCurrent(b).toFixed(2)} A`).join('<br>');
+    const details = `<p>${breakdown}</p><p style="margin-top:6px;">Total current = ${total.toFixed(2)} A (the sum of both branches).</p>
+      <p style="margin-top:6px;">Because the branches are independent, disconnecting one wouldn't stop current in the other — that's what makes a parallel circuit different from a series circuit, where any break stops everything.</p>`;
+    document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Parallel circuit completed successfully.', details, score);
   };
 
   render();
