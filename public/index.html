@@ -1443,9 +1443,17 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <input class="grade-input" style="width:100%; grid-column:1/-1;" id="labObjective" placeholder="Objective">
           </div>
           <textarea id="labConfig" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;"></textarea>
-          <button class="btn btn-primary btn-sm" onclick="createLabExperiment()">Create as draft</button>
+          <div id="labConfigErrors" style="display:none; font-size:11.5px; padding:8px 10px; background:var(--paper-alt); border-radius:8px; margin-bottom:10px;"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="validateLabConfig()">Validate</button>
+            <button class="btn btn-primary btn-sm" onclick="createLabExperiment()">Create as draft</button>
+          </div>
         </div>
         <div class="card"><div class="card-head"><h3>Experiments</h3></div><div id="labExperimentsList"><p class="empty">Loading…</p></div></div>
+        <div class="card" id="labPreviewCard" style="display:none; margin-top:20px;">
+          <div class="card-head"><h3 id="labPreviewTitle">Preview</h3><button class="btn btn-outline btn-sm" onclick="labPreviewAbandonAndReturn()">← Back to Experiments</button></div>
+          <div id="labPreviewArea"></div>
+        </div>
       </div>
 
       <div class="admin-page" data-page="results">
@@ -3393,19 +3401,123 @@ async function saveExamGrades(attemptId, questionIds){
 
 /* ============================== Virtual Lab authoring (staff) ============================== */
 
+const LAB_STATUS_COLOR = { draft: 'var(--ink-soft)', submitted_for_review: 'var(--gold)', published: 'var(--green)', archived: 'var(--red)' };
+const LAB_STATUS_LABEL = { draft: 'Draft', submitted_for_review: 'In review', published: 'Published', archived: 'Archived' };
+
+// Status-aware actions: which buttons an experiment gets depends on where
+// it is in the draft -> submitted_for_review -> published lifecycle, with
+// archive/restore on the side. Preview is always available so staff can
+// test-play a draft before anyone submits or publishes it.
+function labExperimentActionsHtml(e, canManage){
+  const btns = [`<button class="btn btn-outline btn-sm" onclick="startLabPreview(${e.id}, '${escapeHtml(e.title).replace(/'/g,"\\'")}')">Preview</button>`];
+  if (canManage) {
+    if (e.status === 'draft') {
+      btns.push(`<button class="btn btn-primary btn-sm" onclick="submitLabExperimentForReview(${e.id})">Submit for Review</button>`);
+      btns.push(`<button class="btn btn-outline btn-sm" onclick="publishLabExperiment(${e.id})">Publish now</button>`);
+      btns.push(`<button class="btn btn-outline btn-sm" onclick="archiveLabExperiment(${e.id})">Archive</button>`);
+    } else if (e.status === 'submitted_for_review') {
+      btns.push(`<button class="btn btn-primary btn-sm" onclick="approveLabExperiment(${e.id})">Approve</button>`);
+      btns.push(`<button class="btn btn-outline btn-sm" onclick="archiveLabExperiment(${e.id})">Archive</button>`);
+    } else if (e.status === 'published') {
+      btns.push(`<button class="btn btn-outline btn-sm" onclick="unpublishLabExperiment(${e.id})">Unpublish</button>`);
+      btns.push(`<button class="btn btn-outline btn-sm" onclick="archiveLabExperiment(${e.id})">Archive</button>`);
+    } else if (e.status === 'archived') {
+      btns.push(`<button class="btn btn-primary btn-sm" onclick="restoreLabExperiment(${e.id})">Restore</button>`);
+    }
+  }
+  return btns.join('');
+}
+
 async function loadLabExperimentsList(){
   try {
     const d = await api('/lab/experiments');
     const canManage = STAFF_PERMISSIONS.includes('labs.manage');
     document.getElementById('labExperimentsList').innerHTML = d.experiments.length
-      ? d.experiments.map(e => `<div class="list-row"><div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
-          <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${e.status==='published'?'var(--green)':'var(--ink-soft)'}; font-size:10.5px;">${e.status}</span></div>
+      ? d.experiments.map(e => `<div class="list-row" style="flex-wrap:wrap;"><div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
+          <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${LAB_STATUS_COLOR[e.status] || 'var(--ink-soft)'}; font-size:10.5px;">${LAB_STATUS_LABEL[e.status] || e.status}</span></div>
             <div class="l-sub">${escapeHtml(e.type)} · ${escapeHtml(e.difficulty)} · v${e.currentVersion} · ${e.attemptCount} attempt${e.attemptCount===1?'':'s'}</div></div></div>
-          ${canManage ? `<button class="btn ${e.status==='published'?'btn-outline':'btn-primary'} btn-sm" onclick="${e.status==='published'?'unpublishLabExperiment':'publishLabExperiment'}(${e.id})">${e.status==='published'?'Unpublish':'Publish'}</button>` : ''}</div>`).join('')
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">${labExperimentActionsHtml(e, canManage)}</div></div>`).join('')
       : '<p class="empty">No experiments yet.</p>';
   } catch (err) {
     toast(err.message);
   }
+}
+
+async function validateLabConfig(){
+  const type = document.getElementById('labType').value.trim();
+  const configRaw = document.getElementById('labConfig').value.trim();
+  const box = document.getElementById('labConfigErrors');
+  if (!type || !configRaw) { toast('Type and config are required to validate.'); return; }
+  let config;
+  try { config = JSON.parse(configRaw); } catch (e) { box.style.display='block'; box.innerHTML = '<b>Invalid JSON.</b>'; return; }
+  try {
+    const res = await api('/lab/experiments/validate', { method: 'POST', body: JSON.stringify({ type, config }) });
+    box.style.display = 'block';
+    box.innerHTML = res.valid
+      ? '<span style="color:var(--green);"><b>✓ Valid</b> — this config is ready to create.</span>'
+      : `<b>Not valid yet:</b><ul style="margin:4px 0 0 16px;">${res.errors.map(er => `<li>${escapeHtml(er.field)}: ${escapeHtml(er.message)}</li>`).join('')}</ul>`;
+  } catch (err) {
+    box.style.display = 'block';
+    box.innerHTML = escapeHtml(err.message);
+  }
+}
+
+async function submitLabExperimentForReview(id){
+  try { const res = await api(`/lab/experiments/${id}/submit-review`, { method: 'POST' }); toast(res.message); await loadLabExperimentsList(); }
+  catch (err) { toast(err.message); }
+}
+
+async function approveLabExperiment(id){
+  try { const res = await api(`/lab/experiments/${id}/approve`, { method: 'POST' }); toast(res.message); await loadLabExperimentsList(); }
+  catch (err) { toast(err.message); }
+}
+
+async function archiveLabExperiment(id){
+  if (!confirm('Archive this experiment? It will no longer be assignable or publishable until restored.')) return;
+  try { const res = await api(`/lab/experiments/${id}/archive`, { method: 'POST' }); toast(res.message); await loadLabExperimentsList(); }
+  catch (err) { toast(err.message); }
+}
+
+async function restoreLabExperiment(id){
+  try { const res = await api(`/lab/experiments/${id}/restore`, { method: 'POST' }); toast(res.message); await loadLabExperimentsList(); }
+  catch (err) { toast(err.message); }
+}
+
+// ---- Staff preview mode: same renderers/feedback contract as the student
+// play flow, targeting a separate DOM area so nothing about the student
+// experience is touched. CURRENT_LAB_ATTEMPT.isPreview is what tells the
+// shared labComplete/labSuccessBoxHtml functions which endpoints and
+// screen to return to.
+async function startLabPreview(experimentId, title){
+  try {
+    const d = await api(`/lab/experiments/${experimentId}/preview-attempt`, { method: 'POST', body: JSON.stringify({ mode: 'challenge' }) });
+    CURRENT_LAB_ATTEMPT = { id: d.attemptId, experimentType: d.experimentType, config: d.config, mode: d.mode, status: 'in_progress', isPreview: true };
+    document.getElementById('labPreviewTitle').textContent = `Preview — ${title}`;
+    document.getElementById('labPreviewCard').style.display = 'block';
+    document.getElementById('labPreviewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const renderer = LAB_RENDERERS[d.experimentType];
+    if (!renderer) {
+      document.getElementById('labPreviewArea').innerHTML = '<p class="empty">This experiment type isn\'t supported yet.</p>';
+      return;
+    }
+    renderer(document.getElementById('labPreviewArea'), d.config, d.attemptId, d.mode);
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+function labPreviewBackToList(){
+  document.getElementById('labPreviewCard').style.display = 'none';
+  document.getElementById('labPreviewArea').innerHTML = '';
+  CURRENT_LAB_ATTEMPT = null;
+  loadLabExperimentsList();
+}
+
+async function labPreviewAbandonAndReturn(){
+  if (CURRENT_LAB_ATTEMPT && CURRENT_LAB_ATTEMPT.isPreview && CURRENT_LAB_ATTEMPT.status !== 'completed') {
+    try { await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/preview-abandon`, { method: 'POST' }); } catch (err) { /* non-fatal */ }
+  }
+  labPreviewBackToList();
 }
 
 async function createLabExperiment(){
@@ -4251,7 +4363,8 @@ async function labLogEvent(eventType, detail, state){
 async function labComplete(){
   if (!CURRENT_LAB_ATTEMPT) return;
   try {
-    const res = await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/complete`, { method: 'POST' });
+    const endpoint = CURRENT_LAB_ATTEMPT.isPreview ? 'preview-complete' : 'complete';
+    const res = await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/${endpoint}`, { method: 'POST' });
     CURRENT_LAB_ATTEMPT.status = 'completed';
     return res.score;
   } catch (err) {
@@ -4286,11 +4399,12 @@ function labHintBoxHtml(msg){
 }
 
 function labSuccessBoxHtml(headline, detailsHtml, score){
+  const isPreview = CURRENT_LAB_ATTEMPT && CURRENT_LAB_ATTEMPT.isPreview;
   return `<div style="font-size:12.5px; padding:10px; background:var(--gold-bg); border-radius:8px;">
       <p style="font-weight:600; margin-bottom:4px;">🎉 ${escapeHtml(headline)}</p>
       ${detailsHtml}
       ${score !== null ? `<p style="margin-top:6px;">Score: <b>${score}</b>/100</p>` : ''}
-      <button class="btn btn-ink btn-sm" style="margin-top:8px;" onclick="labBackToCatalog()">Back to Virtual Lab</button>
+      <button class="btn btn-ink btn-sm" style="margin-top:8px;" onclick="${isPreview ? 'labPreviewBackToList' : 'labBackToCatalog'}()">Back to ${isPreview ? 'Experiments' : 'Virtual Lab'}</button>
     </div>`;
 }
 

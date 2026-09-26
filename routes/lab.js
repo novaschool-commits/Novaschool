@@ -27,6 +27,103 @@ async function canManageLabAssignments(req) {
 }
 
 // ============================================================
+// Supported experiment types — the honest source of truth for what the
+// engine can actually render. Kept in sync with LAB_RENDERERS on the
+// frontend: a type only belongs here once a real renderer exists for it,
+// so validation can never approve a config nothing can play.
+// ============================================================
+
+const SUPPORTED_LAB_TYPES = {
+  circuit: {
+    label: 'Series Circuit',
+    validate(config) {
+      const errors = [];
+      if (!config || typeof config !== 'object') return [{ field: 'config', message: 'config must be an object.' }];
+      if (typeof config.voltage !== 'number' || config.voltage <= 0) {
+        errors.push({ field: 'voltage', message: 'voltage is required and must be a positive number.' });
+      }
+      if (typeof config.resistance !== 'number' || config.resistance <= 0) {
+        errors.push({ field: 'resistance', message: 'resistance is required and must be a positive number.' });
+      }
+      if (!Array.isArray(config.connections) || config.connections.length === 0) {
+        errors.push({ field: 'connections', message: 'connections must be a non-empty array.' });
+      } else {
+        const ids = [];
+        config.connections.forEach((c, i) => {
+          if (!c || typeof c !== 'object') { errors.push({ field: `connections[${i}]`, message: 'Each connection must be an object.' }); return; }
+          if (!c.id || typeof c.id !== 'string') errors.push({ field: `connections[${i}].id`, message: 'id is required and must be a string.' });
+          else ids.push(c.id);
+          if (!c.from || typeof c.from !== 'string') errors.push({ field: `connections[${i}].from`, message: 'from is required and must be a string.' });
+          if (!c.to || typeof c.to !== 'string') errors.push({ field: `connections[${i}].to`, message: 'to is required and must be a string.' });
+        });
+        if (new Set(ids).size !== ids.length) errors.push({ field: 'connections', message: 'connection ids must be unique.' });
+      }
+      return errors;
+    }
+  },
+  circuit_parallel: {
+    label: 'Parallel Circuit',
+    validate(config) {
+      const errors = [];
+      if (!config || typeof config !== 'object') return [{ field: 'config', message: 'config must be an object.' }];
+      if (typeof config.voltage !== 'number' || config.voltage <= 0) {
+        errors.push({ field: 'voltage', message: 'voltage is required and must be a positive number.' });
+      }
+      if (!Array.isArray(config.branches) || config.branches.length < 2) {
+        errors.push({ field: 'branches', message: 'branches must be an array with at least 2 branches.' });
+      } else {
+        const branchIds = [];
+        config.branches.forEach((b, i) => {
+          if (!b || typeof b !== 'object') { errors.push({ field: `branches[${i}]`, message: 'Each branch must be an object.' }); return; }
+          if (!b.id || typeof b.id !== 'string') errors.push({ field: `branches[${i}].id`, message: 'id is required and must be a string.' });
+          else branchIds.push(b.id);
+          if (!b.label || typeof b.label !== 'string') errors.push({ field: `branches[${i}].label`, message: 'label is required and must be a string.' });
+          if (typeof b.resistance !== 'number' || b.resistance <= 0) {
+            errors.push({ field: `branches[${i}].resistance`, message: 'resistance is required and must be a positive number.' });
+          }
+          if (!Array.isArray(b.connections) || b.connections.length !== 2) {
+            errors.push({ field: `branches[${i}].connections`, message: 'Each branch needs exactly 2 connections.' });
+          } else {
+            b.connections.forEach((c, j) => {
+              if (!c || typeof c !== 'object' || !c.id || !c.from || !c.to) {
+                errors.push({ field: `branches[${i}].connections[${j}]`, message: 'Each connection needs id, from, and to.' });
+              }
+            });
+          }
+        });
+        if (new Set(branchIds).size !== branchIds.length) errors.push({ field: 'branches', message: 'branch ids must be unique.' });
+      }
+      return errors;
+    }
+  }
+};
+
+function validateExperimentDefinition(type, config) {
+  const spec = SUPPORTED_LAB_TYPES[type];
+  if (!spec) {
+    return {
+      valid: false,
+      errors: [{ field: 'type', message: `"${type}" isn't a supported experiment type yet. Supported types: ${Object.keys(SUPPORTED_LAB_TYPES).join(', ')}.` }]
+    };
+  }
+  const errors = spec.validate(config);
+  return { valid: errors.length === 0, errors };
+}
+
+router.get('/supported-types', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  res.json({ types: Object.entries(SUPPORTED_LAB_TYPES).map(([type, spec]) => ({ type, label: spec.label })) });
+}));
+
+router.post('/experiments/validate', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const { type, config } = req.body || {};
+  if (!type) return res.status(400).json({ valid: false, errors: [{ field: 'type', message: 'type is required.' }] });
+  let parsedConfig;
+  try { parsedConfig = typeof config === 'string' ? JSON.parse(config) : config; }
+  catch (e) { return res.json({ valid: false, errors: [{ field: 'config', message: 'config must be valid JSON.' }] }); }
+  res.json(validateExperimentDefinition(type, parsedConfig));
+}));
+
+// ============================================================
 // Admin/Staff: experiment catalog management (labs.view / labs.manage)
 // ============================================================
 
@@ -60,6 +157,9 @@ router.post('/experiments', requirePermission('labs.manage'), asyncHandler(async
   let parsedConfig;
   try { parsedConfig = typeof config === 'string' ? JSON.parse(config) : config; }
   catch (e) { return res.status(400).json({ error: 'config must be valid JSON.' }); }
+
+  const { valid, errors: fieldErrors } = validateExperimentDefinition(type, parsedConfig);
+  if (!valid) return res.status(400).json({ error: 'Config failed validation.', fieldErrors });
 
   const validDifficulties = ['beginner', 'intermediate', 'advanced'];
   if (difficulty && !validDifficulties.includes(difficulty)) {
@@ -119,6 +219,8 @@ router.patch('/experiments/:id', requirePermission('labs.manage'), asyncHandler(
     let parsedConfig;
     try { parsedConfig = typeof config === 'string' ? JSON.parse(config) : config; }
     catch (e) { return res.status(400).json({ error: 'config must be valid JSON.' }); }
+    const { valid, errors: fieldErrors } = validateExperimentDefinition(exp.type, parsedConfig);
+    if (!valid) return res.status(400).json({ error: 'Config failed validation.', fieldErrors });
     const newVersion = exp.current_version + 1;
     await run('INSERT INTO lab_experiment_versions (experiment_id, version_number, config) VALUES ($1,$2,$3)', [id, newVersion, JSON.stringify(parsedConfig)]);
     await run('UPDATE lab_experiments SET current_version = $1 WHERE id = $2', [newVersion, id]);
@@ -126,10 +228,21 @@ router.patch('/experiments/:id', requirePermission('labs.manage'), asyncHandler(
   res.json({ message: 'Experiment updated.' });
 }));
 
+// Shared by publish/approve — never let an experiment reach "published"
+// without re-checking its *current* saved config, since validation didn't
+// always exist (older drafts/edits could predate this check).
+async function assertCurrentConfigValid(exp) {
+  const version = await get('SELECT config FROM lab_experiment_versions WHERE experiment_id = $1 AND version_number = $2', [exp.id, exp.current_version]);
+  if (!version) return { valid: false, errors: [{ field: 'config', message: 'This experiment has no saved config to publish.' }] };
+  return validateExperimentDefinition(exp.type, version.config);
+}
+
 router.post('/experiments/:id/publish', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const exp = await get('SELECT * FROM lab_experiments WHERE id = $1', [id]);
   if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
+  const { valid, errors: fieldErrors } = await assertCurrentConfigValid(exp);
+  if (!valid) return res.status(400).json({ error: 'This experiment\'s config fails validation and cannot be published.', fieldErrors });
   await run("UPDATE lab_experiments SET status = 'published' WHERE id = $1", [id]);
   res.json({ message: `"${exp.title}" is now published — students can find and attempt it.` });
 }));
@@ -140,6 +253,88 @@ router.post('/experiments/:id/unpublish', requirePermission('labs.manage'), asyn
   if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
   await run("UPDATE lab_experiments SET status = 'draft' WHERE id = $1", [id]);
   res.json({ message: `"${exp.title}" moved back to draft.` });
+}));
+
+router.post('/experiments/:id/submit-review', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const exp = await get('SELECT * FROM lab_experiments WHERE id = $1', [id]);
+  if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
+  if (exp.status !== 'draft') return res.status(400).json({ error: 'Only a draft experiment can be submitted for review.' });
+  const { valid, errors: fieldErrors } = await assertCurrentConfigValid(exp);
+  if (!valid) return res.status(400).json({ error: 'This experiment\'s config fails validation and cannot be submitted for review.', fieldErrors });
+  await run("UPDATE lab_experiments SET status = 'submitted_for_review' WHERE id = $1", [id]);
+  res.json({ message: `"${exp.title}" submitted for review.` });
+}));
+
+router.post('/experiments/:id/approve', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const exp = await get('SELECT * FROM lab_experiments WHERE id = $1', [id]);
+  if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
+  if (exp.status !== 'submitted_for_review') return res.status(400).json({ error: 'Only an experiment submitted for review can be approved.' });
+  const { valid, errors: fieldErrors } = await assertCurrentConfigValid(exp);
+  if (!valid) return res.status(400).json({ error: 'This experiment\'s config fails validation and cannot be approved.', fieldErrors });
+  await run("UPDATE lab_experiments SET status = 'published' WHERE id = $1", [id]);
+  res.json({ message: `"${exp.title}" approved and published.` });
+}));
+
+router.post('/experiments/:id/archive', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const exp = await get('SELECT * FROM lab_experiments WHERE id = $1', [id]);
+  if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
+  if (exp.status === 'archived') return res.status(400).json({ error: 'This experiment is already archived.' });
+  await run("UPDATE lab_experiments SET status = 'archived' WHERE id = $1", [id]);
+  res.json({ message: `"${exp.title}" archived.` });
+}));
+
+router.post('/experiments/:id/restore', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const exp = await get('SELECT * FROM lab_experiments WHERE id = $1', [id]);
+  if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
+  if (exp.status !== 'archived') return res.status(400).json({ error: 'Only an archived experiment can be restored.' });
+  await run("UPDATE lab_experiments SET status = 'draft' WHERE id = $1", [id]);
+  res.json({ message: `"${exp.title}" restored to draft.` });
+}));
+
+// ============================================================
+// Staff/Teacher: preview mode — the same play interface a student sees,
+// used to test-play an experiment (any status, including draft) before it
+// ever reaches a student. Separate attempt rows (is_preview=true,
+// student_id NULL) so previewing never pollutes real student data or
+// results dashboards.
+// ============================================================
+
+router.post('/experiments/:id/preview-attempt', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  const exp = await get('SELECT * FROM lab_experiments WHERE id = $1', [id]);
+  if (!exp) return res.status(404).json({ error: 'Experiment not found.' });
+  const version = await get('SELECT * FROM lab_experiment_versions WHERE experiment_id = $1 AND version_number = $2', [exp.id, exp.current_version]);
+  if (!version) return res.status(400).json({ error: 'This experiment has no saved config to preview.' });
+  const { mode } = req.body || {};
+  const effectiveMode = mode === 'guided' ? 'guided' : 'challenge';
+  const attempt = await get(
+    `INSERT INTO lab_attempts (experiment_id, experiment_version_id, student_id, mode, is_preview, previewed_by_user_id)
+     VALUES ($1,$2,NULL,$3,true,$4) RETURNING id`,
+    [exp.id, version.id, effectiveMode, req.user.id]
+  );
+  res.status(201).json({ attemptId: attempt.id, experimentType: exp.type, config: version.config, mode: effectiveMode, isPreview: true });
+}));
+
+router.post('/attempts/:id/preview-complete', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const attemptId = Number(req.params.id);
+  const attempt = await get('SELECT * FROM lab_attempts WHERE id = $1 AND is_preview = true AND previewed_by_user_id = $2', [attemptId, req.user.id]);
+  if (!attempt) return res.status(404).json({ error: 'Preview attempt not found.' });
+  if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'This preview has already ended.' });
+  const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
+  await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
+  res.json({ message: 'Preview completed.', score });
+}));
+
+router.post('/attempts/:id/preview-abandon', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
+  const attemptId = Number(req.params.id);
+  const attempt = await get('SELECT * FROM lab_attempts WHERE id = $1 AND is_preview = true AND previewed_by_user_id = $2', [attemptId, req.user.id]);
+  if (!attempt) return res.status(404).json({ error: 'Preview attempt not found.' });
+  if (attempt.status === 'in_progress') await run("UPDATE lab_attempts SET status = 'abandoned' WHERE id = $1", [attemptId]);
+  res.json({ message: 'OK' });
 }));
 
 // ============================================================
@@ -233,10 +428,16 @@ router.get('/attempts/:id', asyncHandler(async (req, res) => {
 }));
 
 router.post('/attempts/:id/event', asyncHandler(async (req, res) => {
-  const student = await getStudent(req);
-  if (!student) return res.status(403).json({ error: 'Only students can log attempt events.' });
   const attemptId = Number(req.params.id);
-  const attempt = await get('SELECT * FROM lab_attempts WHERE id = $1 AND student_id = $2', [attemptId, student.id]);
+  const student = await getStudent(req);
+  // Same endpoint serves two owners: a student logging events on their own
+  // real attempt, or a staff/teacher previewer logging events on their own
+  // preview attempt — the renderer code calls this identically either way,
+  // so the distinction is made here rather than by branching the frontend.
+  let attempt = student ? await get('SELECT * FROM lab_attempts WHERE id = $1 AND student_id = $2', [attemptId, student.id]) : null;
+  if (!attempt) {
+    attempt = await get('SELECT * FROM lab_attempts WHERE id = $1 AND is_preview = true AND previewed_by_user_id = $2', [attemptId, req.user.id]);
+  }
   if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
   if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'This attempt has already ended.' });
 

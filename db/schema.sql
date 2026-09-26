@@ -802,3 +802,40 @@ CREATE TABLE IF NOT EXISTS lab_assignments (
 );
 
 ALTER TABLE lab_attempts ADD COLUMN IF NOT EXISTS assignment_id INTEGER REFERENCES lab_assignments(id);
+
+-- Virtual Lab review workflow + preview mode. Widen status from the
+-- original draft/published to a full review lifecycle: draft ->
+-- submitted_for_review -> published, with archived/restore on the side.
+-- Existing rows keep whatever status they already have (draft or
+-- published) — nothing changes for them, the constraint just now also
+-- allows the two new values going forward. Same drop-and-recreate pattern
+-- already used above for courses.status.
+DO $$
+DECLARE
+  con_name TEXT;
+BEGIN
+  SELECT conname INTO con_name
+  FROM pg_constraint
+  WHERE conrelid = 'lab_experiments'::regclass AND contype = 'c'
+    AND pg_get_constraintdef(oid) ILIKE '%status%';
+  IF con_name IS NOT NULL THEN
+    EXECUTE format('ALTER TABLE lab_experiments DROP CONSTRAINT %I', con_name);
+  END IF;
+END $$;
+ALTER TABLE lab_experiments ADD CONSTRAINT lab_experiments_status_check
+  CHECK (status IN ('draft','submitted_for_review','published','archived'));
+
+-- Preview attempts: staff/teachers previewing an experiment (including
+-- drafts, before any student ever sees them) have no student row at all,
+-- so student_id has to become optional — but only for a preview attempt.
+-- A real student attempt must still always have a student_id.
+ALTER TABLE lab_attempts ALTER COLUMN student_id DROP NOT NULL;
+ALTER TABLE lab_attempts ADD COLUMN IF NOT EXISTS is_preview BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE lab_attempts ADD COLUMN IF NOT EXISTS previewed_by_user_id INTEGER REFERENCES users(id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lab_attempts_preview_check') THEN
+    ALTER TABLE lab_attempts ADD CONSTRAINT lab_attempts_preview_check
+      CHECK ((is_preview = false AND student_id IS NOT NULL) OR (is_preview = true AND previewed_by_user_id IS NOT NULL));
+  END IF;
+END $$;
