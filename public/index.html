@@ -908,6 +908,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="security" onclick="showAdminPage('security')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6z"/><path d="M9.5 12l1.8 1.8L14.5 10"/></svg><span class="txt">Security</span></a>
         <a class="side-link" data-page="settings" onclick="showAdminPage('settings')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="txt">Settings</span></a>
         <a class="side-link" data-page="academics" onclick="showAdminPage('academics')"><svg class="icon" viewBox="0 0 24 24"><path d="M12 3l9 4.5-9 4.5-9-4.5z"/><path d="M6 10v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/></svg><span class="txt">Academics</span></a>
+        <a class="side-link" data-page="lab" onclick="showAdminPage('lab')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6M10 2v6l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-10V2"/><path d="M8.5 14h7"/></svg><span class="txt">Virtual Lab</span></a>
       </nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--ink); border:1px solid rgba(255,255,255,.3);" id="adminAvatar">--</div><div><div class="u-name" id="adminName">—</div><div class="u-role" id="adminTitle">—</div></div></div>
@@ -1287,6 +1288,35 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <div class="card-head"><h3>Security settings</h3></div>
             <p style="font-size:12.5px; color:var(--ink-soft);">Session activity, suspicious logins, and force-logout live in the <a href="javascript:void(0)" onclick="showAdminPage('security')" style="color:var(--indigo);">Security</a> tab. Granular policy controls (password rules, session length) aren't configurable yet — they're fixed in the code.</p>
           </div>
+        </div>
+      </div>
+
+      <div class="admin-page" data-page="lab">
+        <div class="card" id="labCreateCardAdmin" style="margin-bottom:20px;">
+          <div class="card-head"><h3>Create an experiment</h3></div>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array).</p>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+            <input class="grade-input" style="width:100%;" id="labSlugAdmin" placeholder="Slug (unique, e.g. series-circuit-2)">
+            <input class="grade-input" style="width:100%;" id="labTypeAdmin" placeholder="Type (e.g. circuit)" value="circuit">
+            <input class="grade-input" style="width:100%;" id="labTitleAdmin" placeholder="Title">
+            <input class="grade-input" style="width:100%;" id="labSubjectAdmin" placeholder="Subject">
+            <input class="grade-input" style="width:100%;" id="labCurriculumAdmin" placeholder="Curriculum (optional)">
+            <input class="grade-input" style="width:100%;" id="labGradeAdmin" placeholder="Grade (optional)">
+            <input class="grade-input" style="width:100%;" id="labTopicAdmin" placeholder="Topic (optional)">
+            <select class="grade-input" style="width:100%;" id="labDifficultyAdmin"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+            <input class="grade-input" style="width:100%; grid-column:1/-1;" id="labObjectiveAdmin" placeholder="Objective">
+          </div>
+          <textarea id="labConfigAdmin" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;"></textarea>
+          <div id="labConfigErrorsAdmin" style="display:none; font-size:11.5px; padding:8px 10px; background:var(--paper-alt); border-radius:8px; margin-bottom:10px;"></div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-outline btn-sm" onclick="validateLabConfig()">Validate</button>
+            <button class="btn btn-primary btn-sm" onclick="createLabExperiment()">Create as draft</button>
+          </div>
+        </div>
+        <div class="card"><div class="card-head"><h3>Experiments</h3></div><div id="labExperimentsListAdmin"><p class="empty">Loading…</p></div></div>
+        <div class="card" id="labPreviewCardAdmin" style="display:none; margin-top:20px;">
+          <div class="card-head"><h3 id="labPreviewTitleAdmin">Preview</h3><button class="btn btn-outline btn-sm" onclick="labPreviewAbandonAndReturn()">← Back to Experiments</button></div>
+          <div id="labPreviewAreaAdmin"></div>
         </div>
       </div>
     </main>
@@ -3404,6 +3434,14 @@ async function saveExamGrades(attemptId, questionIds){
 const LAB_STATUS_COLOR = { draft: 'var(--ink-soft)', submitted_for_review: 'var(--gold)', published: 'var(--green)', archived: 'var(--red)' };
 const LAB_STATUS_LABEL = { draft: 'Draft', submitted_for_review: 'In review', published: 'Published', archived: 'Archived' };
 
+// Virtual Lab management exists twice in the DOM — once on the Staff
+// dashboard (permission-gated), once on the Admin dashboard (always
+// full access) — each with its own uniquely-ID'd copy of the same
+// markup, so the two never fight over one element. Every lab function
+// below resolves the right copy through this helper rather than a
+// hardcoded id, keyed off the single active role for this login.
+function labId(base){ return (currentUser && currentUser.role === 'admin') ? base + 'Admin' : base; }
+
 // Status-aware actions: which buttons an experiment gets depends on where
 // it is in the draft -> submitted_for_review -> published lifecycle, with
 // archive/restore on the side. Preview is always available so staff can
@@ -3431,8 +3469,8 @@ function labExperimentActionsHtml(e, canManage){
 async function loadLabExperimentsList(){
   try {
     const d = await api('/lab/experiments');
-    const canManage = STAFF_PERMISSIONS.includes('labs.manage');
-    document.getElementById('labExperimentsList').innerHTML = d.experiments.length
+    const canManage = (currentUser && currentUser.role === 'admin') ? true : STAFF_PERMISSIONS.includes('labs.manage');
+    document.getElementById(labId('labExperimentsList')).innerHTML = d.experiments.length
       ? d.experiments.map(e => `<div class="list-row" style="flex-wrap:wrap;"><div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
           <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${LAB_STATUS_COLOR[e.status] || 'var(--ink-soft)'}; font-size:10.5px;">${LAB_STATUS_LABEL[e.status] || e.status}</span></div>
             <div class="l-sub">${escapeHtml(e.type)} · ${escapeHtml(e.difficulty)} · v${e.currentVersion} · ${e.attemptCount} attempt${e.attemptCount===1?'':'s'}</div></div></div>
@@ -3444,9 +3482,9 @@ async function loadLabExperimentsList(){
 }
 
 async function validateLabConfig(){
-  const type = document.getElementById('labType').value.trim();
-  const configRaw = document.getElementById('labConfig').value.trim();
-  const box = document.getElementById('labConfigErrors');
+  const type = document.getElementById(labId('labType')).value.trim();
+  const configRaw = document.getElementById(labId('labConfig')).value.trim();
+  const box = document.getElementById(labId('labConfigErrors'));
   if (!type || !configRaw) { toast('Type and config are required to validate.'); return; }
   let config;
   try { config = JSON.parse(configRaw); } catch (e) { box.style.display='block'; box.innerHTML = '<b>Invalid JSON.</b>'; return; }
@@ -3492,23 +3530,23 @@ async function startLabPreview(experimentId, title){
   try {
     const d = await api(`/lab/experiments/${experimentId}/preview-attempt`, { method: 'POST', body: JSON.stringify({ mode: 'challenge' }) });
     CURRENT_LAB_ATTEMPT = { id: d.attemptId, experimentType: d.experimentType, config: d.config, mode: d.mode, status: 'in_progress', isPreview: true };
-    document.getElementById('labPreviewTitle').textContent = `Preview — ${title}`;
-    document.getElementById('labPreviewCard').style.display = 'block';
-    document.getElementById('labPreviewCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(labId('labPreviewTitle')).textContent = `Preview — ${title}`;
+    document.getElementById(labId('labPreviewCard')).style.display = 'block';
+    document.getElementById(labId('labPreviewCard')).scrollIntoView({ behavior: 'smooth', block: 'start' });
     const renderer = LAB_RENDERERS[d.experimentType];
     if (!renderer) {
-      document.getElementById('labPreviewArea').innerHTML = '<p class="empty">This experiment type isn\'t supported yet.</p>';
+      document.getElementById(labId('labPreviewArea')).innerHTML = '<p class="empty">This experiment type isn\'t supported yet.</p>';
       return;
     }
-    renderer(document.getElementById('labPreviewArea'), d.config, d.attemptId, d.mode);
+    renderer(document.getElementById(labId('labPreviewArea')), d.config, d.attemptId, d.mode);
   } catch (err) {
     toast(err.message);
   }
 }
 
 function labPreviewBackToList(){
-  document.getElementById('labPreviewCard').style.display = 'none';
-  document.getElementById('labPreviewArea').innerHTML = '';
+  document.getElementById(labId('labPreviewCard')).style.display = 'none';
+  document.getElementById(labId('labPreviewArea')).innerHTML = '';
   CURRENT_LAB_ATTEMPT = null;
   loadLabExperimentsList();
 }
@@ -3521,23 +3559,23 @@ async function labPreviewAbandonAndReturn(){
 }
 
 async function createLabExperiment(){
-  const slug = document.getElementById('labSlug').value.trim();
-  const type = document.getElementById('labType').value.trim();
-  const title = document.getElementById('labTitle').value.trim();
-  const subject = document.getElementById('labSubject').value.trim();
-  const curriculum = document.getElementById('labCurriculum').value.trim();
-  const grade = document.getElementById('labGrade').value.trim();
-  const topic = document.getElementById('labTopic').value.trim();
-  const difficulty = document.getElementById('labDifficulty').value;
-  const objective = document.getElementById('labObjective').value.trim();
-  const configRaw = document.getElementById('labConfig').value.trim();
+  const slug = document.getElementById(labId('labSlug')).value.trim();
+  const type = document.getElementById(labId('labType')).value.trim();
+  const title = document.getElementById(labId('labTitle')).value.trim();
+  const subject = document.getElementById(labId('labSubject')).value.trim();
+  const curriculum = document.getElementById(labId('labCurriculum')).value.trim();
+  const grade = document.getElementById(labId('labGrade')).value.trim();
+  const topic = document.getElementById(labId('labTopic')).value.trim();
+  const difficulty = document.getElementById(labId('labDifficulty')).value;
+  const objective = document.getElementById(labId('labObjective')).value.trim();
+  const configRaw = document.getElementById(labId('labConfig')).value.trim();
   if (!slug || !type || !title || !subject || !configRaw) { toast('Slug, type, title, subject, and config are required.'); return; }
   let config;
   try { config = JSON.parse(configRaw); } catch (e) { toast('Config must be valid JSON.'); return; }
   try {
     const res = await api('/lab/experiments', { method: 'POST', body: JSON.stringify({ slug, type, title, subject, curriculum: curriculum || undefined, grade: grade || undefined, topic: topic || undefined, difficulty, objective: objective || undefined, config }) });
     toast(res.message);
-    ['labSlug','labTitle','labSubject','labCurriculum','labGrade','labTopic','labObjective','labConfig'].forEach(id => document.getElementById(id).value = '');
+    ['labSlug','labTitle','labSubject','labCurriculum','labGrade','labTopic','labObjective','labConfig'].forEach(id => document.getElementById(labId(id)).value = '');
     await loadLabExperimentsList();
   } catch (err) {
     toast(err.message);
@@ -6004,7 +6042,7 @@ async function loadAdminDashboard(){
     populateSectionTeacherOptions();
 
     await loadAdminPendingFees();
-
+    await loadLabExperimentsList();
     const atSectionEl = document.getElementById('atSection');
     if (atSectionEl) {
       const prevValue = atSectionEl.value;
