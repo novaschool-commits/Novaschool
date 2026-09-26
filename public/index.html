@@ -1296,17 +1296,17 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <div class="card-head"><h3>Create an experiment</h3></div>
           <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array).</p>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <input class="grade-input" style="width:100%;" id="labSlugAdmin" placeholder="Slug (unique, e.g. series-circuit-2)">
-            <input class="grade-input" style="width:100%;" id="labTypeAdmin" placeholder="Type (e.g. circuit)" value="circuit">
+            <input class="grade-input" style="width:100%;" id="labSlugAdmin" placeholder="Slug (unique id)" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <input class="grade-input" style="width:100%;" id="labTypeAdmin" placeholder="Type" value="circuit" autocapitalize="off" autocorrect="off" spellcheck="false">
             <input class="grade-input" style="width:100%;" id="labTitleAdmin" placeholder="Title">
             <input class="grade-input" style="width:100%;" id="labSubjectAdmin" placeholder="Subject">
-            <input class="grade-input" style="width:100%;" id="labCurriculumAdmin" placeholder="Curriculum (optional)">
-            <input class="grade-input" style="width:100%;" id="labGradeAdmin" placeholder="Grade (optional)">
-            <input class="grade-input" style="width:100%;" id="labTopicAdmin" placeholder="Topic (optional)">
+            <input class="grade-input" style="width:100%;" id="labCurriculumAdmin" placeholder="Curriculum">
+            <input class="grade-input" style="width:100%;" id="labGradeAdmin" placeholder="Grade">
+            <input class="grade-input" style="width:100%;" id="labTopicAdmin" placeholder="Topic">
             <select class="grade-input" style="width:100%;" id="labDifficultyAdmin"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
             <input class="grade-input" style="width:100%; grid-column:1/-1;" id="labObjectiveAdmin" placeholder="Objective">
           </div>
-          <textarea id="labConfigAdmin" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;"></textarea>
+          <textarea id="labConfigAdmin" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
           <div id="labConfigErrorsAdmin" style="display:none; font-size:11.5px; padding:8px 10px; background:var(--paper-alt); border-radius:8px; margin-bottom:10px;"></div>
           <div style="display:flex; gap:8px;">
             <button class="btn btn-outline btn-sm" onclick="validateLabConfig()">Validate</button>
@@ -1462,17 +1462,17 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <div class="card-head"><h3>Create an experiment</h3></div>
           <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array).</p>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-            <input class="grade-input" style="width:100%;" id="labSlug" placeholder="Slug (unique, e.g. series-circuit-2)">
-            <input class="grade-input" style="width:100%;" id="labType" placeholder="Type (e.g. circuit)" value="circuit">
+            <input class="grade-input" style="width:100%;" id="labSlug" placeholder="Slug (unique id)" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <input class="grade-input" style="width:100%;" id="labType" placeholder="Type" value="circuit" autocapitalize="off" autocorrect="off" spellcheck="false">
             <input class="grade-input" style="width:100%;" id="labTitle" placeholder="Title">
             <input class="grade-input" style="width:100%;" id="labSubject" placeholder="Subject">
-            <input class="grade-input" style="width:100%;" id="labCurriculum" placeholder="Curriculum (optional)">
-            <input class="grade-input" style="width:100%;" id="labGrade" placeholder="Grade (optional)">
-            <input class="grade-input" style="width:100%;" id="labTopic" placeholder="Topic (optional)">
+            <input class="grade-input" style="width:100%;" id="labCurriculum" placeholder="Curriculum">
+            <input class="grade-input" style="width:100%;" id="labGrade" placeholder="Grade">
+            <input class="grade-input" style="width:100%;" id="labTopic" placeholder="Topic">
             <select class="grade-input" style="width:100%;" id="labDifficulty"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
             <input class="grade-input" style="width:100%; grid-column:1/-1;" id="labObjective" placeholder="Objective">
           </div>
-          <textarea id="labConfig" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;"></textarea>
+          <textarea id="labConfig" placeholder='Config JSON, e.g. {"voltage":9,"resistance":3,"connections":[{"id":"battery-switch","from":"Battery","to":"Switch"},{"id":"switch-bulb","from":"Switch","to":"Bulb"},{"id":"bulb-battery","from":"Bulb","to":"Battery"}]}' style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:var(--mono); font-size:12px; margin-bottom:10px; resize:vertical; min-height:80px;" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
           <div id="labConfigErrors" style="display:none; font-size:11.5px; padding:8px 10px; background:var(--paper-alt); border-radius:8px; margin-bottom:10px;"></div>
           <div style="display:flex; gap:8px;">
             <button class="btn btn-outline btn-sm" onclick="validateLabConfig()">Validate</button>
@@ -3472,8 +3472,8 @@ async function loadLabExperimentsList(){
     const canManage = (currentUser && currentUser.role === 'admin') ? true : STAFF_PERMISSIONS.includes('labs.manage');
     document.getElementById(labId('labExperimentsList')).innerHTML = d.experiments.length
       ? d.experiments.map(e => `<div class="list-row" style="flex-wrap:wrap;"><div class="l-main"><span class="tag" style="background:${subjectColor(e.subject)};">${escapeHtml(e.subject)}</span>
-          <div><div class="l-title">${escapeHtml(e.title)} <span class="tag" style="background:${LAB_STATUS_COLOR[e.status] || 'var(--ink-soft)'}; font-size:10.5px;">${LAB_STATUS_LABEL[e.status] || e.status}</span></div>
-            <div class="l-sub">${escapeHtml(e.type)} · ${escapeHtml(e.difficulty)} · v${e.currentVersion} · ${e.attemptCount} attempt${e.attemptCount===1?'':'s'}</div></div></div>
+          <div><div class="l-title">${escapeHtml(e.title)}</div>
+            <div class="l-sub"><span class="tag" style="background:${LAB_STATUS_COLOR[e.status] || 'var(--ink-soft)'}; font-size:10.5px;">${LAB_STATUS_LABEL[e.status] || e.status}</span> ${escapeHtml(e.type)} · ${escapeHtml(e.difficulty)} · v${e.currentVersion} · ${e.attemptCount} attempt${e.attemptCount===1?'':'s'}</div></div></div>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">${labExperimentActionsHtml(e, canManage)}</div></div>`).join('')
       : '<p class="empty">No experiments yet.</p>';
   } catch (err) {
