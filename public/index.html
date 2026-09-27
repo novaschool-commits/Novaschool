@@ -4470,28 +4470,51 @@ LAB_RENDERERS.circuit = function renderCircuitExperiment(container, config, atte
     container.innerHTML = `
       <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
         <svg viewBox="0 0 400 260" style="width:100%; max-width:400px; background:var(--paper-alt); border-radius:12px;">
-          <!-- Battery -->
+          <defs>
+            <linearGradient id="cktBatteryBody" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5a5a5a"/><stop offset="55%" stop-color="#2b2b2b"/><stop offset="100%" stop-color="#1a1a1a"/>
+            </linearGradient>
+            <linearGradient id="cktBatteryCap" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f0d27a"/><stop offset="100%" stop-color="#b8912f"/>
+            </linearGradient>
+            <radialGradient id="cktBulbGlow"><stop offset="0%" stop-color="#fff6c8" stop-opacity="0.95"/><stop offset="100%" stop-color="#ffd23f" stop-opacity="0"/></radialGradient>
+          </defs>
+          <!-- Battery (realistic cell: dark body, brass + terminal cap) -->
           <g>
-            <rect x="30" y="150" width="60" height="40" rx="6" fill="${complete ? 'var(--green)' : 'var(--ink-soft)'}"/>
-            <text x="60" y="175" text-anchor="middle" fill="#fff" font-size="11" font-family="sans-serif">Battery</text>
+            ${complete ? '<rect x="24" y="139" width="82" height="62" rx="12" fill="none" stroke="var(--green)" stroke-width="2.5" opacity="0.65"/>' : ''}
+            <rect x="30" y="145" width="70" height="50" rx="7" fill="url(#cktBatteryBody)" stroke="#111" stroke-width="1.5"/>
+            <rect x="96" y="161" width="10" height="18" rx="2" fill="url(#cktBatteryCap)" stroke="#8a6a1f" stroke-width="1"/>
+            <text x="46" y="175" text-anchor="middle" fill="#eee" font-size="17" font-weight="700" font-family="sans-serif">−</text>
+            <text x="82" y="175" text-anchor="middle" fill="#eee" font-size="15" font-weight="700" font-family="sans-serif">+</text>
+            <text x="65" y="212" text-anchor="middle" fill="var(--ink-soft)" font-size="10" font-family="sans-serif">Battery</text>
           </g>
-          <!-- Switch -->
+          <!-- Switch (knife switch: two contact posts + a lever) -->
           <g style="cursor:pointer;" onclick="window.__labToggleSwitch()">
-            <rect x="170" y="20" width="60" height="40" rx="6" fill="${switchClosed ? 'var(--green)' : 'var(--amber)'}"/>
-            <text x="200" y="36" text-anchor="middle" fill="#fff" font-size="10" font-family="sans-serif">Switch</text>
-            <text x="200" y="50" text-anchor="middle" fill="#fff" font-size="9" font-family="sans-serif">${switchClosed ? '(closed)' : '(open — tap)'}</text>
+            <rect x="163" y="18" width="94" height="44" rx="7" fill="#e7e7e7" stroke="#9aa0a6" stroke-width="1.5"/>
+            <circle cx="180" cy="47" r="6" fill="#8a8a8a" stroke="#5f5f5f" stroke-width="1"/>
+            <circle cx="240" cy="47" r="6" fill="#8a8a8a" stroke="#5f5f5f" stroke-width="1"/>
+            ${switchClosed
+              ? '<line x1="180" y1="47" x2="240" y2="47" stroke="#3a3a3a" stroke-width="5" stroke-linecap="round"/>'
+              : '<line x1="180" y1="47" x2="220" y2="24" stroke="#3a3a3a" stroke-width="5" stroke-linecap="round"/>'}
+            <text x="210" y="12" text-anchor="middle" fill="var(--ink-soft)" font-size="10" font-family="sans-serif">${switchClosed ? 'Closed' : 'Open — tap'}</text>
           </g>
-          <!-- Bulb -->
+          <!-- Bulb (incandescent glass bulb + screw base + glowing filament) -->
           <g>
-            <circle cx="340" cy="170" r="30" fill="${complete ? '#ffe58a' : '#d9d9d9'}" stroke="${complete ? 'var(--amber)' : 'var(--ink-soft)'}" stroke-width="3"/>
-            <text x="340" y="175" text-anchor="middle" fill="${complete ? '#5a4300' : '#666'}" font-size="11" font-family="sans-serif">Bulb</text>
+            ${complete ? '<circle cx="340" cy="158" r="46" fill="url(#cktBulbGlow)"/>' : ''}
+            <ellipse cx="340" cy="158" rx="28" ry="32" fill="${complete ? '#fffaf0' : '#eef0f2'}" stroke="#9aa0a6" stroke-width="2"/>
+            <path d="M330,146 L336,164 L344,146 L350,164" fill="none" stroke="${complete ? '#ff8f00' : '#b0b0b0'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="328" y="186" width="24" height="18" fill="#b0b0b0" stroke="#7a7a7a" stroke-width="1"/>
+            <line x1="328" y1="191" x2="352" y2="191" stroke="#7a7a7a" stroke-width="1"/>
+            <line x1="328" y1="197" x2="352" y2="197" stroke="#7a7a7a" stroke-width="1"/>
+            <rect x="333" y="204" width="14" height="6" rx="2" fill="#8a8a8a"/>
+            <text x="340" y="232" text-anchor="middle" fill="var(--ink-soft)" font-size="10" font-family="sans-serif">Bulb</text>
           </g>
           <!-- Wire: battery-switch -->
-          <line x1="90" y1="160" x2="170" y2="45" stroke="${wires['battery-switch'] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires['battery-switch'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('battery-switch')"/>
+          <line x1="106" y1="170" x2="180" y2="47" stroke="${wires['battery-switch'] ? '#b5651d' : '#ccc'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${wires['battery-switch'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('battery-switch')"/>
           <!-- Wire: switch-bulb -->
-          <line x1="230" y1="45" x2="340" y2="140" stroke="${wires['switch-bulb'] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires['switch-bulb'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('switch-bulb')"/>
+          <line x1="240" y1="47" x2="340" y2="126" stroke="${wires['switch-bulb'] ? '#b5651d' : '#ccc'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${wires['switch-bulb'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('switch-bulb')"/>
           <!-- Wire: bulb-battery -->
-          <line x1="340" y1="200" x2="60" y2="190" stroke="${wires['bulb-battery'] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires['bulb-battery'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('bulb-battery')"/>
+          <line x1="340" y1="210" x2="30" y2="170" stroke="${wires['bulb-battery'] ? '#b5651d' : '#ccc'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${wires['bulb-battery'] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('bulb-battery')"/>
         </svg>
         <div style="flex:1; min-width:200px;">
           <p style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">Tap a dashed line to connect that wire. Tap the switch to open/close it.</p>
@@ -4598,19 +4621,43 @@ LAB_RENDERERS.circuit_parallel = function renderParallelCircuitExperiment(contai
       const live = branchLive(b);
       const conn1 = b.connections[0], conn2 = b.connections[1];
       svgBranches += `
-        <line x1="100" y1="${y}" x2="220" y2="${y}" stroke="${wires[conn1.id] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires[conn1.id] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('${conn1.id}')"/>
-        <circle cx="250" cy="${y}" r="26" fill="${live ? '#ffe58a' : '#d9d9d9'}" stroke="${live ? 'var(--amber)' : 'var(--ink-soft)'}" stroke-width="3"/>
-        <text x="250" y="${y + 4}" text-anchor="middle" fill="${live ? '#5a4300' : '#666'}" font-size="10" font-family="sans-serif">${escapeHtml(b.label || 'Bulb ' + (i + 1))}</text>
-        <line x1="280" y1="${y}" x2="380" y2="${y}" stroke="${wires[conn2.id] ? 'var(--indigo)' : '#ccc'}" stroke-width="5" stroke-dasharray="${wires[conn2.id] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('${conn2.id}')"/>`;
+        <line x1="100" y1="${y}" x2="222" y2="${y}" stroke="${wires[conn1.id] ? '#b5651d' : '#ccc'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${wires[conn1.id] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('${conn1.id}')"/>
+        ${live ? `<ellipse cx="250" cy="${y}" rx="42" ry="40" fill="url(#pcktBulbGlow)"/>` : ''}
+        <ellipse cx="250" cy="${y}" rx="26" ry="24" fill="${live ? '#fffaf0' : '#eef0f2'}" stroke="#9aa0a6" stroke-width="2"/>
+        <path d="M241,${y - 9} L247,${y + 6} L253,${y - 9} L259,${y + 6}" fill="none" stroke="${live ? '#ff8f00' : '#b0b0b0'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="237" y="${y + 14}" width="26" height="10" fill="#b0b0b0" stroke="#7a7a7a" stroke-width="1"/>
+        <line x1="237" y1="${y + 18}" x2="263" y2="${y + 18}" stroke="#7a7a7a" stroke-width="1"/>
+        <text x="250" y="${y - 32}" text-anchor="middle" fill="var(--ink-soft)" font-size="10" font-family="sans-serif">${escapeHtml(b.label || 'Bulb ' + (i + 1))}</text>
+        <line x1="278" y1="${y}" x2="380" y2="${y}" stroke="${wires[conn2.id] ? '#b5651d' : '#ccc'}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${wires[conn2.id] ? '0' : '6,6'}" style="cursor:pointer;" onclick="window.__labToggleWire('${conn2.id}')"/>`;
     });
     container.innerHTML = `
       <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
         <svg viewBox="0 0 420 260" style="width:100%; max-width:420px; background:var(--paper-alt); border-radius:12px;">
-          <rect x="20" y="100" width="60" height="60" rx="6" fill="${complete ? 'var(--green)' : 'var(--ink-soft)'}"/>
-          <text x="50" y="135" text-anchor="middle" fill="#fff" font-size="10" font-family="sans-serif">Battery</text>
+          <defs>
+            <linearGradient id="pcktBatteryBody" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#5a5a5a"/><stop offset="55%" stop-color="#2b2b2b"/><stop offset="100%" stop-color="#1a1a1a"/>
+            </linearGradient>
+            <linearGradient id="pcktBatteryCap" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#f0d27a"/><stop offset="100%" stop-color="#b8912f"/>
+            </linearGradient>
+            <radialGradient id="pcktBulbGlow"><stop offset="0%" stop-color="#fff6c8" stop-opacity="0.95"/><stop offset="100%" stop-color="#ffd23f" stop-opacity="0"/></radialGradient>
+          </defs>
+          <!-- Battery (realistic cell, vertical) -->
+          ${complete ? '<rect x="14" y="94" width="72" height="72" rx="12" fill="none" stroke="var(--green)" stroke-width="2.5" opacity="0.65"/>' : ''}
+          <rect x="20" y="100" width="60" height="60" rx="7" fill="url(#pcktBatteryBody)" stroke="#111" stroke-width="1.5"/>
+          <rect x="36" y="94" width="28" height="10" rx="2" fill="url(#pcktBatteryCap)" stroke="#8a6a1f" stroke-width="1"/>
+          <text x="50" y="122" text-anchor="middle" fill="#eee" font-size="14" font-weight="700" font-family="sans-serif">+</text>
+          <text x="50" y="150" text-anchor="middle" fill="#eee" font-size="16" font-weight="700" font-family="sans-serif">−</text>
+          <text x="50" y="178" text-anchor="middle" fill="var(--ink-soft)" font-size="10" font-family="sans-serif">Battery</text>
+          <!-- Switch (knife switch) -->
           <g style="cursor:pointer;" onclick="window.__labToggleSwitch()">
-            <rect x="20" y="10" width="60" height="30" rx="6" fill="${switchClosed ? 'var(--green)' : 'var(--amber)'}"/>
-            <text x="50" y="29" text-anchor="middle" fill="#fff" font-size="9" font-family="sans-serif">${switchClosed ? 'Closed' : 'Open (tap)'}</text>
+            <rect x="12" y="6" width="76" height="36" rx="7" fill="#e7e7e7" stroke="#9aa0a6" stroke-width="1.5"/>
+            <circle cx="30" cy="30" r="5" fill="#8a8a8a" stroke="#5f5f5f" stroke-width="1"/>
+            <circle cx="70" cy="30" r="5" fill="#8a8a8a" stroke="#5f5f5f" stroke-width="1"/>
+            ${switchClosed
+              ? '<line x1="30" y1="30" x2="70" y2="30" stroke="#3a3a3a" stroke-width="4.5" stroke-linecap="round"/>'
+              : '<line x1="30" y1="30" x2="62" y2="12" stroke="#3a3a3a" stroke-width="4.5" stroke-linecap="round"/>'}
+            <text x="50" y="13" text-anchor="middle" fill="var(--ink-soft)" font-size="8.5" font-family="sans-serif">${switchClosed ? 'Closed' : 'Open — tap'}</text>
           </g>
           ${svgBranches}
         </svg>
