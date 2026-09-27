@@ -4398,16 +4398,23 @@ async function labLogEvent(eventType, detail, state){
   } catch (err) { /* non-fatal — don't interrupt the student's flow over a logging failure */ }
 }
 
+// Calls the server-authoritative completion check. The server independently
+// re-derives whether the experiment is actually complete from its own
+// stored state — it does not trust anything the client believes about
+// itself — so this can come back either way:
+//   { ok: true, score, measurements }   — server agrees it's complete
+//   { ok: false, issues }               — server says it's not, with why
 async function labComplete(){
-  if (!CURRENT_LAB_ATTEMPT) return;
+  if (!CURRENT_LAB_ATTEMPT) return { ok: false, issues: ['No active attempt.'] };
+  const endpoint = CURRENT_LAB_ATTEMPT.isPreview ? 'preview-complete' : 'complete';
   try {
-    const endpoint = CURRENT_LAB_ATTEMPT.isPreview ? 'preview-complete' : 'complete';
     const res = await api(`/lab/attempts/${CURRENT_LAB_ATTEMPT.id}/${endpoint}`, { method: 'POST' });
     CURRENT_LAB_ATTEMPT.status = 'completed';
-    return res.score;
+    return { ok: true, score: res.score, measurements: res.measurements };
   } catch (err) {
+    if (err.issues) return { ok: false, issues: err.issues };
     toast(err.message);
-    return null;
+    return { ok: false, issues: null };
   }
 }
 
@@ -4553,30 +4560,28 @@ LAB_RENDERERS.circuit = function renderCircuitExperiment(container, config, atte
     render();
   };
 
-  window.__labHint = () => {
-    hintsUsed++;
-    labLogEvent('hint', { hintNumber: hintsUsed });
-    const issues = missingPieces();
-    const msg = issues.length
-      ? issues[0]
-      : 'Your circuit is complete! The current is calculated using Ohm\'s law: I = V / R.';
-    document.getElementById('labFeedback').innerHTML = labHintBoxHtml(msg);
+  window.__labHint = async () => {
+    try {
+      const res = await api(`/lab/attempts/${attemptId}/event`, { method: 'POST', body: JSON.stringify({ event_type: 'hint' }) });
+      document.getElementById('labFeedback').innerHTML = labHintBoxHtml(res.message);
+    } catch (err) {
+      toast(err.message);
+    }
   };
 
   window.__labCheck = async () => {
-    const issues = missingPieces();
-    if (issues.length > 0) {
-      mistakes++;
-      labLogEvent('mistake', { issues });
-      document.getElementById('labFeedback').innerHTML = labMistakeBoxHtml(issues, 'A series circuit needs a complete loop — every connection matters, and the switch must be closed for current to flow.');
+    const result = await labComplete();
+    if (!result.ok) {
+      if (result.issues) {
+        document.getElementById('labFeedback').innerHTML = labMistakeBoxHtml(result.issues, 'A series circuit needs a complete loop — every connection matters, and the switch must be closed for current to flow.');
+      }
       return;
     }
     completed = true;
-    const score = await labComplete();
-    const current = config.voltage / config.resistance;
+    const current = result.measurements.current;
     const details = `<p>Current = V ÷ R = ${config.voltage}V ÷ ${config.resistance}Ω = <b>${current.toFixed(2)} A</b></p>
       <p style="margin-top:6px;">Because every component was connected in a single loop and the switch was closed, current could flow continuously through the bulb.</p>`;
-    document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Circuit completed successfully.', details, score);
+    document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Circuit completed successfully.', details, result.score);
   };
 
   render();
@@ -4699,29 +4704,29 @@ LAB_RENDERERS.circuit_parallel = function renderParallelCircuitExperiment(contai
     render();
   };
 
-  window.__labHint = () => {
-    hintsUsed++;
-    labLogEvent('hint', { hintNumber: hintsUsed });
-    const issues = missingPieces();
-    const msg = issues.length ? issues[0] : 'Each branch works independently — current divides between them based on their own resistance.';
-    document.getElementById('labFeedback').innerHTML = labHintBoxHtml(msg);
+  window.__labHint = async () => {
+    try {
+      const res = await api(`/lab/attempts/${attemptId}/event`, { method: 'POST', body: JSON.stringify({ event_type: 'hint' }) });
+      document.getElementById('labFeedback').innerHTML = labHintBoxHtml(res.message);
+    } catch (err) {
+      toast(err.message);
+    }
   };
 
   window.__labCheck = async () => {
-    const issues = missingPieces();
-    if (issues.length > 0) {
-      mistakes++;
-      labLogEvent('mistake', { issues });
-      document.getElementById('labFeedback').innerHTML = labMistakeBoxHtml(issues, "In a parallel circuit, each branch needs its own complete connection — the branches don't depend on each other, but every one still needs to be wired correctly.");
+    const result = await labComplete();
+    if (!result.ok) {
+      if (result.issues) {
+        document.getElementById('labFeedback').innerHTML = labMistakeBoxHtml(result.issues, "In a parallel circuit, each branch needs its own complete connection — the branches don't depend on each other, but every one still needs to be wired correctly.");
+      }
       return;
     }
     completed = true;
-    const score = await labComplete();
-    const total = totalCurrent();
-    const breakdown = config.branches.map((b, i) => `Branch ${i + 1}: ${config.voltage}V ÷ ${b.resistance}Ω = ${branchCurrent(b).toFixed(2)} A`).join('<br>');
+    const { total, branchCurrents } = result.measurements;
+    const breakdown = config.branches.map((b, i) => `Branch ${i + 1}: ${config.voltage}V ÷ ${b.resistance}Ω = ${branchCurrents[i].toFixed(2)} A`).join('<br>');
     const details = `<p>${breakdown}</p><p style="margin-top:6px;">Total current = ${total.toFixed(2)} A (the sum of both branches).</p>
       <p style="margin-top:6px;">Because the branches are independent, disconnecting one wouldn't stop current in the other — that's what makes a parallel circuit different from a series circuit, where any break stops everything.</p>`;
-    document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Parallel circuit completed successfully.', details, score);
+    document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Parallel circuit completed successfully.', details, result.score);
   };
 
   render();

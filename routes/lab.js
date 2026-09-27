@@ -110,6 +110,80 @@ function validateExperimentDefinition(type, config) {
   return { valid: errors.length === 0, errors };
 }
 
+// ============================================================
+// Server-authoritative simulation logic. The renderer keeps its own copy
+// of this same logic client-side purely for instant visual feedback — but
+// nothing the client sends is trusted for scoring. Authoritative state is
+// built up server-side, one specific action at a time (never from a
+// client-supplied full-state snapshot), and completeness/mistakes/hints
+// are all derived from that server-held state, not from anything the
+// client claims about itself.
+//
+// A type left out of this registry falls back to the old trust-the-
+// accumulated-counters behavior (flagged as serverVerified:false in the
+// Layer 5 audit) rather than being blocked — that's a visible, reviewed
+// gap for a future type, not a silent one for these two.
+// ============================================================
+
+function applyWireSwitchEvent(state, event_type, detail) {
+  const s = { wires: Object.assign({}, state && state.wires), switchClosed: !!(state && state.switchClosed) };
+  if ((event_type === 'connect' || event_type === 'disconnect') && detail && typeof detail.wire === 'string') {
+    s.wires[detail.wire] = event_type === 'connect';
+  } else if (event_type === 'toggle_switch' && detail && typeof detail.closed === 'boolean') {
+    s.switchClosed = detail.closed;
+  }
+  return s;
+}
+
+function evaluateCircuit(config, state) {
+  const wires = (state && state.wires) || {};
+  const switchClosed = !!(state && state.switchClosed);
+  const ids = (config.connections || []).map(c => c.id);
+  const missing = ids.filter(id => !wires[id]);
+  const issues = [];
+  if (missing.length) issues.push(`Missing ${missing.length} connection${missing.length === 1 ? '' : 's'} — check the wires around the loop.`);
+  else if (!switchClosed) issues.push('Every wire is connected, but the switch is still open — close it to let current flow.');
+  const complete = missing.length === 0 && switchClosed;
+  return { complete, issues, measurements: { current: complete ? (config.voltage / config.resistance) : 0 } };
+}
+
+function evaluateCircuitParallel(config, state) {
+  const wires = (state && state.wires) || {};
+  const switchClosed = !!(state && state.switchClosed);
+  const issues = [];
+  let allWired = true;
+  const branchCurrents = (config.branches || []).map((b, i) => {
+    const missing = b.connections.filter(c => !wires[c.id]);
+    if (missing.length) {
+      allWired = false;
+      issues.push(`Branch ${i + 1} (${b.label || 'Bulb ' + (i + 1)}) is missing ${missing.length} connection${missing.length === 1 ? '' : 's'}.`);
+    }
+    return (switchClosed && missing.length === 0) ? (config.voltage / b.resistance) : 0;
+  });
+  if (allWired && !switchClosed) issues.push('All branches are wired, but the switch is still open — close it to let current flow.');
+  const complete = allWired && switchClosed;
+  return { complete, issues, measurements: { total: branchCurrents.reduce((a, b) => a + b, 0), branchCurrents } };
+}
+
+// type -> { applyEvent(state, event_type, detail) -> newState,
+//           evaluate(config, state) -> { complete, issues, measurements } }
+const LAB_TYPE_LOGIC = {
+  circuit: { applyEvent: applyWireSwitchEvent, evaluate: evaluateCircuit },
+  circuit_parallel: { applyEvent: applyWireSwitchEvent, evaluate: evaluateCircuitParallel }
+};
+
+// Shared by /complete and /preview-complete. Returns null when the type has
+// no server-side logic yet (caller should fall back to the old behavior),
+// otherwise { complete, issues, measurements } derived purely from the
+// experiment's config and the attempt's server-held state.
+async function evaluateAttemptCompletion(attempt) {
+  const exp = await get('SELECT type FROM lab_experiments WHERE id = $1', [attempt.experiment_id]);
+  const logic = exp && LAB_TYPE_LOGIC[exp.type];
+  if (!logic) return null;
+  const version = await get('SELECT config FROM lab_experiment_versions WHERE id = $1', [attempt.experiment_version_id]);
+  return logic.evaluate(version.config, attempt.state);
+}
+
 router.get('/supported-types', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
   res.json({ types: Object.entries(SUPPORTED_LAB_TYPES).map(([type, spec]) => ({ type, label: spec.label })) });
 }));
@@ -324,9 +398,20 @@ router.post('/attempts/:id/preview-complete', requirePermission('labs.manage'), 
   const attempt = await get('SELECT * FROM lab_attempts WHERE id = $1 AND is_preview = true AND previewed_by_user_id = $2', [attemptId, req.user.id]);
   if (!attempt) return res.status(404).json({ error: 'Preview attempt not found.' });
   if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'This preview has already ended.' });
+
+  const result = await evaluateAttemptCompletion(attempt);
+  if (result === null) {
+    const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
+    await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
+    return res.json({ message: 'Preview completed.', score });
+  }
+  if (!result.complete) {
+    await run('UPDATE lab_attempts SET mistakes_count = mistakes_count + 1 WHERE id = $1', [attemptId]);
+    return res.status(400).json({ error: 'Not complete yet.', issues: result.issues });
+  }
   const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
   await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
-  res.json({ message: 'Preview completed.', score });
+  res.json({ message: 'Preview completed.', score, measurements: result.measurements });
 }));
 
 router.post('/attempts/:id/preview-abandon', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
@@ -441,15 +526,47 @@ router.post('/attempts/:id/event', asyncHandler(async (req, res) => {
   if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
   if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'This attempt has already ended.' });
 
-  const { event_type, detail, state } = req.body || {};
+  const { event_type, detail } = req.body || {};
   if (!event_type) return res.status(400).json({ error: 'event_type is required.' });
-  await run('INSERT INTO lab_attempt_events (attempt_id, event_type, detail) VALUES ($1,$2,$3)', [attemptId, event_type, detail ? JSON.stringify(detail) : null]);
 
-  if (event_type === 'mistake') await run('UPDATE lab_attempts SET mistakes_count = mistakes_count + 1 WHERE id = $1', [attemptId]);
-  if (event_type === 'hint') await run('UPDATE lab_attempts SET hints_used = hints_used + 1 WHERE id = $1', [attemptId]);
-  if (state !== undefined) await run('UPDATE lab_attempts SET state = $1 WHERE id = $2', [JSON.stringify(state), attemptId]);
+  const exp = await get('SELECT type FROM lab_experiments WHERE id = $1', [attempt.experiment_id]);
+  const logic = exp && LAB_TYPE_LOGIC[exp.type];
+  let storedDetail = detail || null;
+  let responseExtra = {};
 
-  res.json({ message: 'Recorded.' });
+  if (logic && (event_type === 'connect' || event_type === 'disconnect' || event_type === 'toggle_switch')) {
+    // Authoritative state is derived here, server-side, from this one
+    // specific action — any full "state" snapshot the client also sends
+    // alongside it is ignored entirely, so a fabricated snapshot can never
+    // become the attempt's stored state.
+    const newState = logic.applyEvent(attempt.state, event_type, detail);
+    await run('UPDATE lab_attempts SET state = $1 WHERE id = $2', [JSON.stringify(newState), attemptId]);
+  } else if (logic && event_type === 'hint') {
+    // The hint's content is generated here from the server's own state, not
+    // sent by the client — so requesting a hint and it counting are the
+    // same act; there's no way to see hint content without it being logged.
+    const version = await get('SELECT config FROM lab_experiment_versions WHERE id = $1', [attempt.experiment_version_id]);
+    const { issues } = logic.evaluate(version.config, attempt.state);
+    const message = issues.length ? issues[0] : 'Everything looks connected — try checking your circuit.';
+    await run('UPDATE lab_attempts SET hints_used = hints_used + 1 WHERE id = $1', [attemptId]);
+    storedDetail = { message };
+    responseExtra = { message };
+  } else if (event_type === 'hint') {
+    // No server-side logic for this type yet — old behavior, unchanged.
+    await run('UPDATE lab_attempts SET hints_used = hints_used + 1 WHERE id = $1', [attemptId]);
+  } else if (event_type === 'mistake') {
+    // Mistakes are now derived server-side when a completion check actually
+    // fails (see /complete) — a client-reported 'mistake' event no longer
+    // moves the score. Still accepted and logged below for the audit trail.
+  } else if (!logic && req.body && req.body.state !== undefined) {
+    // Unverified type fallback: keep the old trust-the-client-state
+    // behavior so a future type without server logic yet still works.
+    await run('UPDATE lab_attempts SET state = $1 WHERE id = $2', [JSON.stringify(req.body.state), attemptId]);
+  }
+
+  await run('INSERT INTO lab_attempt_events (attempt_id, event_type, detail) VALUES ($1,$2,$3)', [attemptId, event_type, storedDetail ? JSON.stringify(storedDetail) : null]);
+
+  res.json(Object.assign({ message: 'Recorded.' }, responseExtra));
 }));
 
 router.post('/attempts/:id/complete', asyncHandler(async (req, res) => {
@@ -460,14 +577,22 @@ router.post('/attempts/:id/complete', asyncHandler(async (req, res) => {
   if (!attempt) return res.status(404).json({ error: 'Attempt not found.' });
   if (attempt.status !== 'in_progress') return res.status(400).json({ error: 'This attempt has already ended.' });
 
-  // Score is derived server-side from mistakes/hints this attempt actually
-  // accumulated via /event calls — not taken from whatever the client
-  // claims at completion time. Note: a determined student could still call
-  // the API directly to under-report mistakes; this is fine for a v1
-  // learning tool, not a high-stakes exam integrity system.
+  const result = await evaluateAttemptCompletion(attempt);
+  if (result === null) {
+    // No server-side logic for this type yet — old behavior, unchanged.
+    const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
+    await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
+    return res.json({ message: 'Experiment completed.', score });
+  }
+  if (!result.complete) {
+    // A rejected completion attempt IS the mistake — derived here, not
+    // trusted from anything the client reported about itself.
+    await run('UPDATE lab_attempts SET mistakes_count = mistakes_count + 1 WHERE id = $1', [attemptId]);
+    return res.status(400).json({ error: 'Not complete yet.', issues: result.issues });
+  }
   const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
   await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
-  res.json({ message: 'Experiment completed.', score });
+  res.json({ message: 'Experiment completed.', score, measurements: result.measurements });
 }));
 
 router.post('/attempts/:id/abandon', asyncHandler(async (req, res) => {
