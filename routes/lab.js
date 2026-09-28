@@ -95,6 +95,29 @@ const SUPPORTED_LAB_TYPES = {
       }
       return errors;
     }
+  },
+  pendulum: {
+    label: 'Simple Pendulum',
+    validate(config) {
+      const errors = [];
+      if (!config || typeof config !== 'object') return [{ field: 'config', message: 'config must be an object.' }];
+      if (!Array.isArray(config.allowedLengths) || config.allowedLengths.length === 0 || !config.allowedLengths.every(n => typeof n === 'number' && n > 0)) {
+        errors.push({ field: 'allowedLengths', message: 'allowedLengths must be a non-empty array of positive numbers (meters).' });
+      }
+      if (!Array.isArray(config.allowedAngles) || config.allowedAngles.length === 0 || !config.allowedAngles.every(n => typeof n === 'number' && n > 0 && n <= 20)) {
+        errors.push({ field: 'allowedAngles', message: 'allowedAngles must be a non-empty array of positive numbers, each 20° or less (the small-angle period formula only holds at small angles).' });
+      }
+      if (config.gravity !== undefined && (typeof config.gravity !== 'number' || config.gravity <= 0)) {
+        errors.push({ field: 'gravity', message: 'gravity must be a positive number if provided.' });
+      }
+      if (config.tolerancePercent !== undefined && (typeof config.tolerancePercent !== 'number' || config.tolerancePercent <= 0 || config.tolerancePercent > 100)) {
+        errors.push({ field: 'tolerancePercent', message: 'tolerancePercent must be a number between 0 and 100 if provided.' });
+      }
+      if (config.maxOscillations !== undefined && (!Number.isInteger(config.maxOscillations) || config.maxOscillations <= 0)) {
+        errors.push({ field: 'maxOscillations', message: 'maxOscillations must be a positive integer if provided.' });
+      }
+      return errors;
+    }
   }
 };
 
@@ -125,7 +148,7 @@ function validateExperimentDefinition(type, config) {
 // gap for a future type, not a silent one for these two.
 // ============================================================
 
-function applyWireSwitchEvent(state, event_type, detail) {
+function applyWireSwitchEvent(config, state, event_type, detail) {
   const s = { wires: Object.assign({}, state && state.wires), switchClosed: !!(state && state.switchClosed) };
   if ((event_type === 'connect' || event_type === 'disconnect') && detail && typeof detail.wire === 'string') {
     s.wires[detail.wire] = event_type === 'connect';
@@ -165,24 +188,175 @@ function evaluateCircuitParallel(config, state) {
   return { complete, issues, measurements: { total: branchCurrents.reduce((a, b) => a + b, 0), branchCurrents } };
 }
 
-// type -> { applyEvent(state, event_type, detail) -> newState,
-//           evaluate(config, state) -> { complete, issues, measurements } }
+// ---- Simple Pendulum ----
+// State shape: { pendingLength, pendingAngle, activeTrial: {length,angle,startedAt}|null,
+//                trials: [{length,angle,oscillationsCounted,elapsedMs,measuredPeriod,truePeriod,errorFraction}, ...] }
+// Every timestamp (startedAt / trial end) is the server's own Date.now() —
+// the client never sends a duration, a period, or an error; it only ever
+// sends "I selected this length", "I released it", "I stopped it, having
+// counted N swings". Everything derived from that is computed here.
+
+function validatePendulumEvent(config, state, event_type, detail) {
+  const allowedLengths = config.allowedLengths || [];
+  const allowedAngles = config.allowedAngles || [];
+  const maxOsc = typeof config.maxOscillations === 'number' ? config.maxOscillations : 30;
+  if (event_type === 'set_length') return !!(detail && allowedLengths.includes(detail.length));
+  if (event_type === 'set_angle') return !!(detail && allowedAngles.includes(detail.angle));
+  if (event_type === 'start_trial') {
+    return !(state && state.activeTrial) && !!(state && state.pendingLength != null && state.pendingAngle != null);
+  }
+  if (event_type === 'stop_trial') {
+    const n = detail && detail.oscillationsCounted;
+    return !!(state && state.activeTrial) && Number.isInteger(n) && n > 0 && n <= maxOsc;
+  }
+  return true; // 'reset' and anything else not specifically restricted
+}
+
+function applyPendulumEvent(config, state, event_type, detail) {
+  const s = {
+    pendingLength: state && state.pendingLength != null ? state.pendingLength : null,
+    pendingAngle: state && state.pendingAngle != null ? state.pendingAngle : null,
+    activeTrial: state && state.activeTrial ? Object.assign({}, state.activeTrial) : null,
+    trials: state && Array.isArray(state.trials) ? state.trials.slice() : []
+  };
+  const gravity = typeof config.gravity === 'number' ? config.gravity : 9.8;
+
+  if (event_type === 'set_length') {
+    s.pendingLength = detail.length; // already validated by validatePendulumEvent
+  } else if (event_type === 'set_angle') {
+    s.pendingAngle = detail.angle;
+  } else if (event_type === 'start_trial') {
+    // Locked in now — a later set_length/set_angle can only ever change
+    // pendingLength/pendingAngle above, never this trial's own snapshot.
+    s.activeTrial = { length: s.pendingLength, angle: s.pendingAngle, startedAt: Date.now() };
+  } else if (event_type === 'stop_trial') {
+    const endedAt = Date.now();
+    const elapsedMs = Math.max(1, endedAt - s.activeTrial.startedAt);
+    const measuredPeriod = (elapsedMs / 1000) / detail.oscillationsCounted;
+    const truePeriod = 2 * Math.PI * Math.sqrt(s.activeTrial.length / gravity);
+    const errorFraction = Math.abs(measuredPeriod - truePeriod) / truePeriod;
+    s.trials.push({
+      length: s.activeTrial.length, angle: s.activeTrial.angle,
+      oscillationsCounted: detail.oscillationsCounted, elapsedMs,
+      measuredPeriod, truePeriod, errorFraction
+    });
+    s.activeTrial = null;
+  } else if (event_type === 'reset') {
+    s.activeTrial = null;
+    s.trials = [];
+  }
+  return s;
+}
+
+function evaluatePendulum(config, state) {
+  const trials = (state && Array.isArray(state.trials)) ? state.trials : [];
+  const tolerance = (typeof config.tolerancePercent === 'number' ? config.tolerancePercent : 15) / 100;
+  if (!trials.length) {
+    return { complete: false, issues: ['No completed trial yet — pick a length and angle, release the pendulum, then count and record its swings.'], measurements: null };
+  }
+  // Best-of-all-trials, not most-recent — repeated measurement is the
+  // encouraged scientific process here, not a mistake to be penalized away.
+  let best = trials[0];
+  for (const tr of trials) if (tr.errorFraction < best.errorFraction) best = tr;
+  const complete = best.errorFraction <= tolerance;
+  const issues = complete ? [] : [`Your closest measurement was off by ${(best.errorFraction * 100).toFixed(1)}% — try counting more oscillations (averages out timing error) or timing more carefully, then try again.`];
+  return {
+    complete,
+    issues,
+    measurements: {
+      bestTrial: {
+        length: best.length, angle: best.angle, oscillationsCounted: best.oscillationsCounted,
+        measuredPeriod: best.measuredPeriod, truePeriod: best.truePeriod,
+        errorFraction: best.errorFraction, errorPercent: best.errorFraction * 100
+      },
+      trialsCount: trials.length,
+      allTrials: trials.map(t => ({ length: t.length, angle: t.angle, measuredPeriod: t.measuredPeriod, truePeriod: t.truePeriod, errorPercent: t.errorFraction * 100 }))
+    }
+  };
+}
+
+// Isolated on purpose (per the approved design) so it can be retuned later
+// without touching the generic /complete route. "error percentage x 300"
+// from the approved formula is implemented here as errorFraction*300 (e.g.
+// 0.15 error -> 45 penalty) rather than errorPercent*300, since the latter
+// would hit the 60-point cap for almost any nonzero error and contradict
+// the "don't punish normal experimental variation" requirement — flagging
+// this interpretation explicitly since the source instruction was ambiguous
+// between a fraction and an already-multiplied-by-100 percentage.
+function scorePendulum(measurements, mistakesCount, hintsUsed) {
+  const errorPenalty = Math.min(60, measurements.bestTrial.errorFraction * 300);
+  const extraTrialsPenalty = Math.min(20, Math.max(0, measurements.trialsCount - 1) * 5);
+  const hintsPenalty = Math.min(15, hintsUsed * 5);
+  return Math.max(30, Math.round(100 - errorPenalty - extraTrialsPenalty - hintsPenalty));
+}
+
+// Mode-aware: Guided reveals the true period/error right after each trial
+// (learn-as-you-go); Challenge reveals only what the student already knows
+// from their own stopwatch (the measured period) until final submission —
+// this only changes what's shown, never what's verified (evaluate() above
+// always runs on full authoritative data regardless of mode).
+function describePendulumEvent(config, state, event_type, detail, mode) {
+  if (event_type !== 'stop_trial') return null;
+  const trial = state.trials[state.trials.length - 1];
+  if (!trial) return null;
+  if (mode === 'guided') {
+    return { measuredPeriod: trial.measuredPeriod, truePeriod: trial.truePeriod, errorPercent: trial.errorFraction * 100 };
+  }
+  return { measuredPeriod: trial.measuredPeriod };
+}
+
+// Optional hook: what to persist in the attempt_events audit trail for an
+// accepted action. For pendulum this is the SERVER-derived record (locked
+// parameters, server timestamps' elapsed time, raw measured/true period,
+// error) rather than whatever the client happened to send — so a teacher
+// reviewing the event sequence (and a future Nova Lab Agent) sees the
+// authoritative trial history, including improvement between trials.
+function recordPendulumEvent(config, state, event_type, detail) {
+  if (event_type === 'start_trial' && state.activeTrial) {
+    return { trialNumber: state.trials.length + 1, length: state.activeTrial.length, angle: state.activeTrial.angle };
+  }
+  if (event_type === 'stop_trial') {
+    const t = state.trials[state.trials.length - 1];
+    if (!t) return null;
+    return {
+      trialNumber: state.trials.length, length: t.length, angle: t.angle,
+      oscillationsCounted: t.oscillationsCounted, elapsedMs: t.elapsedMs,
+      measuredPeriod: t.measuredPeriod, truePeriod: t.truePeriod, errorPercent: t.errorFraction * 100
+    };
+  }
+  return null;
+}
+
+// type -> { applyEvent(config, state, event_type, detail) -> newState,
+//           evaluate(config, state) -> { complete, issues, measurements },
+//           validateEvent(config, state, event_type, detail) -> boolean  [optional],
+//           describeEvent(config, newState, event_type, detail, mode) -> object|null  [optional],
+//           recordEvent(config, newState, event_type, detail) -> object|null  [optional; audit-trail detail],
+//           score(measurements, mistakesCount, hintsUsed) -> number  [optional; default formula used if absent] }
 const LAB_TYPE_LOGIC = {
   circuit: { applyEvent: applyWireSwitchEvent, evaluate: evaluateCircuit },
-  circuit_parallel: { applyEvent: applyWireSwitchEvent, evaluate: evaluateCircuitParallel }
+  circuit_parallel: { applyEvent: applyWireSwitchEvent, evaluate: evaluateCircuitParallel },
+  pendulum: { applyEvent: applyPendulumEvent, evaluate: evaluatePendulum, validateEvent: validatePendulumEvent, describeEvent: describePendulumEvent, recordEvent: recordPendulumEvent, score: scorePendulum }
 };
 
 // Shared by /complete and /preview-complete. Returns null when the type has
 // no server-side logic yet (caller should fall back to the old behavior),
-// otherwise { complete, issues, measurements } derived purely from the
+// otherwise { type, complete, issues, measurements } derived purely from the
 // experiment's config and the attempt's server-held state.
 async function evaluateAttemptCompletion(attempt) {
   const exp = await get('SELECT type FROM lab_experiments WHERE id = $1', [attempt.experiment_id]);
   const logic = exp && LAB_TYPE_LOGIC[exp.type];
   if (!logic) return null;
   const version = await get('SELECT config FROM lab_experiment_versions WHERE id = $1', [attempt.experiment_version_id]);
-  return logic.evaluate(version.config, attempt.state);
+  return Object.assign({ type: exp.type }, logic.evaluate(version.config, attempt.state));
 }
+
+function deriveScore(type, measurements, mistakesCount, hintsUsed) {
+  const logic = LAB_TYPE_LOGIC[type];
+  if (logic && logic.score) return logic.score(measurements, mistakesCount, hintsUsed);
+  return Math.max(5, 100 - Math.min(80, mistakesCount * 15) - Math.min(15, hintsUsed * 5));
+}
+
 
 router.get('/supported-types', requirePermission('labs.manage'), asyncHandler(async (req, res) => {
   res.json({ types: Object.entries(SUPPORTED_LAB_TYPES).map(([type, spec]) => ({ type, label: spec.label })) });
@@ -409,7 +583,7 @@ router.post('/attempts/:id/preview-complete', requirePermission('labs.manage'), 
     await run('UPDATE lab_attempts SET mistakes_count = mistakes_count + 1 WHERE id = $1', [attemptId]);
     return res.status(400).json({ error: 'Not complete yet.', issues: result.issues });
   }
-  const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
+  const score = deriveScore(result.type, result.measurements, attempt.mistakes_count, attempt.hints_used);
   await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
   res.json({ message: 'Preview completed.', score, measurements: result.measurements });
 }));
@@ -534,31 +708,45 @@ router.post('/attempts/:id/event', asyncHandler(async (req, res) => {
   let storedDetail = detail || null;
   let responseExtra = {};
 
-  if (logic && (event_type === 'connect' || event_type === 'disconnect' || event_type === 'toggle_switch')) {
-    // Authoritative state is derived here, server-side, from this one
-    // specific action — any full "state" snapshot the client also sends
-    // alongside it is ignored entirely, so a fabricated snapshot can never
-    // become the attempt's stored state.
-    const newState = logic.applyEvent(attempt.state, event_type, detail);
-    await run('UPDATE lab_attempts SET state = $1 WHERE id = $2', [JSON.stringify(newState), attemptId]);
-  } else if (logic && event_type === 'hint') {
+  if (logic && event_type === 'hint') {
     // The hint's content is generated here from the server's own state, not
     // sent by the client — so requesting a hint and it counting are the
     // same act; there's no way to see hint content without it being logged.
     const version = await get('SELECT config FROM lab_experiment_versions WHERE id = $1', [attempt.experiment_version_id]);
     const { issues } = logic.evaluate(version.config, attempt.state);
-    const message = issues.length ? issues[0] : 'Everything looks connected — try checking your circuit.';
+    const message = issues.length ? issues[0] : 'Everything looks good so far.';
     await run('UPDATE lab_attempts SET hints_used = hints_used + 1 WHERE id = $1', [attemptId]);
     storedDetail = { message };
     responseExtra = { message };
-  } else if (event_type === 'hint') {
-    // No server-side logic for this type yet — old behavior, unchanged.
-    await run('UPDATE lab_attempts SET hints_used = hints_used + 1 WHERE id = $1', [attemptId]);
-  } else if (event_type === 'mistake') {
+  } else if (logic && event_type === 'mistake') {
     // Mistakes are now derived server-side when a completion check actually
     // fails (see /complete) — a client-reported 'mistake' event no longer
     // moves the score. Still accepted and logged below for the audit trail.
-  } else if (!logic && req.body && req.body.state !== undefined) {
+  } else if (logic) {
+    // Every other action (connect/disconnect/toggle_switch for circuits;
+    // set_length/set_angle/start_trial/stop_trial/reset for pendulum; and
+    // whatever a future type defines) flows through the same two generic
+    // hooks — the route itself has no per-type knowledge of action names.
+    const version = await get('SELECT config FROM lab_experiment_versions WHERE id = $1', [attempt.experiment_version_id]);
+    if (logic.validateEvent && !logic.validateEvent(version.config, attempt.state, event_type, detail)) {
+      return res.status(400).json({ error: 'That action is not valid right now — check your selection or attempt state.' });
+    }
+    // Authoritative state is derived here, server-side, from this one
+    // specific action — any full "state" snapshot the client also sends
+    // alongside it is ignored entirely, so a fabricated snapshot can never
+    // become the attempt's stored state.
+    const newState = logic.applyEvent(version.config, attempt.state, event_type, detail);
+    await run('UPDATE lab_attempts SET state = $1 WHERE id = $2', [JSON.stringify(newState), attemptId]);
+    if (logic.describeEvent) {
+      responseExtra = logic.describeEvent(version.config, newState, event_type, detail, attempt.mode) || {};
+    }
+    if (logic.recordEvent) {
+      storedDetail = logic.recordEvent(version.config, newState, event_type, detail) || storedDetail;
+    }
+  } else if (event_type === 'hint') {
+    // No server-side logic for this type yet — old behavior, unchanged.
+    await run('UPDATE lab_attempts SET hints_used = hints_used + 1 WHERE id = $1', [attemptId]);
+  } else if (req.body && req.body.state !== undefined) {
     // Unverified type fallback: keep the old trust-the-client-state
     // behavior so a future type without server logic yet still works.
     await run('UPDATE lab_attempts SET state = $1 WHERE id = $2', [JSON.stringify(req.body.state), attemptId]);
@@ -590,7 +778,7 @@ router.post('/attempts/:id/complete', asyncHandler(async (req, res) => {
     await run('UPDATE lab_attempts SET mistakes_count = mistakes_count + 1 WHERE id = $1', [attemptId]);
     return res.status(400).json({ error: 'Not complete yet.', issues: result.issues });
   }
-  const score = Math.max(5, 100 - Math.min(80, attempt.mistakes_count * 15) - Math.min(15, attempt.hints_used * 5));
+  const score = deriveScore(result.type, result.measurements, attempt.mistakes_count, attempt.hints_used);
   await run("UPDATE lab_attempts SET status = 'completed', score = $1, completed_at = CURRENT_TIMESTAMP WHERE id = $2", [score, attemptId]);
   res.json({ message: 'Experiment completed.', score, measurements: result.measurements });
 }));

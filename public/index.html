@@ -1294,7 +1294,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="admin-page" data-page="lab">
         <div class="card" id="labCreateCardAdmin" style="margin-bottom:20px;">
           <div class="card-head"><h3>Create an experiment</h3></div>
-          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array).</p>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array), and <span class="mono">pendulum</span> (needs <span class="mono">allowedLengths</span> in metres and <span class="mono">allowedAngles</span> in degrees, each 20 or less; optional <span class="mono">gravity</span>, <span class="mono">tolerancePercent</span>, <span class="mono">maxOscillations</span>).</p>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
             <input class="grade-input" style="width:100%;" id="labSlugAdmin" placeholder="Slug (unique id)" autocapitalize="off" autocorrect="off" spellcheck="false">
             <input class="grade-input" style="width:100%;" id="labTypeAdmin" placeholder="Type" value="circuit" autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -1460,7 +1460,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div class="admin-page" data-page="lab">
         <div class="card" id="labCreateCard" style="margin-bottom:20px; display:none;">
           <div class="card-head"><h3>Create an experiment</h3></div>
-          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array).</p>
+          <p style="font-size:11.5px; color:var(--ink-soft); margin-bottom:10px;">v1 uses a JSON config to define an experiment rather than a visual builder. Supported types: <span class="mono">circuit</span> (series — needs <span class="mono">voltage</span>, <span class="mono">resistance</span>, and a <span class="mono">connections</span> array) and <span class="mono">circuit_parallel</span> (needs <span class="mono">voltage</span> and a <span class="mono">branches</span> array, each with its own <span class="mono">resistance</span> and 2-item <span class="mono">connections</span> array), and <span class="mono">pendulum</span> (needs <span class="mono">allowedLengths</span> in metres and <span class="mono">allowedAngles</span> in degrees, each 20 or less; optional <span class="mono">gravity</span>, <span class="mono">tolerancePercent</span>, <span class="mono">maxOscillations</span>).</p>
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
             <input class="grade-input" style="width:100%;" id="labSlug" placeholder="Slug (unique id)" autocapitalize="off" autocorrect="off" spellcheck="false">
             <input class="grade-input" style="width:100%;" id="labType" placeholder="Type" value="circuit" autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -3545,6 +3545,7 @@ async function startLabPreview(experimentId, title){
 }
 
 function labPreviewBackToList(){
+  if (window.__labCleanup) { window.__labCleanup(); window.__labCleanup = null; }
   document.getElementById(labId('labPreviewCard')).style.display = 'none';
   document.getElementById(labId('labPreviewArea')).innerHTML = '';
   CURRENT_LAB_ATTEMPT = null;
@@ -4345,6 +4346,7 @@ async function openLabDetail(experimentId){
 }
 
 function labBackToCatalog(){
+  if (window.__labCleanup) { window.__labCleanup(); window.__labCleanup = null; }
   document.getElementById('labDetailCard').style.display = 'none';
   document.getElementById('labPlayCard').style.display = 'none';
   document.getElementById('labCatalogCard').style.display = 'block';
@@ -4727,6 +4729,167 @@ LAB_RENDERERS.circuit_parallel = function renderParallelCircuitExperiment(contai
     const details = `<p>${breakdown}</p><p style="margin-top:6px;">Total current = ${total.toFixed(2)} A (the sum of both branches).</p>
       <p style="margin-top:6px;">Because the branches are independent, disconnecting one wouldn't stop current in the other — that's what makes a parallel circuit different from a series circuit, where any break stops everything.</p>`;
     document.getElementById('labFeedback').innerHTML = labSuccessBoxHtml('Excellent! Parallel circuit completed successfully.', details, result.score);
+  };
+
+  render();
+};
+
+// ============================================================
+// Simple Pendulum — the first non-circuit experiment type. Proves the
+// LAB_TYPE_LOGIC/LAB_RENDERERS architecture generalizes: this renderer
+// owns a continuous client-side animation (never sent to the server) and
+// sends only discrete actions (set_length/set_angle/start_trial/
+// stop_trial/reset) — the server derives its own timestamps, computes the
+// real physics, and is the sole authority on correctness and score.
+// ============================================================
+LAB_RENDERERS.pendulum = function renderPendulumExperiment(container, config, attemptId, mode){
+  const gravity = typeof config.gravity === 'number' ? config.gravity : 9.8;
+  const tolerancePercent = typeof config.tolerancePercent === 'number' ? config.tolerancePercent : 15;
+  const maxLen = Math.max(...config.allowedLengths);
+  const pxPerMeter = 190 / maxLen;
+  const pivotX = 200, pivotY = 18;
+
+  let selectedLength = config.allowedLengths[0];
+  let selectedAngle = config.allowedAngles[0];
+  let running = false;
+  let oscCount = 0;
+  let trials = []; // local display mirror only — server's own trial list is authoritative
+  let submitted = false;
+  let animStart = null;
+  let rafId = null;
+
+  function angleAtTime(tSeconds){
+    const omega = Math.sqrt(gravity / selectedLength);
+    const theta0 = selectedAngle * Math.PI / 180;
+    return theta0 * Math.cos(omega * tSeconds);
+  }
+
+  function svgAt(theta){
+    const len = selectedLength * pxPerMeter;
+    const bx = (pivotX + Math.sin(theta) * len).toFixed(1);
+    const by = (pivotY + Math.cos(theta) * len).toFixed(1);
+    return `<svg viewBox="0 0 400 240" style="width:100%; max-width:400px; background:var(--paper-alt); border-radius:12px;">
+      <line x1="150" y1="${pivotY}" x2="250" y2="${pivotY}" stroke="#7a7a7a" stroke-width="4"/>
+      <circle cx="${pivotX}" cy="${pivotY}" r="5" fill="#3a3a3a"/>
+      <line x1="${pivotX}" y1="${pivotY}" x2="${bx}" y2="${by}" stroke="#8a8a8a" stroke-width="2"/>
+      <circle cx="${bx}" cy="${by}" r="14" fill="#c0392b" stroke="#7a2015" stroke-width="2"/>
+    </svg>`;
+  }
+
+  function stopAnimation(){ if (rafId) cancelAnimationFrame(rafId); rafId = null; animStart = null; }
+  window.__labCleanup = stopAnimation;
+
+  function animate(ts){
+    if (!animStart) animStart = ts;
+    const el = document.getElementById(`pendulumSvg-${attemptId}`);
+    if (el) el.innerHTML = svgAt(angleAtTime((ts - animStart) / 1000));
+    if (running) rafId = requestAnimationFrame(animate);
+  }
+
+  function render(){
+    const lengthBtns = config.allowedLengths.map(l => `<button class="btn ${l === selectedLength ? 'btn-primary' : 'btn-outline'} btn-sm" ${running ? 'disabled' : ''} onclick="window.__pendulumSetLength(${l})">${l} m</button>`).join(' ');
+    const angleBtns = config.allowedAngles.map(a => `<button class="btn ${a === selectedAngle ? 'btn-primary' : 'btn-outline'} btn-sm" ${running ? 'disabled' : ''} onclick="window.__pendulumSetAngle(${a})">${a}°</button>`).join(' ');
+    const trialsHtml = trials.length
+      ? `<div style="margin-top:10px; font-size:12px;"><b>Your trials:</b><ul style="margin:4px 0 0 16px;">${trials.map(t => `<li>${t.length} m, ${t.angle}° — ${t.oscillationsCounted} swings → measured ${t.measuredPeriod.toFixed(2)}s${'errorPercent' in t ? ` (off by ${t.errorPercent.toFixed(1)}%)` : ''}</li>`).join('')}</ul></div>`
+      : '';
+    container.innerHTML = `
+      <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start;">
+        <div id="pendulumSvg-${attemptId}">${svgAt(selectedAngle * Math.PI / 180)}</div>
+        <div style="flex:1; min-width:220px;">
+          <p style="font-size:12px; font-weight:600; margin-bottom:4px;">Length</p>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${lengthBtns}</div>
+          <p style="font-size:12px; font-weight:600; margin-bottom:4px;">Starting angle</p>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;">${angleBtns}</div>
+          ${!running
+            ? `<button class="btn btn-primary btn-sm" onclick="window.__pendulumRelease()">Release</button>`
+            : `<div style="padding:8px; background:var(--gold-bg); border-radius:8px; margin-bottom:8px;">
+                 <p style="font-size:12px; margin-bottom:6px;">Watch it swing — tap once each time it returns to this side (one full oscillation).</p>
+                 <p style="font-size:22px; font-weight:700; text-align:center;">${oscCount}</p>
+                 <div style="display:flex; gap:8px; justify-content:center;">
+                   <button class="btn btn-outline btn-sm" onclick="window.__pendulumCount()">+1 swing</button>
+                   <button class="btn btn-primary btn-sm" ${oscCount === 0 ? 'disabled' : ''} onclick="window.__pendulumStop()">Stop &amp; record</button>
+                 </div>
+               </div>`}
+          ${trialsHtml}
+          <div id="pendulumFeedback" style="margin-top:10px;"></div>
+          ${(trials.length && !submitted) ? '<button class="btn btn-ink btn-sm" style="margin-top:10px;" onclick="window.__pendulumSubmit()">Submit result</button>' : ''}
+        </div>
+      </div>`;
+  }
+
+  window.__pendulumSetLength = (l) => {
+    if (running) return;
+    selectedLength = l;
+    labLogEvent('set_length', { length: l });
+    render();
+  };
+
+  window.__pendulumSetAngle = (a) => {
+    if (running) return;
+    selectedAngle = a;
+    labLogEvent('set_angle', { angle: a });
+    render();
+  };
+
+  window.__pendulumRelease = async () => {
+    try {
+      // Make sure the server holds this exact selection before locking it
+      // into a trial — it never trusts the client's idea of what's selected.
+      await api(`/lab/attempts/${attemptId}/event`, { method: 'POST', body: JSON.stringify({ event_type: 'set_length', detail: { length: selectedLength } }) });
+      await api(`/lab/attempts/${attemptId}/event`, { method: 'POST', body: JSON.stringify({ event_type: 'set_angle', detail: { angle: selectedAngle } }) });
+      await api(`/lab/attempts/${attemptId}/event`, { method: 'POST', body: JSON.stringify({ event_type: 'start_trial' }) });
+      running = true;
+      oscCount = 0;
+      render();
+      rafId = requestAnimationFrame(animate);
+    } catch (err) {
+      toast(err.message);
+    }
+  };
+
+  window.__pendulumCount = () => { oscCount++; render(); };
+
+  window.__pendulumStop = async () => {
+    if (oscCount === 0) return;
+    try {
+      const res = await api(`/lab/attempts/${attemptId}/event`, { method: 'POST', body: JSON.stringify({ event_type: 'stop_trial', detail: { oscillationsCounted: oscCount } }) });
+      running = false;
+      stopAnimation();
+      trials.push(Object.assign({ length: selectedLength, angle: selectedAngle, oscillationsCounted: oscCount }, res));
+      render();
+      const box = document.getElementById('pendulumFeedback');
+      if (box) {
+        if ('errorPercent' in res) {
+          box.innerHTML = res.errorPercent <= tolerancePercent
+            ? `<p style="font-size:12.5px; padding:8px; background:var(--gold-bg); border-radius:8px;">Measured ${res.measuredPeriod.toFixed(2)}s vs a true period of ${res.truePeriod.toFixed(2)}s — within tolerance! Submit now, or try again for an even closer measurement.</p>`
+            : `<p style="font-size:12.5px; padding:8px; background:var(--paper-alt); border-radius:8px;">Measured ${res.measuredPeriod.toFixed(2)}s vs a true period of ${res.truePeriod.toFixed(2)}s — off by ${res.errorPercent.toFixed(1)}%. Try counting more swings (it averages out timing error), or time more carefully.</p>`;
+        } else {
+          box.innerHTML = `<p style="font-size:12.5px; padding:8px; background:var(--paper-alt); border-radius:8px;">Recorded: ${res.measuredPeriod.toFixed(2)}s for ${oscCount} swings. Submit when you're ready to see how close it was.</p>`;
+        }
+      }
+    } catch (err) {
+      // The rejected request never touched the server's active trial, so
+      // leave the animation running — the count can be corrected and Stop
+      // tried again rather than losing the trial.
+      toast(err.message);
+    }
+  };
+
+  window.__pendulumSubmit = async () => {
+    const result = await labComplete();
+    const box = document.getElementById('pendulumFeedback');
+    if (!result.ok) {
+      if (result.issues && box) {
+        box.innerHTML = labMistakeBoxHtml(result.issues, 'Measure → observe → repeat → improve — try another trial with careful timing and a good oscillation count.');
+      }
+      return;
+    }
+    submitted = true;
+    const bt = result.measurements.bestTrial;
+    const details = `<p>Best measurement: ${bt.length} m, ${bt.angle}°, ${bt.oscillationsCounted} swings → <b>${bt.measuredPeriod.toFixed(2)}s</b> (true period ${bt.truePeriod.toFixed(2)}s, off by ${bt.errorPercent.toFixed(1)}%)</p>
+      <p style="margin-top:6px;">A pendulum's period depends only on its length and gravity — not its starting angle or the bob's weight — which is exactly what T = 2π√(L/g) describes.</p>`;
+    render();
+    if (box) box.innerHTML = labSuccessBoxHtml('Nice work! Your measurement matched the pendulum formula.', details, result.score);
   };
 
   render();
