@@ -204,7 +204,6 @@ ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS fee_currency TEXT;
 ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS contact_phone TEXT;
 ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS guardian_id TEXT;
 
-ALTER TABLE teacher_applications ADD COLUMN IF NOT EXISTS co_curricular TEXT;
 
 ALTER TABLE sections ADD COLUMN IF NOT EXISTS curriculum TEXT DEFAULT 'Pakistani';
 
@@ -233,6 +232,7 @@ CREATE TABLE IF NOT EXISTS teacher_applications (
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending','approved','declined')),
   submitted_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE teacher_applications ADD COLUMN IF NOT EXISTS co_curricular TEXT;
 
 -- Simple entrance/screening test question banks — one set for prospective
 -- students, one for prospective teachers. Auto-graded MCQ only, deliberately
