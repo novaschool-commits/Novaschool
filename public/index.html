@@ -7,7 +7,7 @@
 <meta name="description" content="NovaSchool OS runs Novaschool.pk: timetable, live classes, homework, exams, Virtual Lab, attendance, fees and messaging for students, parents, teachers and school staff.">
 <meta name="theme-color" content="#06152E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Playfair+Display:wght@600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   /* Novaschool.pk brand system — deep emerald + antique gold */
@@ -289,6 +289,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<link rel="icon" type="image/png" href="/assets/ns-mark.png">
 <link rel="stylesheet" href="/css/nova-os.css">
 <script src="/js/nova-shell.js" defer></script>
 </head>
@@ -298,7 +299,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen active" data-screen="landing">
   <div class="nav">
     <div class="wrap nav-inner">
-      <a class="brand" href="#top" aria-label="NovaSchool OS home"><img src="assets/logo-icon.jpg" alt="" class="brand-logo-img" style="width:32px;height:32px;">NovaSchool <span class="brand-os">OS</span></a>
+      <a class="brand nv-brand" href="#top" aria-label="Novaschool.pk home"><img src="assets/ns-mark.png" alt="" class="nv-mark" width="40" height="40"><span class="nv-word"><span class="nv-name">Novaschool<span class="nv-dot">.pk</span></span><span class="nv-tag">School OS · Grades 1–12</span></span></a>
       <nav class="nav-links" aria-label="Site"><a href="#platform">Platform</a><a href="#labs">Virtual Lab</a><a href="#roles">Who it's for</a><a href="#programs">Courses</a><a href="#news">News</a></nav>
       <div class="nav-cta">
         <button class="btn btn-outline btn-sm" onclick="go('login')">Log in</button>
@@ -445,7 +446,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   </div>
 
   <footer><div class="wrap foot-inner">
-    <div class="brand" style="font-size:16px;"><img src="assets/logo-icon.jpg" alt="" class="brand-logo-img" style="width:24px;height:24px;">NovaSchool <span class="brand-os">OS</span></div>
+    <div class="brand nv-brand nv-sm"><img src="assets/ns-mark.png" alt="" class="nv-mark" width="32" height="32"><span class="nv-word"><span class="nv-name">Novaschool<span class="nv-dot">.pk</span></span><span class="nv-tag">School OS</span></span></div>
     <div class="foot-links" style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
       <a href="https://www.tiktok.com/@novaschool.pk" target="_blank" rel="noopener">TikTok</a>
       <a href="https://www.youtube.com/@novaschool_pk" target="_blank" rel="noopener">YouTube</a>
@@ -464,7 +465,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     <div class="login-side">
       <a class="back" href="javascript:void(0)" onclick="go('landing')">Back to NovaSchool OS</a>
       <div>
-        <img src="assets/logo-full.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:84px;height:auto;margin-bottom:24px;">
+        <div class="nv-brand nv-on-dark nv-lg" style="margin-bottom:26px;"><img src="assets/ns-mark-light.png" alt="" class="nv-mark" width="52" height="52"><span class="nv-word"><span class="nv-name">Novaschool<span class="nv-dot">.pk</span></span><span class="nv-tag">School OS · Grades 1–12</span></span></div>
         <h2>Your school day, in one place.</h2>
         <ul class="nova-login-points">
           <li><svg viewBox="0 0 24 24"><path d="M5 12l4 4 10-10"/></svg><span>Students and parents see timetables, homework, results and fees.</span></li>
@@ -476,6 +477,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
     </div>
     <div class="login-main">
       <div class="login-box">
+        <a class="nv-brand nv-sm nv-login-brand" href="javascript:void(0)" onclick="go('landing')" aria-label="Novaschool.pk home"><img src="assets/ns-mark.png" alt="" class="nv-mark" width="32" height="32"><span class="nv-word"><span class="nv-name">Novaschool<span class="nv-dot">.pk</span></span><span class="nv-tag">School OS</span></span></a>
         <h2 style="font-size:26px; margin-bottom:6px;">Welcome back</h2>
         <p style="color:var(--ink-soft); font-size:14.5px; margin-bottom:26px;">Sign in with your school account.</p>
         <div class="role-tabs" id="roleTabs"></div>
@@ -521,10 +523,10 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <p id="applyConfirmMessage" style="font-size:14.5px; margin-bottom:18px;"></p>
 
       <div id="feeVoucher" style="border:1.5px dashed var(--line); border-radius:12px; padding:22px; margin-bottom:18px; position:relative; overflow:hidden;">
-        <img src="assets/logo-icon.jpg" alt="" style="position:absolute; top:50%; left:50%; width:220px; height:auto; transform:translate(-50%,-50%); opacity:0.08; pointer-events:none;">
+        <img src="assets/ns-mark.png" alt="" style="position:absolute; top:50%; left:50%; width:200px; height:auto; transform:translate(-50%,-50%); opacity:0.07; pointer-events:none;">
         <div style="position:relative;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <img src="assets/logo-icon.jpg" alt="Novaschool.pk" style="width:40px;height:40px;border-radius:6px;">
+            <img src="assets/ns-mark.png" alt="Novaschool.pk" style="width:40px;height:40px;">
             <span class="mono" style="font-size:12px; color:var(--ink-soft);">Provisional Fee Voucher</span>
           </div>
           <p style="font-size:13px; color:var(--ink-soft); margin-bottom:4px;">Applicant</p>
@@ -594,7 +596,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="student">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">NovaSchool <span style="color:var(--nova-cyan);">OS</span></span></div>
+      <div class="app-brand nv-brand nv-on-dark"><img src="assets/ns-mark-light.png" alt="Novaschool.pk logo" class="nv-mark" width="36" height="36"><span class="txt nv-word"><span class="nv-name">Novaschool</span><span class="nv-tag">School OS</span></span></div>
       <nav class="side-nav" id="studentSideNav">
         <a class="side-link active" data-page="dashboard" onclick="showStudentPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
         <a class="side-link" data-page="courses" onclick="showStudentPage('courses')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">My Courses</span></a>
@@ -735,7 +737,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="parent">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">NovaSchool <span style="color:var(--nova-cyan);">OS</span></span></div>
+      <div class="app-brand nv-brand nv-on-dark"><img src="assets/ns-mark-light.png" alt="Novaschool.pk logo" class="nv-mark" width="36" height="36"><span class="txt nv-word"><span class="nv-name">Novaschool</span><span class="nv-tag">School OS</span></span></div>
       <nav class="side-nav"><a class="side-link active"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a></nav>
       <div class="side-foot">
         <div class="side-user"><div class="avatar" style="background:var(--amber);" id="parentAvatar">--</div><div><div class="u-name" id="parentName">—</div><div class="u-role">Parent account</div></div></div>
@@ -781,7 +783,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="teacher">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">NovaSchool <span style="color:var(--nova-cyan);">OS</span></span></div>
+      <div class="app-brand nv-brand nv-on-dark"><img src="assets/ns-mark-light.png" alt="Novaschool.pk logo" class="nv-mark" width="36" height="36"><span class="txt nv-word"><span class="nv-name">Novaschool</span><span class="nv-tag">School OS</span></span></div>
       <nav class="side-nav" id="teacherSideNav">
         <a class="side-link active" data-page="dashboard" onclick="showTeacherPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
         <a class="side-link" data-page="students" onclick="showTeacherPage('students')"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.4.4 4.5 2.4 4.5 5.8"/></svg><span class="txt">My Students</span></a>
@@ -789,6 +791,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <a class="side-link" data-page="lessons" onclick="showTeacherPage('lessons')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V4H6.5A2.5 2.5 0 0 0 4 6.5v13z"/></svg><span class="txt">Lessons</span></a>
         <a class="side-link" data-page="materials" onclick="showTeacherPage('materials')"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg><span class="txt">Study Materials</span></a>
         <a class="side-link" data-page="courses" onclick="showTeacherPage('courses')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg><span class="txt">Courses</span></a>
+        <a class="side-link" data-page="assignments" onclick="showTeacherPage('assignments')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h1"/><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/></svg><span class="txt">Assignments</span></a>
         <a class="side-link" data-page="exams" onclick="showTeacherPage('exams')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg><span class="txt">Quizzes &amp; Exams</span></a>
         <a class="side-link" data-page="lab" onclick="showTeacherPage('lab')"><svg class="icon" viewBox="0 0 24 24"><path d="M9 2h6M10 2v6l-5 10a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-10V2"/><path d="M8.5 14h7"/></svg><span class="txt">Virtual Lab</span></a>
         <a class="side-link" data-page="gradebook" onclick="showTeacherPage('gradebook')"><svg class="icon" viewBox="0 0 24 24"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span class="txt">Gradebook</span></a>
@@ -855,13 +858,19 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
 
       <div class="teacher-page" data-page="live">
+        <section class="lc-panel" id="lcPanel" aria-labelledby="lcHeading">
+          <div class="lc-state"><span class="lc-dot" aria-hidden="true"></span><span id="lcStateText">Not live</span></div>
+          <h3 id="lcHeading">Teach a live class</h3>
+          <p class="lc-lede">Choose a section and open the whiteboard classroom. Students in that section get a <b>Join</b> button on their dashboard, and you can talk, draw and answer questions.</p>
+          <div class="lc-controls">
+            <label class="nx-field lc-section"><span>Section</span><select class="grade-input" id="ttSection" onchange="loadTimetableManager(); refreshLiveClassButton();"></select></label>
+            <button class="btn lc-primary" id="lcOpenBtn" onclick="openLiveWhiteboard()"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4M7 9l3 3 4-4 3 3"/></svg>Open whiteboard classroom</button>
+            <button class="btn lc-secondary" id="liveClassBtn" onclick="toggleLiveClass()">Start live class</button>
+          </div>
+          <p class="lc-status" id="liveClassStatus"></p>
+        </section>
         <div class="card">
           <div class="card-head"><h3>Manage timetable</h3></div>
-          <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;">
-            <select class="grade-input" id="ttSection" onchange="loadTimetableManager(); refreshLiveClassButton();"></select>
-            <button class="btn btn-primary btn-sm" id="liveClassBtn" onclick="toggleLiveClass()">Start live class</button>
-            <span id="liveClassStatus" style="font-size:12px; color:var(--ink-soft);"></span>
-          </div>
           <div id="teacherTimetable"><p class="empty">Loading…</p></div>
           <div class="divider" style="height:1px; background:var(--line); margin:16px 0;"></div>
           <p style="font-size:13px; font-weight:600; margin-bottom:10px;">Add a period</p>
@@ -877,17 +886,37 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         </div>
       </div>
 
+      <div class="teacher-page" data-page="assignments">
+        <div class="card">
+          <div class="card-head"><h3>Assignments</h3><button class="btn btn-primary btn-sm" onclick="toggleNewAssignmentForm()">+ New assignment</button></div>
+          <div id="newAssignmentForm" class="nx-form" hidden>
+            <div class="nx-form-grid">
+              <label class="nx-field nx-wide"><span>Title</span><input class="grade-input" id="taTitle" placeholder="e.g. Algebra worksheet 4"></label>
+              <label class="nx-field"><span>Subject</span><input class="grade-input" id="taSubject" placeholder="e.g. Mathematics"></label>
+              <label class="nx-field"><span>Section</span><select class="grade-input" id="taSection"></select></label>
+              <label class="nx-field"><span>Due date</span><input class="grade-input" type="date" id="taDue"></label>
+              <label class="nx-field"><span>Total marks</span><input class="grade-input" type="number" min="1" id="taMarks" value="100"></label>
+              <label class="nx-field nx-wide"><span>Instructions for students</span><textarea class="grade-input" id="taDesc" rows="4" placeholder="What should students do? Add page numbers, questions or rules."></textarea></label>
+              <label class="nx-field nx-wide"><span>Attach a file (optional, up to about 3.5 MB)</span><input type="file" id="taFile"></label>
+            </div>
+            <div class="nx-form-actions"><button class="btn btn-primary btn-sm" id="taCreateBtn" onclick="createTeacherAssignment()">Create assignment</button><button class="btn btn-outline btn-sm" onclick="toggleNewAssignmentForm()">Cancel</button></div>
+          </div>
+          <div id="teacherAssignments"><p class="empty">Loading…</p></div>
+        </div>
+      </div>
+
       <div class="teacher-page" data-page="exams">
         <div class="card">
           <div class="card-head"><h3>Tests &amp; quizzes</h3><button class="btn btn-ink btn-sm" onclick="toggleNewExamForm()">+ Create test</button></div>
-          <div id="newExamForm" style="display:none; margin-bottom:16px; padding:14px; background:var(--paper-alt); border-radius:10px;">
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
-              <input class="grade-input" style="width:100%;" id="examTitle" placeholder="Test title">
-              <input class="grade-input" style="width:100%;" id="examSubject" placeholder="Subject">
-              <select class="grade-input" style="width:100%;" id="examSection"></select>
-              <input class="grade-input" style="width:100%;" type="number" id="examDuration" placeholder="Duration (minutes)" value="30">
+          <div id="newExamForm" class="nx-form" style="display:none;">
+            <div class="nx-form-grid">
+              <label class="nx-field nx-wide"><span>Test title</span><input class="grade-input" id="examTitle" placeholder="e.g. Chapter 4 quiz"></label>
+              <label class="nx-field"><span>Subject</span><input class="grade-input" id="examSubject" placeholder="e.g. Physics"></label>
+              <label class="nx-field"><span>Section</span><select class="grade-input" id="examSection"></select></label>
+              <label class="nx-field"><span>Time allowed (minutes)</span><input class="grade-input" type="number" min="1" id="examDuration" value="30"></label>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="createExam()">Create</button>
+            <p class="nx-help">After creating the test, add questions, then publish it so students can take it.</p>
+            <div class="nx-form-actions"><button class="btn btn-primary btn-sm" onclick="createExam()">Create test</button><button class="btn btn-outline btn-sm" onclick="toggleNewExamForm()">Cancel</button></div>
           </div>
           <div id="teacherExams"><p class="empty">Loading…</p></div>
         </div>
@@ -978,7 +1007,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="admin">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">NovaSchool <span style="color:var(--nova-cyan);">OS</span></span></div>
+      <div class="app-brand nv-brand nv-on-dark"><img src="assets/ns-mark-light.png" alt="Novaschool.pk logo" class="nv-mark" width="36" height="36"><span class="txt nv-word"><span class="nv-name">Novaschool</span><span class="nv-tag">School OS</span></span></div>
       <nav class="side-nav" id="adminSideNav">
         <a class="side-link active" data-page="overview" onclick="showAdminPage('overview')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Overview</span></a>
         <a class="side-link" data-page="management" onclick="showAdminPage('management')"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M4.5 20c0-4 3.4-7 7.5-7s7.5 3 7.5 7"/><path d="M17.5 3.5l1 2 2.2.3-1.6 1.5.4 2.2-2-1-2 1 .4-2.2-1.6-1.5 2.2-.3z"/></svg><span class="txt">Management</span></a>
@@ -1020,16 +1049,43 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <button type="button" role="tab" class="nova-tab" data-ov-tab="messages" aria-selected="false" onclick="showOverviewTab('messages')">Messages and notices</button>
           <button type="button" role="tab" class="nova-tab" data-ov-tab="setup" aria-selected="false" onclick="showOverviewTab('setup')">Admission tests</button>
         </div>
-      <div data-ov="attention" class="card" style="margin-bottom:20px;" id="approvalCenterCard">
-        <div class="card-head"><h3>Waiting for your decision</h3></div>
+      <section data-ov="attention" class="ovb-hero" aria-label="School at a glance">
+        <p class="ovb-eyebrow">Today at a glance</p>
+        <div class="ovb-hero-stats">
+          <div class="ovb-glass"><span class="ovb-num" id="ovbStudents">—</span><span class="ovb-lbl">Students</span></div>
+          <div class="ovb-glass"><span class="ovb-num" id="ovbTeachers">—</span><span class="ovb-lbl">Teachers</span></div>
+        </div>
+      </section>
+      <div data-ov="attention" class="ovb-float" id="adminKpis">
+        <div class="ovb-card">
+          <p class="ovb-card-lbl">Fee collection</p>
+          <p class="ovb-big" id="ovbFeePct">—</p>
+          <div class="ovb-track" role="img" id="ovbFeeTrack" aria-label="Fee collection"><div class="ovb-fill" id="ovbFeeBar"></div></div>
+          <p class="ovb-note" id="ovbFeeNote"></p>
+        </div>
+        <div class="ovb-card ovb-ring-card">
+          <svg class="ovb-ring" viewBox="0 0 64 64" role="img" id="ovbAttRingSvg" aria-label="Attendance">
+            <circle cx="32" cy="32" r="26" fill="none" stroke="#DCFCE7" stroke-width="9"/>
+            <circle id="ovbAttRing" cx="32" cy="32" r="26" fill="none" stroke="#16A34A" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 163.4" transform="rotate(-90 32 32)"/>
+          </svg>
+          <div><p class="ovb-big ovb-big-sm" id="ovbAttPct">—</p><p class="ovb-card-lbl">Attendance</p></div>
+        </div>
+      </div>
+      <div data-ov="attention" class="card ovb-attn" id="approvalCenterCard">
+        <div class="ovb-attn-head"><span class="ovb-alert" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v6M12 17h.01"/></svg></span><h3>Needs your decision</h3><span class="ovb-total" id="ovbAttnTotal" hidden></span></div>
         <div id="approvalCenterList"><p class="empty">Loading…</p></div>
       </div>
-      <div data-ov="attention" class="grid-4" style="margin-bottom:20px;" id="adminKpis">
-        <div class="card kpi"><p class="k-label">Total students</p><p class="k-val">—</p></div>
-        <div class="card kpi"><p class="k-label">Total teachers</p><p class="k-val">—</p></div>
-        <div class="card kpi"><p class="k-label">Fee collection</p><p class="k-val">—</p></div>
-        <div class="card kpi"><p class="k-label">Attendance (avg)</p><p class="k-val">—</p></div>
-      </div>
+      <section data-ov="attention" class="ovb-manage" aria-labelledby="ovbManageH">
+        <h3 id="ovbManageH">Manage</h3>
+        <div class="ovb-grid">
+          <button type="button" class="ovb-tile t-people" onclick="showOverviewTab('people')"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.7 3.1 2.5 3.5 5.2"/></svg><span>People and admissions</span></button>
+          <button type="button" class="ovb-tile t-classes" onclick="showOverviewTab('classes')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span>Classes and timetable</span></button>
+          <button type="button" class="ovb-tile t-fees" onclick="showOverviewTab('fees')"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><circle cx="12" cy="12.5" r="2.5"/></svg><span>Fees</span></button>
+          <button type="button" class="ovb-tile t-messages" onclick="showOverviewTab('messages')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.5 7.2L4 20.5l1.3-4.9A8 8 0 1 1 21 12z"/></svg><span>Messages and notices</span></button>
+          <button type="button" class="ovb-tile t-setup" onclick="showOverviewTab('setup')"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M8 4H6a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><path d="m8.5 13 2.5 2.5 4.5-5"/></svg><span>Admission tests</span></button>
+          <button type="button" class="ovb-tile t-export" onclick="exportAdminOverviewCsv()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg><span>Export report</span></button>
+        </div>
+      </section>
       <div data-ov="attention" class="grid-4" style="margin-bottom:12px; display:none;" id="adminKpis2">
         <div class="card kpi"><p class="k-label">Active / Suspended students</p><p class="k-val">—</p></div>
         <div class="card kpi"><p class="k-label">Active / Suspended teachers</p><p class="k-val">—</p></div>
@@ -1109,7 +1165,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           <select class="grade-input" style="width:100%; grid-column:1 / -1;" id="newSectionTeacher"><option value="">Class teacher (optional)</option></select>
         </div>
         <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="createSection()">Create section</button>
-        <div class="table-scroll"><table class="table-simple"><thead><tr><th>Grade</th><th>Section</th><th>Curriculum</th><th>Students</th><th>Class teacher</th><th>Capacity</th><th></th></tr></thead><tbody id="adminSectionsTable"></tbody></table></div>
+        <div class="ovb-sections" id="adminSectionsTable"></div>
       </div>
 
       <div data-ov="fees" id="ovFeesCard" class="card" style="margin-top:20px;">
@@ -1141,8 +1197,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
         <div id="adminTeacherApps"><p class="empty">Loading…</p></div>
       </div>
 
-      <div data-ov="attention" id="ovLiveCard" class="card" style="margin-top:20px;">
-        <div class="card-head"><h3>Live classes now</h3></div>
+      <div data-ov="attention" id="ovLiveCard" class="ovb-live-wrap">
+        <h3 class="ovb-section-h">Live classes now</h3>
         <div id="adminLiveClasses"><p class="empty">Loading…</p></div>
       </div>
 
@@ -1444,7 +1500,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
 <section class="screen" data-screen="staff">
   <div class="app-shell">
     <aside class="app-sidebar">
-      <div class="app-brand"><img src="assets/logo-icon.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:24px;height:24px;"><span class="txt">NovaSchool <span style="color:var(--nova-cyan);">OS</span></span></div>
+      <div class="app-brand nv-brand nv-on-dark"><img src="assets/ns-mark-light.png" alt="Novaschool.pk logo" class="nv-mark" width="36" height="36"><span class="txt nv-word"><span class="nv-name">Novaschool</span><span class="nv-tag">School OS</span></span></div>
       <nav class="side-nav" id="staffSideNav">
         <a class="side-link active" data-page="dashboard" onclick="showStaffPage('dashboard')"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="txt">Dashboard</span></a>
         <a class="side-link" data-page="students" data-perm="students.view" onclick="showStaffPage('students')" style="display:none;"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="8" r="2.6"/><path d="M15.5 14.2c2.4.4 4.5 2.4 4.5 5.8"/></svg><span class="txt">Students</span></a>
@@ -1712,7 +1768,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   <div class="login-shell">
     <div class="login-side">
       <div>
-        <img src="assets/logo-full.jpg" alt="Novaschool.pk logo" class="brand-logo-img" style="width:88px;height:auto;margin-bottom:22px;">
+        <div class="nv-brand nv-on-dark nv-lg" style="margin-bottom:24px;"><img src="assets/ns-mark-light.png" alt="" class="nv-mark" width="52" height="52"><span class="nv-word"><span class="nv-name">Novaschool<span class="nv-dot">.pk</span></span><span class="nv-tag">School OS</span></span></div>
         <p class="quote">"Welcome to the Novaschool.pk management team."</p>
       </div>
     </div>
@@ -4304,7 +4360,13 @@ async function checkLiveClassroom(){
   const btn = document.getElementById('studentClassroomBtn');
   try {
     const d = await api('/student/whiteboard/current');
+    const card = btn.closest('.card');
+    if (card) card.classList.toggle('lc-student-live', !!d.whiteboard);
+    const joinNext = document.getElementById('studentJoinBtn');
+    if (joinNext) joinNext.style.display = d.whiteboard && joinNext.disabled ? 'none' : '';
     if (d.whiteboard) {
+      document.getElementById('studentLiveTitle').textContent = 'Your class is live now';
+      document.getElementById('studentLiveNote').textContent = `${d.whiteboard.teacherName || 'Your teacher'}${d.whiteboard.subject ? ' · ' + d.whiteboard.subject : ''} is teaching on the whiteboard.`;
       btn.style.display = 'block';
       btn.onclick = () => {
         openClassroom(d.whiteboard.id, `${d.whiteboard.subject || 'Live class'} · ${d.whiteboard.teacherName}`, false);
@@ -4422,19 +4484,102 @@ async function loadStudentDashboard(){
   }
 }
 
+// ---------- Report card: A4 document built from the student's recorded grades ----------
+const RC_SCALE = [
+  { min: 90, grade: 'A+', remark: 'Outstanding' },
+  { min: 80, grade: 'A',  remark: 'Excellent' },
+  { min: 70, grade: 'B',  remark: 'Very good' },
+  { min: 60, grade: 'C',  remark: 'Good' },
+  { min: 50, grade: 'D',  remark: 'Satisfactory' },
+  { min: 40, grade: 'E',  remark: 'Needs improvement' },
+  { min: 0,  grade: 'F',  remark: 'Unsatisfactory' }
+];
+function rcBand(pct){ return RC_SCALE.find(b => pct >= b.min) || RC_SCALE[RC_SCALE.length - 1]; }
+function rcSubjects(grades){
+  const map = new Map();
+  (grades || []).forEach(g => {
+    const key = String(g.subject || 'Other');
+    if (!map.has(key)) map.set(key, { subject: key, count: 0, got: 0, total: 0, other: [] });
+    const row = map.get(key); row.count++;
+    const m = /(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/.exec(String(g.score || ''));
+    if (m && Number(m[2]) > 0) { row.got += Number(m[1]); row.total += Number(m[2]); }
+    else if (g.score) row.other.push(String(g.score));
+  });
+  return [...map.values()].map(r => Object.assign(r, { pct: r.total ? Math.round(r.got / r.total * 1000) / 10 : null }));
+}
+function rcNum(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+function renderReportCardDoc(d){
+  const s = d.student || {};
+  const subjects = rcSubjects(d.grades);
+  const got = subjects.reduce((a, r) => a + r.got, 0), total = subjects.reduce((a, r) => a + r.total, 0);
+  const overall = total ? Math.round(got / total * 1000) / 10 : null;
+  const band = overall !== null ? rcBand(overall) : null;
+  const issued = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  const official = !!d.officiallyIssued;
+  const board = d.examAuthorityName ? escapeHtml(d.examAuthorityName) : 'the relevant examination board';
+  const rows = subjects.length ? subjects.map(r => {
+    const b = r.pct !== null ? rcBand(r.pct) : null;
+    return `<tr>
+      <td class="rc-subj">${escapeHtml(r.subject)}</td>
+      <td class="rc-c">${r.count}</td>
+      <td class="rc-c">${r.total ? `${rcNum(r.got)} / ${rcNum(r.total)}` : escapeHtml(r.other.join(', ') || '—')}</td>
+      <td class="rc-c">${r.pct !== null ? rcNum(r.pct) + '%' : '—'}</td>
+      <td class="rc-c"><span class="rc-grade${b ? ' g-' + b.grade.replace('+', 'p') : ''}">${b ? b.grade : '—'}</span></td>
+      <td>${b ? b.remark : ''}</td></tr>`;
+  }).join('') : '<tr><td colspan="6" class="rc-empty">No marks have been recorded yet.</td></tr>';
+  const bars = subjects.filter(r => r.pct !== null).map(r => `<div class="rc-bar"><span class="rc-bar-l">${escapeHtml(r.subject)}</span><span class="rc-bar-t"><span style="width:${Math.min(100, r.pct)}%; background:${subjectColor(r.subject)};"></span></span><span class="rc-bar-v">${Math.round(r.pct)}%</span></div>`).join('');
+  const detail = (d.grades || []).map(g => `<tr><td>${escapeHtml(g.subject)}</td><td>${escapeHtml(g.assessment)}</td><td class="rc-c">${escapeHtml(g.score)}</td><td class="rc-c">${g.recorded_at ? fmtDate(g.recorded_at) : ''}</td></tr>`).join('');
+  return `<article class="rc-doc${official ? '' : ' rc-unofficial'}" aria-label="Report card for ${escapeHtml(s.name || '')}">
+    <img class="rc-watermark" src="assets/ns-mark.png" alt="">
+    <header class="rc-head">
+      <img class="rc-logo" src="assets/ns-mark.png" alt="Novaschool.pk">
+      <div class="rc-school"><div class="rc-school-name">Novaschool<span>.pk</span></div><div class="rc-school-sub">Online School · Grades 1–12 · Pakistan</div></div>
+      <div class="rc-title"><div class="rc-title-main">${official ? 'Report Card' : 'Progress Report'}</div><div class="rc-title-sub">Issued ${issued}</div></div>
+    </header>
+    <div class="rc-rule"><span></span></div>
+    ${official ? '' : `<p class="rc-notice">Internal progress summary for reference. Official results for this grade are issued through ${board}, not by Novaschool.pk.</p>`}
+    <section class="rc-student">
+      <div><span>Student</span><b>${escapeHtml(s.name || '—')}</b></div>
+      <div><span>Admission no.</span><b>${escapeHtml(s.admissionNo || '—')}</b></div>
+      <div><span>Grade</span><b>${escapeHtml(s.grade || '—')}</b></div>
+      <div><span>Section</span><b>${escapeHtml(s.section || '—')}</b></div>
+      <div><span>Attendance</span><b>${d.attendancePct !== null && d.attendancePct !== undefined ? d.attendancePct + '%' : 'Not recorded'}</b></div>
+      <div class="rc-overall"><span>Overall</span><b>${overall !== null ? rcNum(overall) + '%' : '—'}${band ? ` · ${band.grade}` : ''}</b></div>
+    </section>
+    <table class="rc-table">
+      <thead><tr><th>Subject</th><th class="rc-c">Assessments</th><th class="rc-c">Marks</th><th class="rc-c">%</th><th class="rc-c">Grade</th><th>Remark</th></tr></thead>
+      <tbody>${rows}</tbody>
+      ${total ? `<tfoot><tr><td>Total</td><td></td><td class="rc-c">${rcNum(got)} / ${rcNum(total)}</td><td class="rc-c">${rcNum(overall)}%</td><td class="rc-c"><span class="rc-grade g-${band.grade.replace('+', 'p')}">${band.grade}</span></td><td>${band.remark}</td></tr></tfoot>` : ''}
+    </table>
+    <section class="rc-two">
+      <div class="rc-box"><h4>Subject performance</h4>${bars || '<p class="rc-empty">Charts appear once numeric marks are recorded.</p>'}</div>
+      <div class="rc-box"><h4>Grading scale</h4><table class="rc-scale">${RC_SCALE.map((b, i) => `<tr><td><span class="rc-grade g-${b.grade.replace('+', 'p')}">${b.grade}</span></td><td>${i === 0 ? '90% and above' : b.min === 0 ? 'Below 40%' : `${b.min}–${RC_SCALE[i - 1].min - 1}%`}</td><td>${b.remark}</td></tr>`).join('')}</table></div>
+    </section>
+    <section class="rc-box rc-remarks"><h4>Class teacher's remarks</h4><div class="rc-lines"><span></span><span></span></div></section>
+    <footer class="rc-sign"><div><span></span>Class teacher</div><div><span></span>Principal</div><div><span></span>Parent / guardian</div></footer>
+    <p class="rc-foot">Generated from Novaschool.pk school records on ${issued}. Marks are the totals of all recorded assessments.</p>
+    ${detail ? `<section class="rc-box rc-detail"><h4>Assessment record</h4><table class="rc-table rc-table-sm"><thead><tr><th>Subject</th><th>Assessment</th><th class="rc-c">Score</th><th class="rc-c">Date</th></tr></thead><tbody>${detail}</tbody></table></section>` : ''}
+  </article>`;
+}
+function printReportCard(){
+  const d = window._lastReportCard;
+  if (!d) { toast('The report card is still loading.'); return; }
+  let root = document.getElementById('rcPrintRoot');
+  if (!root) { root = document.createElement('div'); root.id = 'rcPrintRoot'; document.body.appendChild(root); }
+  root.innerHTML = renderReportCardDoc(d);
+  const oldTitle = document.title;
+  const name = (d.student && d.student.name ? d.student.name : 'Student').replace(/[^A-Za-z0-9 _-]/g, '').trim() || 'Student';
+  document.title = `Report card - ${name}`;
+  document.body.classList.add('rc-printing');
+  const done = () => { document.body.classList.remove('rc-printing'); document.title = oldTitle; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  setTimeout(() => window.print(), 150);
+  setTimeout(done, 60000);
+}
+
 async function loadReportCard(){
   try {
     const d = await api('/student/report-card');
-    const gradesRows = d.grades.length
-      ? d.grades.map(g => `<tr><td>${escapeHtml(g.subject)}</td><td>${escapeHtml(g.assessment)}</td><td class="mono">${escapeHtml(g.score)}</td></tr>`).join('')
-      : '<tr><td colspan="3" class="empty">No grades recorded yet.</td></tr>';
-
-    const subjectChart = d.subjectAverages && d.subjectAverages.length
-      ? `<div style="margin-top:16px;"><p style="font-size:12.5px; font-weight:700; margin-bottom:8px;">Marks obtained — subject-wise</p>
-          ${d.subjectAverages.map(s => `<div class="bar-row"><span class="b-label">${escapeHtml(s.subject)}</span><div class="bar-track"><div class="bar-fill" style="width:${s.avgPct}%; background:${subjectColor(s.subject)};"></div></div><span class="b-val">${s.avgPct}%</span></div>`).join('')}
-        </div>`
-      : '';
-
     const historyChart = d.monthlyHistory && d.monthlyHistory.length > 1
       ? `<div style="margin-top:16px;"><p style="font-size:12.5px; font-weight:700; margin-bottom:8px;">Progress over time — previous terms vs. now</p>
           ${renderLineChart(d.monthlyHistory.map(h => ({ label: new Date(h.month + '-01').toLocaleDateString(undefined, { month: 'short', year: '2-digit' }), pct: h.avgPct })), { ariaLabel: 'Average score by term' })}
@@ -4442,34 +4587,14 @@ async function loadReportCard(){
         </div>`
       : (d.monthlyHistory && d.monthlyHistory.length === 1 ? '<p style="font-size:11.5px; color:var(--ink-soft); margin-top:10px;">Not enough history yet to show a trend — check back next term.</p>' : '');
 
-    if (d.officiallyIssued) {
-      document.getElementById('reportCardArea').innerHTML = `
-        <div style="border:1.5px dashed var(--line); border-radius:12px; padding:20px; position:relative; overflow:hidden;">
-          <img src="assets/logo-icon.jpg" alt="" style="position:absolute; top:50%; left:50%; width:180px; height:auto; transform:translate(-50%,-50%); opacity:0.07; pointer-events:none;">
-          <div style="position:relative;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-              <img src="assets/logo-icon.jpg" alt="" style="width:32px;height:32px;border-radius:6px;">
-              <span class="mono" style="font-size:11px; color:var(--ink-soft);">Official Report Card</span>
-            </div>
-            <p style="font-weight:700; font-size:15px;">${escapeHtml(d.student.name)}</p>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:12px;">${escapeHtml(d.student.grade)} · Section ${escapeHtml(d.student.section)} · ${escapeHtml(d.student.admissionNo)}</p>
-            <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:10px;">Attendance: ${d.attendancePct !== null ? d.attendancePct + '%' : 'Not yet recorded'}</p>
-            <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table></div>
-            ${subjectChart}
-            ${historyChart}
-          </div>
-        </div>
-        <button class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="window.print()">Print / Save as PDF</button>`;
-    } else {
-      const boardNote = d.examAuthorityName ? `through ${escapeHtml(d.examAuthorityName)}` : 'through the relevant examination board or authority near you';
-      document.getElementById('reportCardArea').innerHTML = `
-        <div style="padding:12px 14px; background:var(--paper-alt); border-radius:10px; margin-bottom:14px; font-size:12.5px; color:var(--ink-soft);">
-          This grade's official results are issued ${boardNote} — not by Novaschool.pk directly. What's below is an internal progress summary for reference only, not an official transcript.
-        </div>
-        <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody>${gradesRows}</tbody></table></div>
-        ${subjectChart}
-        ${historyChart}`;
-    }
+    window._lastReportCard = d;
+    document.getElementById('reportCardArea').innerHTML = `
+      <div class="rc-actions">
+        <button type="button" class="btn btn-primary" onclick="printReportCard()"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-3px; margin-right:6px;"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>Download PDF</button>
+        <span class="rc-hint">In the print window, choose <b>Save as PDF</b>.</span>
+      </div>
+      <div class="rc-preview">${renderReportCardDoc(d)}</div>
+      ${historyChart}`;
   } catch (err) {
     toast(err.message);
   }
@@ -5217,18 +5342,33 @@ async function loadStudentAssignments(){
   try {
     const d = await api('/student/assignments');
     if (subjectSel.options.length <= 1) {
-      [...new Set(d.assignments.map(a => a.subject))].sort().forEach(s => subjectSel.insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+      [...new Set(d.assignments.map(a => a.subject))].sort().forEach(s => subjectSel.insertAdjacentHTML('beforeend', `<option>${escapeHtml(s)}</option>`));
     }
     const subject = subjectSel.value, status = statusSel.value;
     const filtered = d.assignments.filter(a => (!subject || a.subject === subject) && (!status || a.status === status));
 
+    const stMap = { pending: ['s-new', 'To do'], submitted: ['s-wait', 'Awaiting marks'], graded: ['s-done', 'Marked'], overdue: ['s-late', 'Overdue'] };
+    const today = new Date(); today.setHours(0, 0, 0, 0);
     document.getElementById('studentAssignments').innerHTML = filtered.length
-      ? filtered.map(a => `<div class="list-row">
-          <div class="l-main"><span class="tag" style="background:${subjectColor(a.subject)};">${escapeHtml(a.subject)}</span>
-            <div style="min-width:0;"><div class="l-title">${escapeHtml(a.title)}</div><div class="l-sub">${a.dueDate ? 'Due ' + fmtDate(a.dueDate) : 'No due date'}${a.status === 'graded' ? ` · ${a.marks}/${a.maxMarks}` : ''}</div></div></div>
-          <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">${assignStatusBadge(a.status)}<button class="btn btn-outline btn-sm" onclick="openAssignmentDetail(${a.id})">View</button></div>
-        </div>`).join('')
-      : '<p class="empty">No assignments match those filters.</p>';
+      ? `<div class="nx-list">${filtered.map(a => {
+          const st = stMap[a.status] || stMap.pending;
+          let due = 'No due date', dueCls = '';
+          if (a.dueDate) {
+            const dd = new Date(a.dueDate); dd.setHours(0, 0, 0, 0);
+            const days = Math.round((dd - today) / 86400000);
+            due = days === 0 ? 'Due today' : days === 1 ? 'Due tomorrow' : days > 1 && days <= 6 ? `Due in ${days} days` : 'Due ' + fmtDate(a.dueDate);
+            if (a.status === 'pending' && days >= 0 && days <= 2) dueCls = ' is-soon';
+          }
+          const score = a.status === 'graded' ? `<div class="nx-score"><b>${escapeHtml(String(a.marks))}</b><span>/ ${Number(a.maxMarks)}</span></div>` : '';
+          const label = a.status === 'pending' || a.status === 'overdue' ? 'Open and submit' : 'View';
+          return `<article class="nx-card" style="--c:${subjectColor(a.subject)};">
+            <div class="nx-top"><span class="nx-subject">${escapeHtml(a.subject)}</span><span class="nx-chip ${st[0]}">${st[1]}</span></div>
+            <h4 class="nx-title">${escapeHtml(a.title)}</h4>
+            <div class="nx-meta"><span class="nx-due${dueCls}">${due}</span><span>${Number(a.maxMarks)} marks</span></div>
+            <div class="nx-foot">${score}<button class="btn ${a.status === 'pending' || a.status === 'overdue' ? 'btn-primary' : 'btn-outline'} btn-sm nx-go" onclick="openAssignmentDetail(${Number(a.id)})">${label}</button></div>
+          </article>`;
+        }).join('')}</div>`
+      : '<div class="nx-empty"><b>Nothing here</b><span>No assignments match those filters.</span></div>';
   } catch (err) { toast(err.message); }
 }
 
@@ -5317,16 +5457,21 @@ async function loadStudentExams(){
   try {
     const d = await api('/student/exams');
     document.getElementById('studentExams').innerHTML = d.exams.length
-      ? d.exams.map(e => {
-          const actionBtn = e.status === 'not_started'
-            ? `<button class="btn btn-primary btn-sm" onclick="startExam(${e.id})">Start</button>`
-            : e.status === 'in_progress'
-              ? `<button class="btn btn-primary btn-sm" onclick="startExam(${e.id})">Resume</button>`
-              : '';
-          return `<div class="list-row"><div class="l-main"><span class="tag" style="background:${SUBJECT_COLORS[e.subject]||'var(--indigo)'};">${escapeHtml(e.subject)}</span><div><div class="l-title">${escapeHtml(e.title)}</div><div class="l-sub">${e.durationMinutes} min · ${e.maxMarks} marks</div></div></div>
-            <div style="display:flex; gap:8px; align-items:center;">${examStatusBadge(e.status, e.totalScore, e.maxMarks)}${actionBtn}</div></div>`;
-        }).join('')
-      : '<p class="empty">No tests published yet.</p>';
+      ? `<div class="nx-list">${d.exams.map(e => {
+          const st = { not_started: ['s-new', 'Not started'], in_progress: ['s-progress', 'In progress'], submitted: ['s-wait', 'Awaiting marks'], graded: ['s-done', 'Marked'] }[e.status] || ['s-new', 'Not started'];
+          const action = e.status === 'not_started'
+            ? `<button class="btn btn-primary btn-sm nx-go" onclick="startExam(${Number(e.id)})">Start test</button>`
+            : e.status === 'in_progress' ? `<button class="btn btn-primary btn-sm nx-go" onclick="startExam(${Number(e.id)})">Resume</button>` : '';
+          const score = e.status === 'graded' && e.totalScore !== null
+            ? `<div class="nx-score"><b>${Number(e.totalScore)}</b><span>/ ${Number(e.maxMarks)}</span></div>` : '';
+          return `<article class="nx-card" style="--c:${subjectColor(e.subject)};">
+            <div class="nx-top"><span class="nx-subject">${escapeHtml(e.subject)}</span><span class="nx-chip ${st[0]}">${st[1]}</span></div>
+            <h4 class="nx-title">${escapeHtml(e.title)}</h4>
+            <div class="nx-meta"><span>${Number(e.durationMinutes)} min</span><span>${Number(e.maxMarks)} marks</span></div>
+            <div class="nx-foot">${score}${action}</div>
+          </article>`;
+        }).join('')}</div>`
+      : '<div class="nx-empty"><b>No tests yet</b><span>When your teacher publishes a quiz or exam, it appears here.</span></div>';
   } catch (err) {
     toast(err.message);
   }
@@ -5345,28 +5490,30 @@ function renderExamTaking(examId, attempt, durationMinutes, questions){
   const container = document.getElementById('studentExams');
   const startedAt = new Date(attempt.startedAt).getTime();
   const deadline = startedAt + durationMinutes * 60000;
+  const total = questions.length;
 
   const qHtml = questions.map((q, i) => {
+    const qid = Number(q.id);
+    const head = `<div class="xq-head"><span class="xq-num">${i + 1}</span><p class="xq-text">${escapeHtml(q.question_text)}</p><span class="xq-marks">${Number(q.marks)} mark${Number(q.marks) === 1 ? '' : 's'}</span></div>`;
     if (q.question_type === 'mcq') {
       const opts = (q.options || []).map((opt, oi) =>
-        `<label style="display:flex; align-items:center; gap:8px; padding:7px 0; font-size:13.5px;">
-          <input type="radio" name="q-${q.id}" value="${escapeHtml(opt).replace(/"/g,'&quot;')}"> ${escapeHtml(opt)}
-        </label>`
+        `<label class="xq-opt"><input type="radio" name="q-${qid}" value="${escapeHtml(opt)}" onchange="updateExamProgress()"><span class="xq-letter">${String.fromCharCode(65 + oi)}</span><span class="xq-opt-text">${escapeHtml(opt)}</span></label>`
       ).join('');
-      return `<div style="margin-bottom:18px;"><p style="font-weight:600; font-size:14px; margin-bottom:6px;">${i+1}. ${escapeHtml(q.question_text)} <span class="mono" style="color:var(--ink-soft); font-weight:400; font-size:12px;">(${q.marks} mark${q.marks===1?'':'s'})</span></p>${opts}</div>`;
+      return `<section class="xq" data-qid="${qid}" data-type="mcq">${head}<div class="xq-opts">${opts}</div></section>`;
     }
-    return `<div style="margin-bottom:18px;"><p style="font-weight:600; font-size:14px; margin-bottom:6px;">${i+1}. ${escapeHtml(q.question_text)} <span class="mono" style="color:var(--ink-soft); font-weight:400; font-size:12px;">(${q.marks} mark${q.marks===1?'':'s'})</span></p>
-      <textarea id="ans-${q.id}" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:13.5px; min-height:80px; resize:vertical;" placeholder="Write your answer…"></textarea></div>`;
+    return `<section class="xq" data-qid="${qid}" data-type="text">${head}
+      <textarea id="ans-${qid}" class="xq-answer" oninput="updateExamProgress()" placeholder="Write your answer here…"></textarea></section>`;
   }).join('');
 
   container.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:10px 14px; background:var(--paper-alt); border-radius:10px;">
-      <span style="font-size:13px; font-weight:600;">Time remaining</span>
-      <span class="mono" id="examTimerDisplay" style="font-size:15px; font-weight:700;">--:--</span>
+    <div class="xbar" role="status">
+      <div class="xbar-time"><span>Time left</span><b class="mono" id="examTimerDisplay">--:--</b></div>
+      <div class="xbar-prog"><span id="examProgressText">0 of ${total} answered</span><div class="xbar-track"><div id="examProgressFill"></div></div></div>
     </div>
-    ${qHtml}
-    <button class="btn btn-ink" onclick="submitExam(${examId})">Submit test</button>
+    <div class="xq-list">${qHtml}</div>
+    <div class="x-submit"><button class="btn btn-primary" onclick="confirmSubmitExam(${Number(examId)})">Submit test</button><span>You can't change answers after submitting.</span></div>
   `;
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   clearInterval(examTimerInterval);
   function tick(){
@@ -5376,18 +5523,47 @@ function renderExamTaking(examId, attempt, durationMinutes, questions){
     if (remaining <= 0) {
       display.textContent = '00:00';
       clearInterval(examTimerInterval);
-      toast('Time\u2019s up — submitting automatically.');
+      toast('Time’s up — submitting automatically.');
       submitExam(examId);
       return;
     }
-    const mins = Math.floor(remaining / 60000);
+    const hrs = Math.floor(remaining / 3600000);
+    const mins = Math.floor((remaining % 3600000) / 60000);
     const secs = Math.floor((remaining % 60000) / 1000);
-    display.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    display.textContent = (hrs ? `${hrs}:` : '') + `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    const bar = display.closest('.xbar');
+    if (bar) { bar.classList.toggle('is-warn', remaining < 5 * 60000); bar.classList.toggle('is-danger', remaining < 60000); }
   }
   tick();
   examTimerInterval = setInterval(tick, 1000);
 
   window._currentExamQuestions = questions;
+  updateExamProgress();
+}
+
+function examAnsweredCount(){
+  return (window._currentExamQuestions || []).filter(q => {
+    if (q.question_type === 'mcq') return !!document.querySelector(`input[name="q-${Number(q.id)}"]:checked`);
+    const el = document.getElementById(`ans-${Number(q.id)}`);
+    return !!(el && el.value.trim());
+  }).length;
+}
+function updateExamProgress(){
+  const qs = window._currentExamQuestions || [];
+  const n = examAnsweredCount();
+  const t = document.getElementById('examProgressText'); if (t) t.textContent = `${n} of ${qs.length} answered`;
+  const f = document.getElementById('examProgressFill'); if (f) f.style.width = (qs.length ? Math.round(n / qs.length * 100) : 0) + '%';
+  document.querySelectorAll('.xq').forEach(sec => {
+    const id = sec.dataset.qid;
+    const done = sec.dataset.type === 'mcq' ? !!sec.querySelector('input:checked') : !!(document.getElementById('ans-' + id) || {}).value?.trim();
+    sec.classList.toggle('is-done', done);
+  });
+}
+function confirmSubmitExam(examId){
+  const qs = window._currentExamQuestions || [];
+  const left = qs.length - examAnsweredCount();
+  if (left > 0 && !confirm(`${left} question${left === 1 ? ' is' : 's are'} not answered yet. Submit anyway?`)) return;
+  submitExam(examId);
 }
 
 async function submitExam(examId){
@@ -5751,10 +5927,10 @@ async function loadTeacherGradebook(){
   try {
     const d = await api(`/teacher/gradebook?${params.toString()}`);
     if (sectionSel.options.length <= 1) {
-      d.sections.forEach(s => sectionSel.insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+      d.sections.forEach(s => sectionSel.insertAdjacentHTML('beforeend', `<option>${escapeHtml(s)}</option>`));
     }
     if (subjectSel.options.length <= 1) {
-      d.subjects.forEach(s => subjectSel.insertAdjacentHTML('beforeend', `<option>${s}</option>`));
+      d.subjects.forEach(s => subjectSel.insertAdjacentHTML('beforeend', `<option>${escapeHtml(s)}</option>`));
     }
     document.getElementById('teacherGradebookBody').innerHTML = d.grades.length
       ? d.grades.map(g => `<tr><td>${escapeHtml(g.studentName)}</td><td>${g.sectionCode||''}</td><td>${escapeHtml(g.subject)}</td><td>${escapeHtml(g.assessment)}</td><td>${escapeHtml(g.score)}</td><td>${fmtDate(g.recordedAt)}</td></tr>`).join('')
@@ -5894,7 +6070,7 @@ async function loadTeacherDashboard(){
       : '<p class="empty">No classes today.</p>';
 
     const sectionSelect = document.getElementById('lessonSection');
-    sectionSelect.innerHTML = (d.mySections || []).map(s => `<option value="${s}">${s}</option>`).join('') || '<option value="">No sections yet</option>';
+    sectionSelect.innerHTML = (d.mySections || []).map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('') || '<option value="">No sections yet</option>';
     document.getElementById('examSection').innerHTML = sectionSelect.innerHTML;
     document.getElementById('ttSection').innerHTML = sectionSelect.innerHTML;
     document.getElementById('labAssignSection').innerHTML = sectionSelect.innerHTML;
@@ -5916,6 +6092,7 @@ async function loadTeacherDashboard(){
 
     await loadTeacherLessons();
     await loadTeacherExams();
+    await loadTeacherAssignments();
     await loadTeacherCourses();
     await loadTeacherMaterials();
     await loadTeacherGradebook();
@@ -5966,6 +6143,13 @@ async function startClassroomWhiteboard(sectionCode, subject){
 
 let activeLiveSections = [];
 
+function openLiveWhiteboard(){
+  const section = document.getElementById('ttSection').value;
+  if (!section) { toast('You don\u2019t have a section yet. Ask the office to add you to a timetable.'); return; }
+  const subject = (currentUser && currentUser.profile && currentUser.profile.subject) || 'Live class';
+  startClassroomWhiteboard(section, subject).then(() => setTimeout(refreshLiveClassButton, 800));
+}
+
 async function refreshLiveClassButton(){
   const section = document.getElementById('ttSection').value;
   const btn = document.getElementById('liveClassBtn');
@@ -5976,10 +6160,14 @@ async function refreshLiveClassButton(){
     const d = await api('/teacher/live-sessions');
     activeLiveSections = d.activeSections;
     const isLive = activeLiveSections.includes(section);
-    btn.textContent = isLive ? 'End live class' : 'Start live class';
-    btn.classList.toggle('btn-primary', !isLive);
-    btn.classList.toggle('btn-outline', isLive);
-    statusEl.textContent = isLive ? 'Live: student chat is locked for this section' : '';
+    btn.textContent = isLive ? 'End live class' : 'Start without whiteboard';
+    statusEl.textContent = isLive ? 'Section chat is paused for students while the class is live.' : 'Starting a class pauses student-to-student chat for that section until you end it.';
+    const panel = document.getElementById('lcPanel');
+    if (panel) panel.classList.toggle('is-live', isLive);
+    const stateText = document.getElementById('lcStateText');
+    if (stateText) stateText.textContent = isLive ? `Live now · Section ${section}` : 'Not live';
+    const openBtn = document.getElementById('lcOpenBtn');
+    if (openBtn) openBtn.lastChild.textContent = isLive ? 'Return to whiteboard classroom' : 'Open whiteboard classroom';
   } catch (err) { /* non-critical */ }
 }
 
@@ -6148,43 +6336,57 @@ async function loadTeacherExams(){
   try {
     const d = await api('/teacher/exams');
     document.getElementById('teacherExams').innerHTML = d.exams.length
-      ? d.exams.map(e => `
-        <div style="border-bottom:1px solid var(--paper-alt); padding:12px 0;">
-          <div class="list-row" style="border:none; padding:0 0 8px;">
-            <div class="l-main"><span class="tag" style="background:${SUBJECT_COLORS[e.subject]||'var(--indigo)'};">${escapeHtml(e.subject)}</span>
-              <div><div class="l-title">${escapeHtml(e.title)}</div><div class="l-sub">Section ${escapeHtml(e.sectionCode)} · ${e.questionCount} question${e.questionCount===1?'':'s'} · ${e.durationMinutes} min ${e.isPublished ? '· <span style="color:var(--green);">Published</span>' : '· <span style="color:var(--ink-soft);">Draft</span>'}</div></div></div>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-              <button class="btn btn-outline btn-sm" onclick="toggleAddQuestion(${e.id})">Add question</button>
-              ${!e.isPublished ? `<button class="btn btn-ink btn-sm" onclick="publishExam(${e.id})">Publish</button>` : ''}
-              <button class="btn btn-outline btn-sm" onclick="toggleAttempts(${e.id})">Submissions${e.pendingGrading ? ` (${e.pendingGrading})` : ''}</button>
+      ? `<div class="nx-list nx-list-wide">${d.exams.map(e => {
+          const id = Number(e.id), qn = Number(e.questionCount) || 0, pending = Number(e.pendingGrading) || 0;
+          return `<article class="nx-card" style="--c:${subjectColor(e.subject)};">
+            <div class="nx-top"><span class="nx-subject">${escapeHtml(e.subject)} · ${escapeHtml(e.sectionCode)}</span>${e.isPublished ? '<span class="nx-chip s-done">Published</span>' : '<span class="nx-chip s-draft">Draft</span>'}</div>
+            <h4 class="nx-title">${escapeHtml(e.title)}</h4>
+            <div class="nx-meta"><span>${qn} question${qn === 1 ? '' : 's'}</span><span>${Number(e.durationMinutes)} min</span>${pending ? `<span class="nx-due is-soon">${pending} to mark</span>` : ''}</div>
+            <div class="nx-foot nx-foot-wrap">
+              ${!e.isPublished ? `<button class="btn btn-outline btn-sm" onclick="toggleAddQuestion(${id})">+ Add question</button>` : ''}
+              ${!e.isPublished ? `<button class="btn btn-primary btn-sm" ${qn ? '' : 'disabled title="Add at least one question first"'} onclick="publishExam(${id})">Publish</button>` : ''}
+              <button class="btn ${pending ? 'btn-primary' : 'btn-outline'} btn-sm" onclick="toggleAttempts(${id})">Submissions${pending ? ` (${pending})` : ''}</button>
             </div>
-          </div>
-          <div class="queue-detail" id="qform-${e.id}">
-            <div style="display:grid; grid-template-columns:1fr; gap:8px; margin-bottom:8px;">
-              <textarea id="qtext-${e.id}" placeholder="Question text" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid var(--line); font-family:inherit; font-size:13px; min-height:44px;"></textarea>
-              <select class="grade-input" id="qtype-${e.id}" onchange="toggleMcqFields(${e.id})">
-                <option value="mcq">Multiple choice</option>
-                <option value="descriptive">Descriptive (written answer)</option>
-              </select>
-              <div id="mcqFields-${e.id}">
-                <input class="grade-input" style="width:100%; margin-bottom:6px;" id="qoptions-${e.id}" placeholder="Options, comma-separated (e.g. 4, 6, 8, 10)">
-                <input class="grade-input" style="width:100%;" id="qcorrect-${e.id}" placeholder="Correct answer (must match one option exactly)">
+            <div class="queue-detail" id="qform-${id}">
+              <div class="qb">
+                <label class="nx-field nx-wide"><span>Question</span><textarea class="grade-input" id="qtext-${id}" rows="2" placeholder="Type the question…"></textarea></label>
+                <div class="qb-row">
+                  <div class="qb-type" role="radiogroup" aria-label="Question type">
+                    <label><input type="radio" name="qtype-${id}" value="mcq" checked onchange="toggleMcqFields(${id})"><span>Multiple choice</span></label>
+                    <label><input type="radio" name="qtype-${id}" value="descriptive" onchange="toggleMcqFields(${id})"><span>Written answer</span></label>
+                  </div>
+                  <label class="nx-field qb-marks"><span>Marks</span><input class="grade-input" type="number" min="1" id="qmarks-${id}" value="1"></label>
+                </div>
+                <div id="mcqFields-${id}" class="qb-opts">
+                  <p class="nx-help">Type the options and tick the correct one.</p>
+                  <div id="qopts-${id}">${[0, 1, 2, 3].map(i => qbOptionRow(id, i)).join('')}</div>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="addQbOption(${id})">+ Add option</button>
+                </div>
+                <div class="nx-form-actions"><button class="btn btn-primary btn-sm" onclick="addQuestion(${id})">Save question</button></div>
               </div>
-              <input class="grade-input" style="width:100px;" type="number" id="qmarks-${e.id}" placeholder="Marks" value="1">
             </div>
-            <button class="btn btn-ink btn-sm" onclick="addQuestion(${e.id})">Add question</button>
-          </div>
-          <div class="queue-detail" id="attempts-${e.id}"></div>
-        </div>`).join('')
-      : '<p class="empty">No tests created yet.</p>';
+            <div class="queue-detail" id="attempts-${id}"></div>
+          </article>`;
+        }).join('')}</div>`
+      : '<div class="nx-empty"><b>No tests yet</b><span>Tap “Create test” to make a quiz or exam for one of your sections.</span></div>';
   } catch (err) {
     toast(err.message);
   }
 }
 
+function qbOptionRow(examId, i){
+  return `<div class="qb-opt"><input type="radio" name="qcor-${examId}" value="${i}" aria-label="Mark option ${String.fromCharCode(65 + i)} as correct"${i === 0 ? ' checked' : ''}><span class="xq-letter">${String.fromCharCode(65 + i)}</span><input class="grade-input" id="qopt-${examId}-${i}" placeholder="Option ${String.fromCharCode(65 + i)}"></div>`;
+}
+function addQbOption(examId){
+  const box = document.getElementById(`qopts-${examId}`);
+  const n = box.querySelectorAll('.qb-opt').length;
+  if (n >= 6) { toast('Up to 6 options.'); return; }
+  box.insertAdjacentHTML('beforeend', qbOptionRow(examId, n));
+}
+
 function toggleMcqFields(examId){
-  const isMcq = document.getElementById(`qtype-${examId}`).value === 'mcq';
-  document.getElementById(`mcqFields-${examId}`).style.display = isMcq ? 'block' : 'none';
+  const checked = document.querySelector(`input[name="qtype-${examId}"]:checked`);
+  document.getElementById(`mcqFields-${examId}`).style.display = checked && checked.value === 'mcq' ? 'block' : 'none';
 }
 
 function toggleAddQuestion(examId){
@@ -6196,28 +6398,30 @@ function toggleAddQuestion(examId){
 
 async function addQuestion(examId){
   const question_text = document.getElementById(`qtext-${examId}`).value.trim();
-  const question_type = document.getElementById(`qtype-${examId}`).value;
+  const typeEl = document.querySelector(`input[name="qtype-${examId}"]:checked`);
+  const question_type = typeEl ? typeEl.value : 'mcq';
   const marks = document.getElementById(`qmarks-${examId}`).value;
   let options, correct_answer;
-
+  if (!question_text) { toast('Type the question first.'); return; }
   if (question_type === 'mcq') {
-    options = document.getElementById(`qoptions-${examId}`).value.split(',').map(s => s.trim()).filter(Boolean);
-    correct_answer = document.getElementById(`qcorrect-${examId}`).value.trim();
+    const rows = [...document.querySelectorAll(`#qopts-${examId} .qb-opt`)];
+    const picked = document.querySelector(`input[name="qcor-${examId}"]:checked`);
+    options = [];
+    rows.forEach((row, i) => {
+      const v = document.getElementById(`qopt-${examId}-${i}`).value.trim();
+      if (v) options.push(v);
+      if (picked && Number(picked.value) === i) correct_answer = v;
+    });
+    if (options.length < 2) { toast('Add at least two options.'); return; }
+    if (!correct_answer) { toast('Tick the correct option (it must not be empty).'); return; }
+    if (new Set(options).size !== options.length) { toast('Two options are the same. Make each option different.'); return; }
   }
-
-  if (!question_text) { toast('Enter the question text.'); return; }
-
   try {
     const res = await api(`/teacher/exams/${examId}/questions`, {
       method: 'POST',
       body: JSON.stringify({ question_text, question_type, options, correct_answer, marks })
     });
     toast(res.message);
-    document.getElementById(`qtext-${examId}`).value = '';
-    if (question_type === 'mcq') {
-      document.getElementById(`qoptions-${examId}`).value = '';
-      document.getElementById(`qcorrect-${examId}`).value = '';
-    }
     loadTeacherExams();
   } catch (err) {
     toast(err.message);
@@ -6267,12 +6471,12 @@ async function openGrading(attemptId, examId){
         const correct = a.is_correct;
         return `<div style="padding:8px 0; border-bottom:1px solid var(--line);">
           <p style="font-size:13px; font-weight:600;">${escapeHtml(a.question_text)}</p>
-          <p style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">Answered: ${a.student_answer || '(no answer)'} — <span style="color:${correct ? 'var(--green)' : 'var(--brand-dark)'}; font-weight:600;">${correct ? 'Correct' : 'Incorrect'}</span> (${a.marks_awarded}/${a.marks})</p>
+          <p style="font-size:12.5px; color:var(--ink-soft); margin-top:4px;">Answered: ${escapeHtml(a.student_answer || '(no answer)')} — <span style="color:${correct ? 'var(--green)' : 'var(--brand-dark)'}; font-weight:600;">${correct ? 'Correct' : 'Incorrect'}</span> (${a.marks_awarded}/${a.marks})</p>
         </div>`;
       }
       return `<div style="padding:8px 0; border-bottom:1px solid var(--line);">
         <p style="font-size:13px; font-weight:600;">${escapeHtml(a.question_text)} <span class="mono" style="color:var(--ink-soft); font-weight:400; font-size:12px;">(max ${a.marks})</span></p>
-        <p style="font-size:13px; margin-top:6px; padding:8px; background:var(--paper-alt); border-radius:8px;">${a.student_answer || '(no answer)'}</p>
+        <p style="font-size:13px; margin-top:6px; padding:8px; background:var(--paper-alt); border-radius:8px; white-space:pre-wrap;">${escapeHtml(a.student_answer || '(no answer)')}</p>
         <input class="grade-input" style="width:70px; margin-top:6px;" type="number" min="0" max="${a.marks}" id="mark-${a.question_id}-${attemptId}" value="${a.marks_awarded !== null ? a.marks_awarded : ''}" placeholder="/${a.marks}">
       </div>`;
     }).join('') + `<button class="btn btn-ink btn-sm" style="margin-top:10px;" onclick="saveGrading(${attemptId}, ${examId}, [${d.answers.filter(a=>a.question_type==='descriptive').map(a=>a.question_id).join(',')}])">Save grades</button>`;
@@ -6509,36 +6713,130 @@ async function deleteMaterial(id){
   }
 }
 
-async function toggleQueue(assignmentId){
-  const el = document.getElementById(`queue-${assignmentId}`);
+// ---------- Teacher assignments: create, list, review and mark ----------
+function toggleNewAssignmentForm(){
+  const f = document.getElementById('newAssignmentForm');
+  f.hidden = !f.hidden;
+  if (!f.hidden) {
+    const sel = document.getElementById('taSection');
+    sel.innerHTML = (window._teacherSections || []).map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('') || '<option value="">No sections yet</option>';
+    const subj = document.getElementById('taSubject');
+    if (!subj.value && currentUser && currentUser.profile && currentUser.profile.subject) subj.value = currentUser.profile.subject;
+    document.getElementById('taTitle').focus();
+  }
+}
+
+async function createTeacherAssignment(){
+  const btn = document.getElementById('taCreateBtn');
+  const title = document.getElementById('taTitle').value.trim();
+  const subject = document.getElementById('taSubject').value.trim();
+  const section_code = document.getElementById('taSection').value;
+  const due_date = document.getElementById('taDue').value || null;
+  const max_marks = Number(document.getElementById('taMarks').value) || 100;
+  const description = document.getElementById('taDesc').value.trim() || null;
+  const file = document.getElementById('taFile').files[0];
+  if (!title || !subject || !section_code) { toast('Add a title, subject and section.'); return; }
+  if (file && file.size > 3.6 * 1024 * 1024) { toast('That file is too large. Please use one under about 3.5 MB.'); return; }
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const payload = { title, subject, section_code, due_date, max_marks, description };
+    if (file) { payload.attachment_base64 = await fileToBase64(file); payload.attachment_name = file.name; payload.attachment_mime = file.type; }
+    const res = await api('/teacher/assignments', { method: 'POST', body: JSON.stringify(payload) });
+    toast(res.message);
+    ['taTitle', 'taDue', 'taDesc', 'taFile'].forEach(id => { document.getElementById(id).value = ''; });
+    toggleNewAssignmentForm();
+    loadTeacherAssignments();
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create assignment';
+  }
+}
+
+async function loadTeacherAssignments(){
+  const box = document.getElementById('teacherAssignments');
+  if (!box) return;
+  try {
+    const d = await api('/teacher/assignments');
+    box.innerHTML = d.assignments.length
+      ? `<div class="nx-list nx-list-wide">${d.assignments.map(a => {
+          const id = Number(a.id), pending = Number(a.pendingCount) || 0, graded = Number(a.gradedCount) || 0;
+          return `<article class="nx-card" style="--c:${subjectColor(a.subject)};">
+            <div class="nx-top"><span class="nx-subject">${escapeHtml(a.subject)} · ${escapeHtml(a.sectionCode)}</span>${pending ? `<span class="nx-chip s-wait">${pending} to mark</span>` : '<span class="nx-chip s-done">Up to date</span>'}</div>
+            <h4 class="nx-title">${escapeHtml(a.title)}</h4>
+            <div class="nx-meta"><span>${a.dueDate ? 'Due ' + fmtDate(a.dueDate) : 'No due date'}</span><span>${Number(a.maxMarks)} marks</span><span>${graded} marked</span>${a.hasAttachment ? '<span>File attached</span>' : ''}</div>
+            <div class="nx-foot"><button class="btn ${pending ? 'btn-primary' : 'btn-outline'} btn-sm nx-go" onclick="toggleQueue(${id}, 'aq')">${pending ? 'Review submissions' : 'Check for new work'}</button></div>
+            <div class="queue-detail" id="aq-${id}"></div>
+          </article>`;
+        }).join('')}</div>`
+      : '<div class="nx-empty"><b>No assignments yet</b><span>Tap “New assignment” to set homework for one of your sections.</span></div>';
+  } catch (err) {
+    box.innerHTML = '<p class="empty">Assignments couldn’t be loaded.</p>';
+  }
+}
+
+async function toggleQueue(assignmentId, prefix){
+  prefix = prefix || 'queue';
+  const el = document.getElementById(`${prefix}-${assignmentId}`);
+  if (!el) return;
   const isOpen = el.classList.contains('open');
   document.querySelectorAll('.queue-detail.open').forEach(d => d.classList.remove('open'));
   if (isOpen) return;
   el.innerHTML = '<p class="empty">Loading…</p>';
   el.classList.add('open');
   try {
-    const d = await api(`/teacher/assignments/${assignmentId}/submissions`);
+    const d = await api(`/teacher/assignments/${Number(assignmentId)}/submissions`);
+    const max = Number(d.assignment.maxMarks);
     el.innerHTML = d.submissions.length
-      ? d.submissions.map(s => `
-        <div class="qrow"><span>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</span>
-          <span style="display:flex; gap:8px; align-items:center;">
-            <input type="number" class="grade-input" min="0" max="${d.assignment.maxMarks}" placeholder="/${d.assignment.maxMarks}" id="mark-${s.id}">
-            <button class="btn btn-ink btn-sm" onclick="saveGrade(${s.id}, ${assignmentId})">Save</button>
-          </span></div>`).join('')
-      : '<p class="empty">All graded.</p>';
+      ? d.submissions.map(s => {
+          const sid = Number(s.id);
+          return `<div class="sub-card">
+            <div class="sub-head"><div class="avatar" style="width:32px;height:32px;font-size:11px;background:var(--nova-royal);">${escapeHtml(initials(s.first_name, s.last_name))}</div>
+              <div><b>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</b><span>${s.submitted_at ? 'Submitted ' + fmtDate(s.submitted_at) : 'Submitted'}</span></div></div>
+            ${s.body_text ? `<div class="sub-answer">${escapeHtml(s.body_text)}</div>` : ''}
+            ${s.file_name ? `<button type="button" class="btn btn-outline btn-sm" onclick="downloadSubmissionFile(${sid})">Download ${escapeHtml(s.file_name)}</button>` : ''}
+            ${!s.body_text && !s.file_name ? '<p class="empty">No answer text or file was sent.</p>' : ''}
+            <div class="sub-mark">
+              <label class="nx-field"><span>Marks (out of ${max})</span><input type="number" class="grade-input" min="0" max="${max}" id="mark-${sid}" placeholder="0–${max}"></label>
+              <label class="nx-field nx-grow"><span>Feedback (optional)</span><input class="grade-input" id="fb-${sid}" placeholder="Well done, check question 3 again…"></label>
+              <button class="btn btn-primary btn-sm" onclick="saveGrade(${sid}, ${Number(assignmentId)}, '${prefix === 'aq' ? 'aq' : 'queue'}')">Save mark</button>
+            </div>
+          </div>`;
+        }).join('')
+      : '<p class="empty">Everything submitted so far is marked.</p>';
+  } catch (err) {
+    el.innerHTML = '';
+    el.classList.remove('open');
+    toast(err.message);
+  }
+}
+
+async function downloadSubmissionFile(submissionId){
+  try {
+    const d = await api(`/teacher/submissions/${Number(submissionId)}/file`);
+    const link = document.createElement('a');
+    link.href = `data:application/octet-stream;base64,${d.fileBase64}`;
+    link.download = d.fileName || 'submission';
+    link.click();
   } catch (err) {
     toast(err.message);
   }
 }
 
-async function saveGrade(submissionId, assignmentId){
+async function saveGrade(submissionId, assignmentId, prefix){
   const input = document.getElementById(`mark-${submissionId}`);
+  const fb = document.getElementById(`fb-${submissionId}`);
   const marks = Number(input.value);
-  if (!input.value || Number.isNaN(marks)) { toast('Enter a mark first.'); return; }
+  if (input.value === '' || Number.isNaN(marks)) { toast('Enter a mark first.'); return; }
   try {
-    const res = await api(`/teacher/submissions/${submissionId}/grade`, { method: 'POST', body: JSON.stringify({ marks }) });
+    const res = await api(`/teacher/submissions/${Number(submissionId)}/grade`, { method: 'POST', body: JSON.stringify({ marks, feedback: fb && fb.value.trim() ? fb.value.trim() : undefined }) });
     toast(res.message);
-    loadTeacherDashboard();
+    const card = input.closest('.sub-card');
+    const panel = card ? card.parentElement : null;
+    if (card) card.remove();
+    if (panel && !panel.querySelector('.sub-card')) panel.innerHTML = '<p class="empty">Everything submitted so far is marked.</p>';
+    if (prefix === 'aq') { if (panel && !panel.querySelector('.sub-card')) loadTeacherAssignments(); }
+    else loadTeacherDashboard();
   } catch (err) {
     toast(err.message);
   }
@@ -6554,11 +6852,7 @@ async function loadAdminDashboard(){
   try {
     const o = await api('/admin/overview');
     LAST_OVERVIEW = o;
-    const kpis = document.getElementById('adminKpis').children;
-    kpis[0].querySelector('.k-val').textContent = o.totalStudents;
-    kpis[1].querySelector('.k-val').textContent = o.totalTeachers;
-    kpis[2].querySelector('.k-val').textContent = o.feeCollectionPct + '%';
-    kpis[3].querySelector('.k-val').textContent = o.attendancePct + '%';
+    renderOverviewHeadline(o);
 
     const kpis2 = document.getElementById('adminKpis2').children;
     kpis2[0].querySelector('.k-val').textContent = `${o.students.active} / ${o.students.suspended}`;
@@ -6585,9 +6879,22 @@ async function loadAdminDashboard(){
     await loadAdmissions();
 
     const s = await api('/admin/sections');
-    document.getElementById('adminSectionsTable').innerHTML = s.sections.map(sec =>
-      `<tr><td>${escapeHtml(sec.grade)}</td><td class="mono">${escapeHtml(sec.sectionName)}</td><td>${escapeHtml(sec.curriculum)}</td><td>${sec.studentCount}</td><td>${escapeHtml(sec.classTeacher)}</td><td class="mono">${sec.studentCount} / ${sec.capacity}</td><td><button class="btn btn-outline btn-sm" onclick="deleteSection(${jsArg(sec.sectionCode)})">Delete</button></td></tr>`
-    ).join('');
+    document.getElementById('adminSectionsTable').innerHTML = s.sections.length
+      ? s.sections.map((sec, i) => {
+          const n = Number(sec.studentCount) || 0, cap = Number(sec.capacity) || 0;
+          const pct = cap > 0 ? Math.min(100, Math.round(n / cap * 100)) : 0;
+          const tone = OVB_TONES[i % OVB_TONES.length];
+          return `<div class="ovb-sec">
+            <span class="ovb-sec-badge ${tone}">${escapeHtml(sec.sectionCode)}</span>
+            <div class="ovb-sec-main">
+              <div class="ovb-sec-top"><span class="ovb-sec-name">${escapeHtml(sec.grade)} · ${escapeHtml(sec.sectionName)}</span><span class="ovb-sec-count">${n}/${cap}</span></div>
+              <div class="ovb-sec-sub">${escapeHtml(sec.classTeacher || 'No class teacher')} · ${escapeHtml(sec.curriculum)}</div>
+              <div class="ovb-sec-track" role="img" aria-label="${n} of ${cap} seats filled"><div class="ovb-sec-fill ${tone}" style="width:${pct}%;"></div></div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="deleteSection(${jsArg(sec.sectionCode)})">Delete</button>
+          </div>`;
+        }).join('')
+      : '<p class="empty">No sections yet. Create the first one above.</p>';
     populateSectionTeacherOptions();
 
     await loadAdminPendingFees();
@@ -7375,15 +7682,15 @@ async function loadAdminLiveClasses(){
   try {
     const d = await api('/admin/live-classes');
     document.getElementById('adminLiveClasses').innerHTML = d.sessions.length
-      ? d.sessions.map(s => `<div style="border-bottom:1px solid var(--paper-alt); padding:10px 0;">
-          <div class="list-row" style="border:none; padding:0;">
-            <div class="l-main"><span class="tag" style="background:var(--nova-error);">Live</span>
-              <div><div class="l-title">${escapeHtml(s.teacherName)} — Section ${escapeHtml(s.sectionCode)}</div><div class="l-sub">Started ${new Date(s.startedAt).toLocaleTimeString()}</div></div></div>
-            <button class="btn btn-outline btn-sm" onclick="viewLiveClassChat(${jsArg(s.teacherName)}, ${s.id})">View chat</button>
+      ? d.sessions.map(s => `<div class="ovb-live">
+          <div class="ovb-live-row">
+            <span class="ovb-live-dot" aria-hidden="true"></span>
+            <div class="ovb-live-main"><div class="ovb-live-tag">LIVE NOW</div><div class="ovb-live-title">${escapeHtml(s.teacherName)} · Section ${escapeHtml(s.sectionCode)}</div><div class="ovb-live-sub">Started ${new Date(s.startedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</div></div>
+            <button class="ovb-live-btn" onclick="viewLiveClassChat(${jsArg(s.teacherName)}, ${Number(s.id)})">View chat</button>
           </div>
-          <div class="queue-detail" id="liveclass-${s.id}"></div>
+          <div class="queue-detail" id="liveclass-${Number(s.id)}"></div>
         </div>`).join('')
-      : '<p class="empty">No live classes running right now.</p>';
+      : '<p class="empty ovb-empty-card">No live classes running right now.</p>';
   } catch (err) {
     toast(err.message);
   }
@@ -7608,6 +7915,34 @@ const APPROVAL_TARGETS = {
   'fees': { tab: 'fees', card: 'ovFeesCard' },
   'staff': { page: 'management' }
 };
+// Option B overview: one colour per area, used on tabs, tiles and approval rows.
+const APPROVAL_TONES = { 'admissions': 't-people', 'teacher-applications': 't-classes', 'fees': 't-fees', 'staff': 't-messages' };
+const OVB_TONES = ['t-people', 't-classes', 't-messages', 't-setup'];
+function renderOverviewHeadline(o){
+  const num = v => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('ovbStudents', num(o.totalStudents));
+  setText('ovbTeachers', num(o.totalTeachers));
+  const fee = Math.max(0, Math.min(100, num(o.feeCollectionPct)));
+  const feeTone = fee >= 80 ? 'good' : fee >= 50 ? 'mid' : 'low';
+  const feeEl = document.getElementById('ovbFeePct');
+  if (feeEl) { feeEl.textContent = fee + '%'; feeEl.dataset.tone = feeTone; }
+  const bar = document.getElementById('ovbFeeBar');
+  if (bar) { bar.style.width = fee + '%'; bar.dataset.tone = feeTone; }
+  const track = document.getElementById('ovbFeeTrack');
+  if (track) track.setAttribute('aria-label', 'Fee collection ' + fee + ' percent');
+  const note = document.getElementById('ovbFeeNote');
+  if (note) { note.textContent = feeTone === 'good' ? 'On track' : feeTone === 'mid' ? 'Some fees outstanding' : 'Needs follow-up'; note.dataset.tone = feeTone; }
+  const att = Math.max(0, Math.min(100, num(o.attendancePct)));
+  setText('ovbAttPct', att + '%');
+  const ring = document.getElementById('ovbAttRing');
+  if (ring) {
+    ring.setAttribute('stroke-dasharray', (att / 100 * 163.4).toFixed(1) + ' 163.4');
+    ring.setAttribute('stroke', att >= 85 ? '#16A34A' : att >= 70 ? '#D97706' : '#DC2626');
+  }
+  const svg = document.getElementById('ovbAttRingSvg');
+  if (svg) svg.setAttribute('aria-label', 'Attendance ' + att + ' percent');
+}
 function openApproval(anchor){
   const t = APPROVAL_TARGETS[anchor];
   if (!t) return;
@@ -7642,10 +7977,17 @@ async function loadApprovalCenter(){
     const d = await api('/admin/approvals');
     const total = d.items.reduce((n, i) => n + i.count, 0);
     if (badge) { badge.hidden = total === 0; badge.textContent = total; }
+    const totalEl = document.getElementById('ovbAttnTotal');
+    if (totalEl) { totalEl.hidden = total === 0; totalEl.textContent = total; }
     list.innerHTML = d.items.length
-      ? d.items.map(i => `
-      <div class="list-row"><div class="l-main"><span class="tag" style="background:var(--amber);">${i.count}</span><div class="l-title">${escapeHtml(i.label)}</div></div>
-        <button class="btn btn-primary btn-sm" onclick="openApproval('${escapeHtml(i.anchor)}')">Review</button></div>`).join('')
+      ? d.items.map(i => {
+        const tone = APPROVAL_TONES[i.anchor] || 't-setup';
+        return `<button type="button" class="ovb-item ${tone}" onclick="openApproval(${jsArg(String(i.anchor))})">
+          <span class="ovb-item-count">${Number(i.count) || 0}</span>
+          <span class="ovb-item-label">${escapeHtml(i.label)}</span>
+          <span class="ovb-item-go">Review</span>
+        </button>`;
+      }).join('')
       : '<p class="empty">Nothing is waiting for your decision. New admissions, job applications, staff invitations and fee payments will appear here.</p>';
   } catch (err) {
     list.innerHTML = '<p class="empty">Pending items couldn\'t be loaded. <button type="button" class="btn btn-outline btn-sm" style="margin-left:8px;" onclick="loadApprovalCenter()">Retry</button></p>';

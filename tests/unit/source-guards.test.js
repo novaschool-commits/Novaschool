@@ -60,3 +60,10 @@ test('S12: the public health check does not reveal counts', () => {
 test('Grade bug: auto-marked tests load the subject before writing the grade', () => {
   assert.ok(read('routes/student.js').includes("SELECT title, subject FROM exams WHERE id = $1"));
 });
+
+test('student answers and file names are escaped in teacher marking views', () => {
+  const html = read('public/index.html');
+  assert.equal(/\$\{a\.student_answer \|\|/.test(html), false, 'raw student_answer must not be placed in HTML');
+  assert.ok(html.includes('${escapeHtml(s.body_text)}'));
+  assert.ok(html.includes('Download ${escapeHtml(s.file_name)}'));
+});
