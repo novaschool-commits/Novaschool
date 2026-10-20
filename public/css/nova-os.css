@@ -864,3 +864,10 @@ footer .foot-inner{row-gap:14px;}
 .classroom-topbar > div:last-child{flex-wrap:wrap; justify-content:flex-end;}
 .classroom-topbar .btn{border-radius:10px; min-height:38px;}
 #classroomEndBtn{background:#DC2626 !important; color:#fff !important; border:0 !important;}
+
+/* Parent: result card summary */
+.prc{display:flex; flex-direction:column; gap:12px;}
+.prc-score{display:flex; align-items:center; gap:12px;}
+.prc-score .rc-grade{font-size:18px; min-width:46px; padding:8px 10px; border-radius:12px;}
+.prc-score > div{display:flex; flex-direction:column;} .prc-score > div b{font-family:var(--display); font-size:24px;} .prc-score > div span{font-size:12.5px; color:var(--nova-muted);}
+.prc .rc-actions{margin:0;} .prc .rc-preview[hidden]{display:none;}

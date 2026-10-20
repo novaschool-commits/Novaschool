@@ -22,7 +22,22 @@ took place, and none was authorized.
 - 2026-10-20, 21:02 PKT: the owner ran migrations 0001–0003 on production (host `ep-lively-truth-…`); all three applied,
   0004 skipped as designed. Row-level security is NOT enabled.
 
-## Follow-up change: admin overview "Option B" (not yet deployed)
+## Follow-up change: parents can download a child's result card (not yet deployed)
+
+- New `GET /api/parent/report-card/:studentId`: parent role only, child must be linked in `student_parent_map`
+  (403 otherwise, 400 for a bad id). Report card logic moved unchanged from `routes/student.js` to
+  `lib/reportCard.js`, shared by the student and parent routes.
+- Parent dashboard: "Result card" box with overall %, grade, Download PDF and a preview.
+- New API test "Parent result card: own child only" (own child 200, another family's child 403, bad id 400,
+  student role 403, student's own card still 200). It needs the local server, so it runs on the owner's phone.
+- Rendered with mock data at phone and desktop width, including hostile text: no errors, no handlers fired.
+
+## Second deployment
+
+- 2026-10-20, 22:31 PKT: owner approved and pushed commit `5f3dfaa` (Option B admin, brand, result card, assignments,
+  tests, live class, XSS fix N5) to GitHub `main`; Render auto-deploys it. Front-end only; no database change.
+
+## Follow-up change: admin overview "Option B"
 
 - Owner chose design Option B on 2026-10-20. Changed: `public/index.html` (overview markup, headline,
   approvals, sections and live-class renderers) and `public/css/nova-os.css` (new `ovb-` styles). No server change.
@@ -35,7 +50,7 @@ took place, and none was authorized.
   navy greeting band, colour-coded summary tiles and quick-action tiles. The old gold/green logo files are kept, unused.
   Checked by rendering the public page, sign-in and all four dashboards at 390 px and 1280 px with mock data: no script errors.
 
-## Follow-up change: result card, tests, assignments, live class (not yet deployed)
+## Follow-up change: result card, tests, assignments, live class
 
 - **Security fix (N5, stored XSS, teacher views):** a student's test answer was placed in the teacher's marking
   view without escaping (two places), and subject and section names went into drop-downs unescaped. Now escaped;

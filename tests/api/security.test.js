@@ -191,6 +191,33 @@ test('S4/S11: WebSocket refuses a revoked session', async (t) => {
 });
 
 // Last, because it uses up this connection's sign-in allowance.
+test('Parent result card: own child only', async () => {
+  const parent = await login('parent@novaschool.pk', DEMO_PASSWORD, '198.51.100.40');
+  const kids = await call('/parent/children', { token: parent });
+  assert.equal(kids.status, 200);
+  assert.ok(kids.data.children.length > 0, 'demo parent should have a linked child');
+  const childId = kids.data.children[0].id;
+
+  const own = await call(`/parent/report-card/${childId}`, { token: parent });
+  assert.equal(own.status, 200);
+  assert.ok(Array.isArray(own.data.grades));
+  assert.ok(own.data.student && own.data.student.name);
+
+  const admin = await login('admin@novaschool.pk', DEMO_PASSWORD, '198.51.100.41');
+  const all = await call('/admin/students', { token: admin });
+  const other = (all.data.students || []).find(s => !kids.data.children.some(c => c.id === s.id));
+  if (other) {
+    const r = await call(`/parent/report-card/${other.id}`, { token: parent });
+    assert.equal(r.status, 403, 'a parent must not see another family\'s child');
+  }
+  assert.equal((await call('/parent/report-card/abc', { token: parent })).status, 400);
+
+  const student = await login('student@novaschool.pk', DEMO_PASSWORD, '198.51.100.42');
+  assert.equal((await call(`/parent/report-card/${childId}`, { token: student })).status, 403);
+  const mine = await call('/student/report-card', { token: student });
+  assert.equal(mine.status, 200, 'student report card still works after the refactor');
+});
+
 test('S2: repeated wrong passwords are blocked with 429', async () => {
   const ip = '203.0.113.' + Math.floor(Math.random() * 200);
   const email = `nobody.${uniq()}@test.invalid`;

@@ -761,7 +761,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       </div>
       <div class="grid-2">
         <div class="stack"><div class="card"><div class="card-head"><h3>Recent grades</h3></div>
-          <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div></div>
+          <div class="table-scroll"><table class="table-simple"><thead><tr><th>Subject</th><th>Assessment</th><th>Score</th></tr></thead><tbody id="parentGradeTable"></tbody></table></div></div>
+          <div class="card" id="parentReportCard"><div class="card-head"><h3>Result card</h3></div><div id="parentReportCardArea"><p class="empty">Loading…</p></div></div></div>
         <div class="stack">
           <div class="card"><div class="card-head"><h3>Messages</h3><button class="btn btn-outline btn-sm" onclick="toggleGroupMode('parent')">Group</button></div>
             <div style="display:grid; grid-template-columns:150px 1fr; gap:12px; min-height:200px;" class="msg-grid">
@@ -5894,9 +5895,41 @@ async function loadChildData(studentId){
       : '<tr><td colspan="3" class="empty">No grades recorded yet.</td></tr>';
     window._parentChildData = d;
     updateParentGlance();
+    loadParentReportCard(studentId);
   } catch (err) {
     toast(err.message);
   }
+}
+
+async function loadParentReportCard(studentId){
+  const area = document.getElementById('parentReportCardArea');
+  if (!area) return;
+  area.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const d = await api(`/parent/report-card/${Number(studentId)}`);
+    if (studentId !== activeChildId) return; // another child was picked meanwhile
+    window._lastReportCard = d;
+    const subjects = rcSubjects(d.grades);
+    const got = subjects.reduce((a, r) => a + r.got, 0), total = subjects.reduce((a, r) => a + r.total, 0);
+    const overall = total ? Math.round(got / total * 1000) / 10 : null;
+    const band = overall !== null ? rcBand(overall) : null;
+    area.innerHTML = `
+      <div class="prc">
+        <div class="prc-score">${band ? `<span class="rc-grade g-${band.grade.replace('+', 'p')}">${band.grade}</span>` : ''}<div><b>${overall !== null ? rcNum(overall) + '%' : 'No marks yet'}</b><span>${escapeHtml(d.student.name)} · ${subjects.length} subject${subjects.length === 1 ? '' : 's'}${d.attendancePct !== null && d.attendancePct !== undefined ? ` · ${d.attendancePct}% attendance` : ''}</span></div></div>
+        <div class="rc-actions"><button type="button" class="btn btn-primary" onclick="printReportCard()">Download PDF</button><button type="button" class="btn btn-outline" onclick="toggleParentReportPreview()" id="prcToggle" aria-expanded="false">View result card</button></div>
+        <span class="rc-hint">In the print window, choose <b>Save as PDF</b>.</span>
+        <div class="rc-preview" id="prcPreview" hidden>${renderReportCardDoc(d)}</div>
+      </div>`;
+  } catch (err) {
+    area.innerHTML = `<p class="empty">${escapeHtml(err.message)}</p>`;
+  }
+}
+function toggleParentReportPreview(){
+  const box = document.getElementById('prcPreview'), btn = document.getElementById('prcToggle');
+  if (!box) return;
+  box.hidden = !box.hidden;
+  btn.setAttribute('aria-expanded', box.hidden ? 'false' : 'true');
+  btn.textContent = box.hidden ? 'View result card' : 'Hide result card';
 }
 
 async function claimFeePayment(){

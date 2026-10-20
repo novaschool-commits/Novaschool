@@ -2,6 +2,7 @@ const express = require('express');
 const { get, all, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
+const { buildReportCard } = require('../lib/reportCard');
 
 const router = express.Router();
 router.use(authenticate, requireRole('parent'));
@@ -39,6 +40,22 @@ router.get('/children', asyncHandler(async (req, res) => {
   );
 
   res.json({ parent: { name: `${parent.first_name} ${parent.last_name}` }, children });
+}));
+
+// A linked child's report card: the same data the student sees, only for
+// children mapped to this parent.
+router.get('/report-card/:studentId', asyncHandler(async (req, res) => {
+  const parent = await getParent(req);
+  if (!parent) return res.status(404).json({ error: 'Parent profile not found.' });
+
+  const studentId = Number(req.params.studentId);
+  if (!Number.isInteger(studentId) || studentId <= 0) return res.status(400).json({ error: 'Invalid student.' });
+  if (!await childBelongsToParent(studentId, parent.id)) {
+    return res.status(403).json({ error: 'This student is not linked to your account.' });
+  }
+  const student = await get('SELECT * FROM students WHERE id = $1', [studentId]);
+  if (!student) return res.status(404).json({ error: 'Student not found.' });
+  res.json(await buildReportCard({ get, all }, student));
 }));
 
 router.get('/dashboard/:studentId', asyncHandler(async (req, res) => {
