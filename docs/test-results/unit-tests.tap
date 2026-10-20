@@ -1,0 +1,209 @@
+# node v22.22.0, 2026-10-11T22:50:26+05:00
+TAP version 13
+# Subtest: production refuses to start without a strong JWT secret
+ok 1 - production refuses to start without a strong JWT secret
+  ---
+  duration_ms: 182.840069
+  type: 'test'
+  ...
+# Subtest: production starts with a long secret, and demo seeding stays off even if asked
+ok 2 - production starts with a long secret, and demo seeding stays off even if asked
+  ---
+  duration_ms: 33.056571
+  type: 'test'
+  ...
+# Subtest: development without a secret uses a random one, never the old default
+ok 3 - development without a secret uses a random one, never the old default
+  ---
+  duration_ms: 33.33944
+  type: 'test'
+  ...
+# Subtest: demo seeding is off unless SEED_DEMO=true outside production
+ok 4 - demo seeding is off unless SEED_DEMO=true outside production
+  ---
+  duration_ms: 76.487347
+  type: 'test'
+  ...
+# Subtest: legacy schema on start can be switched off
+ok 5 - legacy schema on start can be switched off
+  ---
+  duration_ms: 94.283674
+  type: 'test'
+  ...
+# Subtest: 100 experiments, 25 per subject, unique codes
+ok 6 - 100 experiments, 25 per subject, unique codes
+  ---
+  duration_ms: 1.615959
+  type: 'test'
+  ...
+# Subtest: every experiment uses a registered engine of its own subject
+ok 7 - every experiment uses a registered engine of its own subject
+  ---
+  duration_ms: 0.621294
+  type: 'test'
+  ...
+# Subtest: only experiments on a built engine are marked available
+ok 8 - only experiments on a built engine are marked available
+  ---
+  duration_ms: 0.512467
+  type: 'test'
+  ...
+# Subtest: grade bands use the agreed values
+ok 9 - grade bands use the agreed values
+  ---
+  duration_ms: 1.944331
+  type: 'test'
+  ...
+# Subtest: allows up to max hits, then blocks with a retry time
+ok 10 - allows up to max hits, then blocks with a retry time
+  ---
+  duration_ms: 1.191836
+  type: 'test'
+  ...
+# Subtest: keys are independent
+ok 11 - keys are independent
+  ---
+  duration_ms: 0.348815
+  type: 'test'
+  ...
+# Subtest: window resets after it expires
+ok 12 - window resets after it expires
+  ---
+  duration_ms: 0.230433
+  type: 'test'
+  ...
+# Subtest: reset clears a key (successful login)
+ok 13 - reset clears a key (successful login)
+  ---
+  duration_ms: 0.287225
+  type: 'test'
+  ...
+# Subtest: memory is swept once many keys have expired
+ok 14 - memory is swept once many keys have expired
+  ---
+  duration_ms: 85.886742
+  type: 'test'
+  ...
+# Subtest: client IP comes from Express (trust proxy: one hop), never the raw header
+ok 15 - client IP comes from Express (trust proxy: one hop), never the raw header
+  ---
+  duration_ms: 0.234726
+  type: 'test'
+  ...
+# Subtest: middleware answers 429 with Retry-After when over the limit
+ok 16 - middleware answers 429 with Retry-After when over the limit
+  ---
+  duration_ms: 0.512945
+  type: 'test'
+  ...
+# Subtest: S1: the page never builds an image address from raw applicant data
+ok 17 - S1: the page never builds an image address from raw applicant data
+  ---
+  duration_ms: 5.184532
+  type: 'test'
+  ...
+# Subtest: S1: admin message oversight escapes message bodies
+ok 18 - S1: admin message oversight escapes message bodies
+  ---
+  duration_ms: 4.871465
+  type: 'test'
+  ...
+# Subtest: S1: public forms validate uploads on the server
+ok 19 - S1: public forms validate uploads on the server
+  ---
+  duration_ms: 0.505157
+  type: 'test'
+  ...
+# Subtest: S4: sessions are verified against the database, including WebSocket joins
+ok 20 - S4: sessions are verified against the database, including WebSocket joins
+  ---
+  duration_ms: 2.104096
+  type: 'test'
+  ...
+# Subtest: S5: demo data is never created by a normal start
+ok 21 - S5: demo data is never created by a normal start
+  ---
+  duration_ms: 0.471552
+  type: 'test'
+  ...
+# Subtest: S6: no hard-coded JWT fallback secret remains
+ok 22 - S6: no hard-coded JWT fallback secret remains
+  ---
+  duration_ms: 0.8607
+  type: 'test'
+  ...
+# Subtest: S7: teacher routes that take a section check the teacher teaches it
+ok 23 - S7: teacher routes that take a section check the teacher teaches it
+  ---
+  duration_ms: 0.751427
+  type: 'test'
+  ...
+# Subtest: S12: the public health check does not reveal counts
+ok 24 - S12: the public health check does not reveal counts
+  ---
+  duration_ms: 0.184686
+  type: 'test'
+  ...
+# Subtest: Grade bug: auto-marked tests load the subject before writing the grade
+ok 25 - Grade bug: auto-marked tests load the subject before writing the grade
+  ---
+  duration_ms: 0.47771
+  type: 'test'
+  ...
+# Subtest: accepts real PNG and JPEG images
+ok 26 - accepts real PNG and JPEG images
+  ---
+  duration_ms: 1.771171
+  type: 'test'
+  ...
+# Subtest: rejects the attribute-breakout payload from the audit
+ok 27 - rejects the attribute-breakout payload from the audit
+  ---
+  duration_ms: 0.272873
+  type: 'test'
+  ...
+# Subtest: rejects base64 that is not an image
+ok 28 - rejects base64 that is not an image
+  ---
+  duration_ms: 0.40099
+  type: 'test'
+  ...
+# Subtest: rejects non-strings, empty and malformed base64
+ok 29 - rejects non-strings, empty and malformed base64
+  ---
+  duration_ms: 0.227489
+  type: 'test'
+  ...
+# Subtest: enforces the size cap
+ok 30 - enforces the size cap
+  ---
+  duration_ms: 20.749681
+  type: 'test'
+  ...
+# Subtest: documents: PDF, Word (zip and legacy) and images accepted; others refused
+ok 31 - documents: PDF, Word (zip and legacy) and images accepted; others refused
+  ---
+  duration_ms: 0.968778
+  type: 'test'
+  ...
+# Subtest: file names lose paths, quotes and control characters
+ok 32 - file names lose paths, quotes and control characters
+  ---
+  duration_ms: 1.831725
+  type: 'test'
+  ...
+# Subtest: whiteboard snapshots must be real PNG data URLs
+ok 33 - whiteboard snapshots must be real PNG data URLs
+  ---
+  duration_ms: 0.368279
+  type: 'test'
+  ...
+1..33
+# tests 33
+# suites 0
+# pass 33
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1048.98388

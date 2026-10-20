@@ -1,0 +1,11 @@
+script[0] 6107 lines syntax: OK
+static ids: 462 duplicates: []
+div open/close: 684 684
+section: 11/11
+nav: 6/6
+main: 5/5
+header: 0/0
+footer: 1/1
+aside: 5/5
+functions: 384 dup: ['missingPieces', 'isComplete', 'render']
+handlers: 211 undefined: ['if']

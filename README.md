@@ -1,4 +1,13 @@
-# Nova School — Online School Platform (full-stack demo)
+# Nova School — Online School Platform
+
+> **Release candidate 1 (security + foundations).** Read these first:
+> - `docs/RELEASE-GATE-REPORT.md`: what was tested, what was not, and remaining risks
+> - `docs/AUDIT-REPORT.md`: security findings and their status
+> - `docs/SETUP-AND-TESTING.md`: install, run the tests, migrations, deploy checklist
+> - `docs/ARCHITECTURE.md`, `docs/DECISIONS-AND-LIMITATIONS.md`, `docs/CURRICULUM-AND-IP-POLICY.md`
+>
+> Demo accounts are no longer created automatically. On a throwaway local
+> database only, start with `SEED_DEMO=true` to get them.
 
 A working full-stack app: **Express + PostgreSQL** API with JWT auth and
 role-based access control, plus a frontend that calls that real API instead
@@ -97,7 +106,7 @@ it's designed to carry real (if modest) traffic on its own.
 
 ## Demo accounts
 
-Password for every account: `password123`
+Password for every demo account: `password123` (created only when `SEED_DEMO=true` on a local throwaway database; never in production)
 
 | Role    | Email                        | Who               |
 |---------|-------------------------------|--------------------|
@@ -110,12 +119,12 @@ Password for every account: `password123`
 
 ```
 nova-school-app/
-├── server.js              # Express app entry point; runs DB migration + seed, then listens
+├── server.js              # starts the app (app.js); legacy schema on start; demo data only with SEED_DEMO=true
 ├── render.yaml             # Optional Render Blueprint (see deployment steps above)
 ├── db/
 │   ├── schema.sql           # Table definitions (Postgres)
 │   ├── index.js              # pg Pool connection + query helpers (get/all/run) + migrate()
-│   └── seed.js                # Demo data (auto-runs once; `npm run seed` to force)
+│   └── seed.js                # Demo data: `SEED_DEMO=true npm run seed:demo` (refuses in production)
 ├── middleware/
 │   ├── auth.js               # JWT verification + role-guard middleware
 │   └── asyncHandler.js        # Wraps async route handlers so errors reach Express's error handler

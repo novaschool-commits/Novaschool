@@ -3,17 +3,34 @@ const { all, get, run } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
 const { notifyStaffWithPermission, userHasPermission, notifyAdmin } = require('../middleware/permissions');
+const crypto = require('crypto');
+const { checkImage, checkDocument, cleanFileName } = require('../lib/validate');
+const { createLimiter, limitByIp } = require('../lib/rateLimit');
+
+// Public forms: at most 5 applications and 10 test submissions per IP per hour
+// (finding S3).
+const applyLimit = limitByIp(createLimiter({ windowMs: 60 * 60 * 1000, max: 5 }), 'Too many applications from this connection. Please try again later.');
+const testLimit = limitByIp(createLimiter({ windowMs: 60 * 60 * 1000, max: 10 }), 'Too many attempts from this connection. Please try again later.');
+
+function textField(v, max) {
+  return typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null;
+}
+
+// Validates the uploaded photo and document (finding S1): only real images
+// and real PDF / Word / image documents are stored.
+function validateUploads(photo, doc, { photoRequired, docRequired }) {
+  if (photo) { const r = checkImage(photo); if (!r.ok) return r.reason === 'too_large' ? 'The photo is too large. Please use one under 3.5 MB.' : 'The photo must be a JPEG, PNG or WebP image.'; }
+  else if (photoRequired) return 'A photo is required.';
+  if (doc) { const r = checkDocument(doc); if (!r.ok) return r.reason === 'too_large' ? 'The document is too large. Please use one under 3.5 MB.' : 'The document must be a PDF, Word file or image.'; }
+  else if (docRequired) return 'A document is required.';
+  return null;
+}
 
 const router = express.Router();
 
 // Basic guard so someone can't stuff a giant file into the database — this
 // stores uploads inline (base64) since there's no cloud storage wired up yet.
 // Fine for a small school; swap for real object storage (S3/GCS) once volume grows.
-const MAX_BASE64_LEN = 5_000_000; // roughly ~3.7MB decoded, safely under the 6MB request body limit
-
-function tooLarge(str) {
-  return typeof str === 'string' && str.length > MAX_BASE64_LEN;
-}
 
 async function gradeEntranceAnswers(testType, answers) {
   const questions = await all('SELECT * FROM entrance_test_questions WHERE test_type = $1', [testType]);
@@ -114,77 +131,104 @@ function computeMonthlyFee(curriculum, gradeApplied) {
   return { amount: isSenior ? 1000 : 500, currency: 'PKR' };
 }
 
-router.post('/admissions/apply', asyncHandler(async (req, res) => {
-  const { applicant_name, grade_applied, parent_email, contact_phone, guardian_id, curriculum, photo_base64, document_base64, document_filename } = req.body || {};
+router.post('/admissions/apply', applyLimit, asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const applicant_name = textField(body.applicant_name, 120);
+  const grade_applied = textField(body.grade_applied, 40);
+  const parent_email = textField(body.parent_email, 254);
+  const contact_phone = textField(body.contact_phone, 30);
+  const guardian_id = textField(body.guardian_id, 40);
+  const curriculum = textField(body.curriculum, 60);
+  const { photo_base64, document_base64 } = body;
   if (!applicant_name || !grade_applied || !parent_email || !contact_phone) {
     return res.status(400).json({ error: 'Student name, grade, parent email, and a contact phone number are required.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parent_email)) return res.status(400).json({ error: 'Enter a valid email address.' });
-  if (tooLarge(photo_base64) || tooLarge(document_base64)) return res.status(413).json({ error: 'Photo or document is too large. Please use a smaller file (under ~4MB).' });
+  if (!photo_base64 || !document_base64) {
+    return res.status(400).json({ error: 'A student photo and the student bio-data or a supporting document are required.' });
+  }
+  const uploadError = validateUploads(photo_base64, document_base64, { photoRequired: true, docRequired: true });
+  if (uploadError) return res.status(400).json({ error: uploadError });
 
   const fee = computeMonthlyFee(curriculum, grade_applied);
+  const entranceToken = crypto.randomBytes(24).toString('hex');
 
   const r = await run(
     `INSERT INTO admission_applications
-       (applicant_name, grade_applied, parent_email, status, photo_base64, document_base64, document_filename, curriculum, monthly_fee, fee_currency, contact_phone, guardian_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-    [applicant_name, grade_applied, parent_email, 'pending', photo_base64 || null, document_base64 || null, document_filename || null, curriculum || 'Pakistani', fee.amount, fee.currency, contact_phone, guardian_id || null]
+       (applicant_name, grade_applied, parent_email, status, photo_base64, document_base64, document_filename, curriculum, monthly_fee, fee_currency, contact_phone, guardian_id, entrance_token)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+    [applicant_name, grade_applied, parent_email, 'pending', photo_base64.trim(), document_base64.trim(), cleanFileName(body.document_filename), curriculum || 'Pakistani', fee.amount, fee.currency, contact_phone, guardian_id, entranceToken]
   );
   await notifyStaffWithPermission('students.view', 'admission.applied', `New admission application from ${applicant_name} (Grade ${grade_applied}).`, 'students');
   await notifyAdmin('admission.applied', `New admission application from ${applicant_name} (Grade ${grade_applied}).`, 'normal', 'overview');
   res.status(201).json({
     message: `Application received for ${applicant_name}. The school will reach out to ${parent_email} within 5 business days.`,
     applicationId: r.rows[0].id,
+    entranceToken,
     voucher: { applicantName: applicant_name, gradeApplied: grade_applied, curriculum: curriculum || 'Pakistani', amount: fee.amount, currency: fee.currency }
   });
 }));
 
-router.post('/admissions/:id/entrance-test', asyncHandler(async (req, res) => {
+// One attempt per application, proven by the token returned at application
+// time (finding S8). The token is cleared once used.
+async function submitEntranceTest(table, testType, req, res) {
   const id = Number(req.params.id);
-  const application = await get('SELECT id FROM admission_applications WHERE id = $1', [id]);
-  if (!application) return res.status(404).json({ error: 'Application not found.' });
-
-  const score = await gradeEntranceAnswers('student_admission', (req.body || {}).answers);
+  const token = (req.body || {}).entrance_token;
+  if (!Number.isInteger(id) || typeof token !== 'string' || token.length !== 48) {
+    return res.status(403).json({ error: 'This test link is not valid.' });
+  }
+  const application = await get(`SELECT id, entrance_token, entrance_score FROM ${table} WHERE id = $1`, [id]);
+  if (!application || !application.entrance_token || application.entrance_score !== null ||
+      !crypto.timingSafeEqual(Buffer.from(application.entrance_token), Buffer.from(token))) {
+    return res.status(403).json({ error: 'This test has already been taken or the link is not valid.' });
+  }
+  const score = await gradeEntranceAnswers(testType, (req.body || {}).answers);
   if (score === null) return res.status(404).json({ error: 'No entrance test is set up yet.' });
-
-  await run('UPDATE admission_applications SET entrance_score = $1 WHERE id = $2', [score, id]);
+  const upd = await run(
+    `UPDATE ${table} SET entrance_score = $1, entrance_token = NULL WHERE id = $2 AND entrance_token = $3 AND entrance_score IS NULL`,
+    [score, id, token]
+  );
+  if (upd.rowCount !== 1) return res.status(409).json({ error: 'This test has already been submitted.' });
   res.json({ message: `Entrance test submitted. Score: ${score}.`, score });
-}));
+}
+
+router.post('/admissions/:id/entrance-test', testLimit, asyncHandler((req, res) =>
+  submitEntranceTest('admission_applications', 'student_admission', req, res)));
 
 // ---------- Teacher recruitment application (no login required) ----------
-router.post('/teacher-applications/apply', asyncHandler(async (req, res) => {
-  const { applicant_name, subject_applied, email, phone, photo_base64, document_base64, document_filename, co_curricular } = req.body || {};
+router.post('/teacher-applications/apply', applyLimit, asyncHandler(async (req, res) => {
+  const body = req.body || {};
+  const applicant_name = textField(body.applicant_name, 120);
+  const subject_applied = textField(body.subject_applied, 80);
+  const email = textField(body.email, 254);
+  const phone = textField(body.phone, 30);
+  const co_curricular = textField(body.co_curricular, 2000);
+  const { photo_base64, document_base64 } = body;
   if (!applicant_name || !subject_applied || !email || !phone) {
     return res.status(400).json({ error: 'Name, subject, email, and phone are all required.' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address.' });
   if (!photo_base64) return res.status(400).json({ error: 'A photo is required.' });
   if (!document_base64) return res.status(400).json({ error: 'A CV (PDF preferred) is required.' });
-  if (tooLarge(photo_base64) || tooLarge(document_base64)) return res.status(413).json({ error: 'Photo or document is too large. Please use a smaller file (under ~4MB).' });
+  const uploadError = validateUploads(photo_base64, document_base64, { photoRequired: true, docRequired: true });
+  if (uploadError) return res.status(400).json({ error: uploadError });
 
+  const entranceToken = crypto.randomBytes(24).toString('hex');
   const r = await run(
-    'INSERT INTO teacher_applications (applicant_name, subject_applied, email, phone, status, photo_base64, document_base64, document_filename, co_curricular) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id',
-    [applicant_name, subject_applied, email, phone, 'pending', photo_base64, document_base64, document_filename || null, co_curricular || null]
+    'INSERT INTO teacher_applications (applicant_name, subject_applied, email, phone, status, photo_base64, document_base64, document_filename, co_curricular, entrance_token) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id',
+    [applicant_name, subject_applied, email, phone, 'pending', photo_base64.trim(), document_base64.trim(), cleanFileName(body.document_filename), co_curricular, entranceToken]
   );
   await notifyStaffWithPermission('teachers.view', 'teacher_application.applied', `New teacher application from ${applicant_name} (${subject_applied}).`, 'teachers');
   await notifyAdmin('teacher_application.applied', `New teacher application from ${applicant_name} (${subject_applied}).`, 'normal', 'overview');
   res.status(201).json({
     message: `Application received for ${applicant_name}. The school will be in touch at ${email}.`,
-    applicationId: r.rows[0].id
+    applicationId: r.rows[0].id,
+    entranceToken
   });
 }));
 
-router.post('/teacher-applications/:id/entrance-test', asyncHandler(async (req, res) => {
-  const id = Number(req.params.id);
-  const application = await get('SELECT id FROM teacher_applications WHERE id = $1', [id]);
-  if (!application) return res.status(404).json({ error: 'Application not found.' });
-
-  const score = await gradeEntranceAnswers('teacher_recruitment', (req.body || {}).answers);
-  if (score === null) return res.status(404).json({ error: 'No entrance test is set up yet.' });
-
-  await run('UPDATE teacher_applications SET entrance_score = $1 WHERE id = $2', [score, id]);
-  res.json({ message: `Entrance test submitted. Score: ${score}.`, score });
-}));
+router.post('/teacher-applications/:id/entrance-test', testLimit, asyncHandler((req, res) =>
+  submitEntranceTest('teacher_applications', 'teacher_recruitment', req, res)));
 
 // Any logged-in role can see announcements addressed to "all" plus their own audience.
 router.get('/announcements', authenticate, asyncHandler(async (req, res) => {

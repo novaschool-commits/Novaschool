@@ -216,7 +216,9 @@ CREATE TABLE IF NOT EXISTS school_settings (
   exam_authority_name TEXT,
   CONSTRAINT single_row CHECK (id = 1)
 );
-INSERT INTO school_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+-- Inserts only when missing, so a NOT NULL column added later (multi-school
+-- institution_id) is never evaluated on every restart.
+INSERT INTO school_settings (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM school_settings WHERE id = 1);
 
 -- Teacher recruitment applications (same idea as admissions, for job candidates).
 CREATE TABLE IF NOT EXISTS teacher_applications (
@@ -839,3 +841,12 @@ BEGIN
       CHECK ((is_preview = false AND student_id IS NOT NULL) OR (is_preview = true AND previewed_by_user_id IS NOT NULL));
   END IF;
 END $$;
+
+-- ============================================================
+-- Release candidate 1 (security): additive and idempotent.
+-- One-time tokens for the public entrance tests (finding S8), and an index
+-- so failed-login counting and pruning stay fast (findings S2, S3).
+-- ============================================================
+ALTER TABLE admission_applications ADD COLUMN IF NOT EXISTS entrance_token TEXT;
+ALTER TABLE teacher_applications ADD COLUMN IF NOT EXISTS entrance_token TEXT;
+CREATE INDEX IF NOT EXISTS failed_login_attempts_email_time_idx ON failed_login_attempts (email, attempted_at);

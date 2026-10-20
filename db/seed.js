@@ -282,6 +282,13 @@ async function seed({ force = false } = {}) {
 }
 
 if (require.main === module) {
+  // Demo data uses the published password "password123" and --force deletes
+  // existing records, so this refuses to run anywhere that looks like
+  // production, and only runs when SEED_DEMO=true is set on purpose.
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.SEED_DEMO !== 'true') {
+    console.error('Refusing to seed demo data. Set SEED_DEMO=true on a disposable local database only.');
+    process.exit(1);
+  }
   const force = process.argv.includes('--force');
   const { migrate, pool } = require('./index');
   migrate()

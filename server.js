@@ -1,76 +1,41 @@
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
 const http = require('http');
 
+const config = require('./lib/config'); // fails fast on an unsafe production config
+const app = require('./app');
 const { pool, migrate } = require('./db');
 const { seed } = require('./db/seed');
 const { seedPermissions } = require('./db/seed-permissions');
 const { seedLabExperiments } = require('./db/seed-lab');
 const { attachWhiteboardWS } = require('./ws/whiteboard');
 
-const app = express();
-app.use(cors());
-app.use(express.json({ limit: '6mb' }));
-
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/student', require('./routes/student'));
-app.use('/api/parent', require('./routes/parent'));
-app.use('/api/teacher', require('./routes/teacher'));
-app.use('/api/admin', require('./routes/admin'));
-app.use('/api/management', require('./routes/management'));
-app.use('/api/lab', require('./routes/lab'));
-app.use('/api', require('./routes/common'));
-
-app.get('/api/health', async (req, res) => {
-  try {
-    const { rows } = await pool.query('SELECT COUNT(*) AS c FROM students');
-    res.json({ status: 'ok', studentsInDatabase: Number(rows[0].c) });
-  } catch (err) {
-    res.status(500).json({ status: 'error', error: err.message });
-  }
-});
-
-// Serve the frontend
-app.use(express.static(path.join(__dirname, 'public')));
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Central error handler — catches anything asyncHandler forwards.
-app.use((err, req, res, next) => {
-  console.error(err);
-  if (err.type === 'entity.too.large') {
-    return res.status(413).json({ error: 'That file is too large. Please use a photo/document under about 4MB.' });
-  }
-  res.status(500).json({ error: 'Something went wrong on the server.' });
-});
-
 const PORT = process.env.PORT || 3000;
 
 async function start() {
-  await migrate();
-  await seedPermissions();
-  await seedLabExperiments();
+  if (config.migrateOnStart) {
+    await migrate();            // legacy idempotent schema.sql only
+    await seedPermissions();    // idempotent catalog
+    await seedLabExperiments(); // idempotent
+  } else {
+    console.log('[server] MIGRATE_ON_START=false: schema and catalogs were not touched.');
+  }
 
-  const { rows } = await pool.query('SELECT COUNT(*) AS c FROM students');
-  if (Number(rows[0].c) === 0) {
-    console.log('[server] Empty database detected — seeding demo data...');
-    await seed({ force: false });
+  if (config.seedDemo) {
+    const { rows } = await pool.query('SELECT COUNT(*) AS c FROM students');
+    if (Number(rows[0].c) === 0) {
+      console.log('[server] SEED_DEMO=true and the database is empty: creating demo data.');
+      await seed({ force: false });
+    }
   }
 
   const server = http.createServer(app);
   attachWhiteboardWS(server);
-
   server.listen(PORT, () => {
     console.log(`\nNova School server running at http://localhost:${PORT}\n`);
-    console.log('Whiteboard WebSocket listening at /ws/whiteboard\n');
   });
 }
 
 start().catch(err => {
-  console.error('Failed to start server:', err);
+  console.error('Failed to start server:', err.message);
   process.exit(1);
 });

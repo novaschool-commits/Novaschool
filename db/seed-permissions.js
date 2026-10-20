@@ -49,6 +49,8 @@ const PERMISSIONS = [
   ['settings.view', 'Settings', 'View system settings'],
   ['settings.edit', 'Settings', 'Edit system settings'],
 
+  ['messages.oversee', 'Messages', 'Read private messages between users (every view is logged)'],
+
   ['tasks.assign', 'Tasks', 'Assign tasks to other staff members'],
 
   ['support.manage', 'Support', 'View, assign, and resolve support tickets'],

@@ -1,0 +1,78 @@
+ setval 
+--------
+    200
+(1 row)
+
+ setval 
+--------
+      1
+(1 row)
+
+test_backfill: all assertions passed
+test_modules: all assertions passed
+ setval 
+--------
+      2
+(1 row)
+
+ set_config 
+------------
+ 1
+(1 row)
+
+ set_config 
+------------
+ 1
+(1 row)
+
+ set_config 
+------------
+ 1
+(1 row)
+
+ set_config 
+------------
+ 999
+(1 row)
+
+ set_config 
+------------
+ 2
+(1 row)
+
+ set_config 
+------------
+ 2
+(1 row)
+
+ set_config 
+------------
+ 2
+(1 row)
+
+ set_config 
+------------
+ 1
+(1 row)
+
+ set_config | set_config 
+------------+------------
+ 1          | 102
+(1 row)
+
+ set_config | set_config 
+------------+------------
+ 2          | 102
+(1 row)
+
+ set_config 
+------------
+ 1
+(1 row)
+
+test_tenancy: all assertions passed
+ setval 
+--------
+      1
+(1 row)
+

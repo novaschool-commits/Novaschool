@@ -12,9 +12,13 @@
 // whiteboard_pages is the source of truth for anyone who (re)joins.
 
 const { WebSocketServer } = require('ws');
-const jwt = require('jsonwebtoken');
-const { SECRET } = require('../middleware/auth');
+const { verifySession } = require('../middleware/auth');
 const { get, all, run } = require('../db');
+const { isSafePngDataUrl } = require('../lib/validate');
+
+// Largest single message accepted (finding S11). A full-page PNG snapshot is
+// the biggest legitimate message; it is also checked by isSafePngDataUrl.
+const MAX_MESSAGE_BYTES = 2 * 1024 * 1024;
 
 const rooms = new Map(); // whiteboardId -> { clients: Map(ws -> joinedInfo), currentPageId, allowStudentDraw }
 
@@ -63,7 +67,7 @@ async function verifyAccess(userId, role, whiteboardId) {
 }
 
 function attachWhiteboardWS(server) {
-  const wss = new WebSocketServer({ server, path: '/ws/whiteboard' });
+  const wss = new WebSocketServer({ server, path: '/ws/whiteboard', maxPayload: MAX_MESSAGE_BYTES });
 
   wss.on('connection', (ws) => {
     let joined = null; // { whiteboardId, userId, role, isTeacher }
@@ -73,9 +77,13 @@ function attachWhiteboardWS(server) {
       try { msg = JSON.parse(raw); } catch { return; }
 
       if (msg.type === 'join') {
-        let payload;
-        try { payload = jwt.verify(msg.token, SECRET); }
-        catch { ws.send(JSON.stringify({ type: 'error', error: 'Invalid or expired session.' })); return; }
+        // Same checks as every HTTP request: signature, expiry, remote
+        // sign-out, suspension (finding S4).
+        const session = typeof msg.token === 'string' ? await verifySession(msg.token) : { ok: false };
+        if (!session.ok) { ws.send(JSON.stringify({ type: 'error', error: 'Invalid or expired session.' })); ws.close(); return; }
+        const payload = session.user;
+        msg.whiteboardId = Number(msg.whiteboardId);
+        if (!Number.isInteger(msg.whiteboardId)) { ws.send(JSON.stringify({ type: 'error', error: 'Unknown whiteboard.' })); return; }
 
         const access = await verifyAccess(payload.id, payload.role, msg.whiteboardId);
         if (!access) { ws.send(JSON.stringify({ type: 'error', error: 'You do not have access to this whiteboard.' })); return; }
@@ -142,6 +150,7 @@ function attachWhiteboardWS(server) {
         // Debounced persistence — the client sends this every ~8s while
         // drawing, plus on page switch and on class end. Not per-stroke.
         if (!room.currentPageId) return;
+        if (!isSafePngDataUrl(msg.dataUrl)) return; // only real PNG snapshots are stored
         try {
           await run('UPDATE whiteboard_pages SET snapshot = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [msg.dataUrl, room.currentPageId]);
           await run('UPDATE whiteboards SET updated_at = CURRENT_TIMESTAMP WHERE id = $1', [joined.whiteboardId]);

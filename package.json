@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "seed": "node db/seed.js --force"
+    "seed:demo": "node db/seed.js --force",
+    "migrate": "node db/migrate.js",
+    "migrate:status": "node db/migrate.js --status",
+    "test": "node --test tests/unit/*.test.js",
+    "test:db": "bash tests/db/run.sh",
+    "test:api": "node --test tests/api/*.test.js"
   },
   "dependencies": {
     "express": "^4.19.2",

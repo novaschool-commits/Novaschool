@@ -10,6 +10,18 @@ async function getTeacher(req) {
   return get('SELECT * FROM teachers WHERE user_id = $1', [req.user.id]);
 }
 
+// A teacher may act on a section only if they have a period there or are its
+// class teacher (finding S7). Used by every route that takes a section_code.
+async function teachesSection(teacherId, sectionCode) {
+  if (typeof sectionCode !== 'string' || !sectionCode) return false;
+  const row = await get(
+    `SELECT 1 FROM timetable WHERE teacher_id = $1 AND section_code = $2
+     UNION ALL SELECT 1 FROM sections WHERE class_teacher_id = $1 AND section_code = $2 LIMIT 1`,
+    [teacherId, sectionCode]
+  );
+  return !!row;
+}
+
 function currentDayName() {
   return new Date().toLocaleDateString('en-US', { weekday: 'long' });
 }
@@ -103,6 +115,7 @@ router.post('/assignments', asyncHandler(async (req, res) => {
   }
   const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
   if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist.` });
+  if (!(await teachesSection(teacher.id, section_code))) return res.status(403).json({ error: 'You do not teach a class in that section.' });
   if (attachment_base64 && attachment_base64.length > MAX_ASSIGNMENT_ATTACHMENT_BASE64) {
     return res.status(413).json({ error: 'Attachment is too large (limit ~3.7MB). Please use a smaller file.' });
   }
@@ -684,6 +697,7 @@ router.post('/live-session/start', asyncHandler(async (req, res) => {
 
   const { section_code } = req.body || {};
   if (!section_code) return res.status(400).json({ error: 'section_code is required.' });
+  if (!(await teachesSection(teacher.id, section_code))) return res.status(403).json({ error: 'You do not teach a class in that section.' });
 
   const existing = await get('SELECT id FROM class_sessions WHERE teacher_id = $1 AND section_code = $2 AND ended_at IS NULL', [teacher.id, section_code]);
   if (existing) return res.status(409).json({ error: 'A live session for this section is already running.', sessionId: existing.id });
@@ -881,3 +895,4 @@ router.get('/gradebook', asyncHandler(async (req, res) => {
 }));
 
 module.exports = router;
+module.exports.teachesSection = teachesSection;

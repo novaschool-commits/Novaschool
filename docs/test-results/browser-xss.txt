@@ -1,0 +1,6 @@
+# release candidate public/ (expect PASS)
+{"public": "public", "handlers_fired": 0, "elements_with_onerror": 0, "hostile_text_shown_as_text": true}
+PASS
+# baseline 7eca459 public/ (control, expect FAIL)
+{"public": "../../base/public", "handlers_fired": 4, "elements_with_onerror": 4, "hostile_text_shown_as_text": true}
+FAIL

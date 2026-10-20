@@ -809,6 +809,15 @@ router.post('/assignments', asyncHandler(async (req, res) => {
   if (!exp) return res.status(400).json({ error: 'That experiment does not exist or is not published.' });
   const section = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
   if (!section) return res.status(400).json({ error: `Section "${section_code}" doesn't exist.` });
+  // A teacher may assign labs only to sections they teach (finding S7).
+  if (teacher) {
+    const teaches = await get(
+      `SELECT 1 FROM timetable WHERE teacher_id = $1 AND section_code = $2
+       UNION ALL SELECT 1 FROM sections WHERE class_teacher_id = $1 AND section_code = $2 LIMIT 1`,
+      [teacher.id, section_code]
+    );
+    if (!teaches) return res.status(403).json({ error: 'You do not teach a class in that section.' });
+  }
   if (attempt_limit !== undefined && attempt_limit !== null && (!Number.isInteger(attempt_limit) || attempt_limit < 1)) {
     return res.status(400).json({ error: 'attempt_limit must be a positive whole number, or omitted for unlimited.' });
   }

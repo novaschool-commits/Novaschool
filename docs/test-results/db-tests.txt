@@ -1,0 +1,17 @@
+# PostgreSQL 16.15, throwaway local cluster, 2026-10-11T22:50:27+05:00
+1  legacy schema applies to an empty database                 PASS
+2  legacy schema re-applies cleanly (server restart)          PASS
+3  synthetic school A loads (old app shape)                   PASS
+4  migrations 0001-0003 apply (gated 0004 skipped)            PASS
+5  backfill checks (test_backfill.sql)                        PASS
+6  module foundation checks (test_modules.sql)                PASS
+7  legacy schema still re-applies after migrations            PASS
+8  gated 0004 row-level security applies                      PASS
+9  synthetic school B loads                                   PASS
+10 tenant isolation as nova_app (test_tenancy.sql)            PASS
+11 legacy schema still re-applies with RLS on                 PASS
+12 rollback 0004, 0003, 0002, 0001 in order                   PASS
+13 schema after rollback equals schema before                 PASS
+14 backfill refuses when two schools already exist            PASS
+
+Database tests: 14 passed, 0 failed. Log: /tmp/dbrun/log.txt

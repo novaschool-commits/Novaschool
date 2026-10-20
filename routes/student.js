@@ -317,6 +317,15 @@ router.post('/exams/:id/submit', asyncHandler(async (req, res) => {
   if (!attempt) return res.status(404).json({ error: 'You have not started this test.' });
   if (attempt.status !== 'in_progress') return res.status(409).json({ error: 'This test has already been submitted.' });
 
+  // The time limit is enforced here, not only by the page's timer (finding S9).
+  // Five minutes' grace covers slow connections during the automatic submit.
+  const examRow = await get('SELECT duration_minutes FROM exams WHERE id = $1', [examId]);
+  const deadline = new Date(attempt.started_at).getTime() + ((examRow ? examRow.duration_minutes : 0) + 5) * 60 * 1000;
+  if (Date.now() > deadline) {
+    await run("UPDATE exam_attempts SET status = 'submitted', submitted_at = $1 WHERE id = $2 AND status = 'in_progress'", [new Date().toISOString(), attempt.id]);
+    return res.status(409).json({ error: 'The time for this test has ended, so these answers could not be accepted. Please speak to your teacher.' });
+  }
+
   const questions = await all('SELECT * FROM exam_questions WHERE exam_id = $1', [examId]);
   const questionMap = {};
   questions.forEach(q => { questionMap[q.id] = q; });
@@ -361,7 +370,7 @@ router.post('/exams/:id/submit', asyncHandler(async (req, res) => {
   );
 
   if (!hasDescriptive) {
-    const exam = await get('SELECT title FROM exams WHERE id = $1', [examId]);
+    const exam = await get('SELECT title, subject FROM exams WHERE id = $1', [examId]);
     const maxMarks = questions.reduce((sum, q) => sum + q.marks, 0);
     await run(
       'INSERT INTO grades (student_id, subject, assessment, score) VALUES ($1,$2,$3,$4)',

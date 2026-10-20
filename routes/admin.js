@@ -1,7 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { get, all, run } = require('../db');
-const { authenticate, requireRole, SECRET } = require('../middleware/auth');
+const { get, all, run, withTransaction } = require('../db');
+const { authenticate, requireRole, revokeSessions } = require('../middleware/auth');
+const config = require('../lib/config');
 const { requirePermission, logAudit, userHasPermission, notifyAdmin } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
 
@@ -230,7 +231,10 @@ router.delete('/entrance-test-questions/:id', requirePermission('settings.edit')
   res.json({ message: 'Question removed.' });
 }));
 
-router.get('/messages', requirePermission('settings.view'), asyncHandler(async (req, res) => {
+// Reading other people's private messages needs its own permission, and
+// every view is written to the audit log (finding S10).
+router.get('/messages', requirePermission('messages.oversee'), asyncHandler(async (req, res) => {
+  await logAudit(req, 'messages.oversight_viewed', 'messages', null, { limit: 50 });
   const rows = await all(
     `SELECT m.id, m.sender_id, m.recipient_id, m.body, m.sent_at,
             su.email AS sender_email, ru.email AS recipient_email
@@ -376,9 +380,13 @@ router.post('/teachers', requirePermission('teachers.create'), asyncHandler(asyn
   const existing = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
   if (existing) return res.status(409).json({ error: 'An account with that email already exists.' });
 
-  const userRow = await run('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), bcrypt.hashSync(password, 10), 'teacher']);
-  const userId = userRow.rows[0].id;
-  await run('INSERT INTO teachers (user_id, first_name, last_name, subject) VALUES ($1,$2,$3,$4)', [userId, first_name, last_name, subject || null]);
+  const passwordHash = await bcrypt.hash(password, 10);
+  // Both rows or neither (finding S14).
+  const userId = await withTransaction(async (client) => {
+    const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), passwordHash, 'teacher']);
+    await client.query('INSERT INTO teachers (user_id, first_name, last_name, subject) VALUES ($1,$2,$3,$4)', [u.rows[0].id, first_name, last_name, subject || null]);
+    return u.rows[0].id;
+  });
 
   await logAudit(req, 'teacher.created', 'teacher', userId, { email: email.toLowerCase().trim() });
   res.status(201).json({ message: `Teacher account created for ${first_name} ${last_name}. They can log in with ${email}.` });
@@ -396,6 +404,8 @@ router.patch('/teachers/:id/status', requirePermission('teachers.suspend'), asyn
   const teacher = await get('SELECT * FROM teachers WHERE id = $1', [id]);
   if (!teacher) return res.status(404).json({ error: 'Teacher not found.' });
   await run('UPDATE teachers SET status = $1 WHERE id = $2', [status, id]);
+  // Suspension ends every session at once (finding S4).
+  if (status === 'suspended' && teacher.user_id) await revokeSessions(teacher.user_id);
   await logAudit(req, status === 'suspended' ? 'teacher.suspended' : 'teacher.reactivated', 'teacher', id, { name: `${teacher.first_name} ${teacher.last_name}` });
   res.json({ message: `${teacher.first_name} ${teacher.last_name} ${status === 'suspended' ? 'suspended' : 'reactivated'}.` });
 }));
@@ -412,19 +422,27 @@ router.post('/students', requirePermission('students.create'), asyncHandler(asyn
   const existingAdm = await get('SELECT id FROM students WHERE admission_no = $1', [admission_no]);
   if (existingAdm) return res.status(409).json({ error: 'That admission number is already in use.' });
 
-  let userId = null;
+  let passwordHash = null;
   if (email && password) {
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
     const existingEmail = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
     if (existingEmail) return res.status(409).json({ error: 'An account with that email already exists.' });
-    const userRow = await run('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), bcrypt.hashSync(password, 10), 'student']);
-    userId = userRow.rows[0].id;
+    passwordHash = await bcrypt.hash(password, 10);
   }
 
-  const studentRow = await run(
-    'INSERT INTO students (user_id, admission_no, first_name, last_name, section_code) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-    [userId, admission_no, first_name, last_name, section_code]
-  );
+  // Login and student record are created together or not at all (finding S14).
+  const { userId, studentRow } = await withTransaction(async (client) => {
+    let uid = null;
+    if (passwordHash) {
+      const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), passwordHash, 'student']);
+      uid = u.rows[0].id;
+    }
+    const st = await client.query(
+      'INSERT INTO students (user_id, admission_no, first_name, last_name, section_code) VALUES ($1,$2,$3,$4,$5) RETURNING id',
+      [uid, admission_no, first_name, last_name, section_code]
+    );
+    return { userId: uid, studentRow: st };
+  });
 
   await logAudit(req, 'student.created', 'student', studentRow.rows[0].id, { admissionNo: admission_no });
   res.status(201).json({
@@ -448,6 +466,8 @@ router.patch('/students/:id/status', requirePermission('students.suspend'), asyn
   const student = await get('SELECT * FROM students WHERE id = $1', [id]);
   if (!student) return res.status(404).json({ error: 'Student not found.' });
   await run('UPDATE students SET status = $1 WHERE id = $2', [status, id]);
+  // Suspension ends every session at once (finding S4).
+  if (status === 'suspended' && student.user_id) await revokeSessions(student.user_id);
   await logAudit(req, status === 'suspended' ? 'student.suspended' : 'student.reactivated', 'student', id, { name: `${student.first_name} ${student.last_name}` });
   res.json({ message: `${student.first_name} ${student.last_name} ${status === 'suspended' ? 'suspended' : 'reactivated'}.` });
 }));
@@ -462,12 +482,20 @@ router.post('/parents', requirePermission('students.create'), asyncHandler(async
   const existing = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
   if (existing) return res.status(409).json({ error: 'An account with that email already exists.' });
 
-  const userRow = await run('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), bcrypt.hashSync(password, 10), 'parent']);
-  const parentRow = await run('INSERT INTO parents (user_id, first_name, last_name) VALUES ($1,$2,$3) RETURNING id', [userRow.rows[0].id, first_name, last_name]);
-
   if (student_id) {
-    await run('INSERT INTO student_parent_map (student_id, parent_id) VALUES ($1,$2)', [student_id, parentRow.rows[0].id]);
+    const child = await get('SELECT id FROM students WHERE id = $1', [Number(student_id)]);
+    if (!child) return res.status(400).json({ error: 'That student does not exist.' });
   }
+  const passwordHash = await bcrypt.hash(password, 10);
+  // Login, parent record and child link are created together (finding S14).
+  const parentRow = await withTransaction(async (client) => {
+    const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), passwordHash, 'parent']);
+    const p = await client.query('INSERT INTO parents (user_id, first_name, last_name) VALUES ($1,$2,$3) RETURNING id', [u.rows[0].id, first_name, last_name]);
+    if (student_id) {
+      await client.query('INSERT INTO student_parent_map (student_id, parent_id) VALUES ($1,$2)', [Number(student_id), p.rows[0].id]);
+    }
+    return p;
+  });
 
   await logAudit(req, 'parent.created', 'parent', parentRow.rows[0].id, { email: email.toLowerCase().trim() });
   res.status(201).json({ message: `Parent account created for ${first_name} ${last_name}. They can log in with ${email}.` });
@@ -489,6 +517,8 @@ router.patch('/parents/:id/status', requirePermission('students.edit'), asyncHan
   const parent = await get('SELECT * FROM parents WHERE id = $1', [id]);
   if (!parent) return res.status(404).json({ error: 'Parent not found.' });
   await run('UPDATE parents SET status = $1 WHERE id = $2', [status, id]);
+  // Suspension ends every session at once (finding S4).
+  if (status === 'suspended' && parent.user_id) await revokeSessions(parent.user_id);
   await logAudit(req, status === 'suspended' ? 'parent.suspended' : 'parent.reactivated', 'parent', id, { name: `${parent.first_name} ${parent.last_name}` });
   res.json({ message: `${parent.first_name} ${parent.last_name} ${status === 'suspended' ? 'suspended' : 'reactivated'}.` });
 }));
@@ -951,10 +981,10 @@ router.get('/system-health', requireRole('admin'), asyncHandler(async (req, res)
 
   checks.push({ name: 'API server', status: 'healthy', detail: 'Responding (this request completed).' });
 
-  const usingDefaultSecret = SECRET === 'novaschool-dev-secret-change-me';
+  const usingDefaultSecret = config.jwtSecretSource !== 'env';
   checks.push({
     name: 'Authentication', status: usingDefaultSecret ? 'warning' : 'healthy',
-    detail: usingDefaultSecret ? 'JWT_SECRET is not set — running on the insecure default. Set it in the environment.' : 'JWT_SECRET is configured.'
+    detail: usingDefaultSecret ? 'JWT_SECRET is not set; a temporary development secret is in use.' : 'JWT_SECRET is configured.'
   });
 
   let dbSizeText = 'Unknown';
