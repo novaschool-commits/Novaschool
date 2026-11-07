@@ -32,6 +32,15 @@ took place, and none was authorized.
   student role 403, student's own card still 200). It needs the local server, so it runs on the owner's phone.
 - Rendered with mock data at phone and desktop width, including hostile text: no errors, no handlers fired.
 
+## Limited database login for the app (not yet deployed)
+
+- Migration `0007_app_role` (ungated): role `nova_app` with data privileges only (no create/alter/drop, no bypass,
+  read-only school and migration records, default privileges for future tables). `npm run db:app-login` creates the
+  login `nova_app_login` (random 192-bit password, printed once, never stored) and verifies it is limited.
+  `npm run db:schema` applies schema.sql and catalogs as the owner; the server skips them when it is not the owner.
+- Tests (local PostgreSQL 16): `tests/api/run-app-login.sh` 11/11 (incl. security suite 15/15 on the app login);
+  database tests 14/14 (rollback 0007→0001 restores the schema); two schools with the lock on 25/25; unit 36/36.
+
 ## Phase P3: school context on every request (not yet deployed)
 
 - Code: `db/index.js` (request scope, savepoint-aware `withTransaction`), `middleware/auth.js` (membership per token),
@@ -41,7 +50,17 @@ took place, and none was authorized.
   `0006_users_rls` (gated: login-row security, catalogs read-only). Rollbacks provided.
 - Tests: unit 36/36; database 14/14 (incl. new T13 login-row checks, rollback 0006→0001 restores the schema);
   API with the lock OFF as on live today: 15/15; API with the lock ON and two schools: 25/25; XSS browser test PASS.
-- Live today keeps row-level security OFF. Before deploying the P3 code, migration 0005 must run on production
+- Rehearsal 2026-11-07 on Neon branch `p3-rehearsal` (copy of production): 0005 applied, 0004/0006 skipped, admin
+  sign-in and overview correct. The log showed "Database used after the request finished" for requests the browser had
+  abandoned (phone to Neon is slow). Fixes: such requests are now rolled back with a one-line note instead of a stack
+  trace; BEGIN and the school settings go in one round trip; the session check is one query; the admin messages list
+  went from up to 400 queries to 1. Re-tested: two schools 25/25, lock off 15/15, unit 36/36; with 120 ms added
+  database latency the admin dashboard's 19 parallel requests all succeed and abandoned requests roll back cleanly.
+- 2026-11-07, 16:04 PKT: the owner ran migration 0005 on production (host `ep-lively-truth-…`): applied; 0004 and
+  0006 skipped. Additive only; the running site (commit `995606f`) is unaffected.
+- 2026-11-07, 16:09 PKT: owner approved and pushed commit `10c6420` (Phase P3) to GitHub `main`; Render auto-deploys.
+- 2026-11-07, 16:17 PKT: P3 live on novaschool.pk; admin sign-in, overview figures and live classes confirmed by the owner.
+- Live keeps row-level security OFF. Before deploying the P3 code, migration 0005 must run on production
   (rehearse on a Neon branch first), otherwise logins created after 0002 cannot sign in.
 
 ## Second deployment
@@ -128,7 +147,7 @@ took place, and none was authorized.
 | R-06 | Remaining unescaped HTML sinks in the 7,900-line page | Medium | High | Finish the manual review; move to CSP |
 | R-07 | Updated lockfile exists only on the owner's phone | Medium | Medium | Commit the phone copy's `package-lock.json` with the release |
 | R-08 | Database TLS not verified | Low | Medium | Test `PGSSL_REJECT_UNAUTHORIZED=true` on a Neon branch |
-| R-09 | Neon's owner role may lack BYPASSRLS, needed for migrations once 0004 is on | Unknown | Medium | Check on a Neon branch before Phase P3 |
+| R-09 | Neon's owner role may lack BYPASSRLS, needed for migrations once 0004 is on | Unknown | Medium | Check on a Neon branch before switching the lock on (the app itself now has its own limited login) |
 | R-10 | `redesign-test` branch connection string was shared in chat | Closed | — | Branch no longer exists in Neon (confirmed 2026-10-12) |
 
 ## Production approval needs, separately

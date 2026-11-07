@@ -45,23 +45,34 @@ function emptyContext() {
   return { institutionId: null, userId: null, accountEmail: null };
 }
 
+// The settings as one SQL statement, so they can travel with BEGIN in a
+// single round trip. Numbers are checked; the email is quoted by the driver.
+function contextSql(client, ctx) {
+  const num = (v) => {
+    if (v === null || v === undefined || v === '') return "''";
+    if (!Number.isInteger(v) || v <= 0) throw new Error('Invalid school or person id for the database context.');
+    return `'${v}'`;
+  };
+  const email = ctx.accountEmail ? client.escapeLiteral(String(ctx.accountEmail)) : "''";
+  return `SELECT set_config('app.institution_id', ${num(ctx.institutionId)}, true), ` +
+         `set_config('app.user_id', ${num(ctx.userId)}, true), ` +
+         `set_config('app.account_email', ${email}, true)`;
+}
+
 async function applyContext(client, ctx) {
-  await client.query(
-    "SELECT set_config('app.institution_id', $1, true), set_config('app.user_id', $2, true), set_config('app.account_email', $3, true)",
-    [ctx.institutionId ? String(ctx.institutionId) : '', ctx.userId ? String(ctx.userId) : '', ctx.accountEmail || '']
-  );
+  await client.query(contextSql(client, ctx));
 }
 
 async function scopeClient(scope) {
   if (scope.closed) {
-    throw Object.assign(new Error('Database used after the request finished (no school context).'), { status: 500 });
+    // Usually the browser gave up on the request (page closed or reloaded).
+    throw Object.assign(new Error('Database used after the request finished (no school context).'), { status: 500, code: 'NOVA_SCOPE_CLOSED' });
   }
   if (!scope.clientPromise) {
     scope.clientPromise = (async () => {
       const client = await pool.connect();
       try {
-        await client.query('BEGIN');
-        await applyContext(client, scope.ctx);
+        await client.query(`BEGIN; ${contextSql(client, scope.ctx)}`);
       } catch (err) {
         client.release(err);
         throw err;

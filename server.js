@@ -12,11 +12,19 @@ const { attachWhiteboardWS } = require('./ws/whiteboard');
 const PORT = process.env.PORT || 3000;
 
 async function start() {
+  // The app's limited login (migration 0007) cannot change tables; the owner
+  // runs `npm run db:schema` instead. Only the table owner applies schema.sql.
+  let ownsTables = false;
   if (config.migrateOnStart) {
+    const { rows } = await pool.query("SELECT COALESCE((SELECT tableowner FROM pg_tables WHERE schemaname = 'public' AND tablename = 'users'), current_user) = current_user AS owner");
+    ownsTables = rows[0].owner;
+    if (!ownsTables) console.log('[server] Connected with the limited app login: schema and catalogs are left to `npm run db:schema` (owner).');
+  }
+  if (config.migrateOnStart && ownsTables) {
     await migrate();            // legacy idempotent schema.sql only
     await seedPermissions();    // idempotent catalog
     await seedLabExperiments(); // idempotent
-  } else {
+  } else if (!config.migrateOnStart) {
     console.log('[server] MIGRATE_ON_START=false: schema and catalogs were not touched.');
   }
 

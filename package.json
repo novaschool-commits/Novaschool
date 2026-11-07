@@ -1,7 +1,7 @@
 {
   "name": "nova-school-app",
   "version": "1.0.0",
-  "description": "Nova School — a full-stack online school platform (Express + PostgreSQL, static frontend).",
+  "description": "Nova School \u2014 a full-stack online school platform (Express + PostgreSQL, static frontend).",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -11,7 +11,9 @@
     "migrate:status": "node db/migrate.js --status",
     "test": "node --test tests/unit/*.test.js",
     "test:db": "bash tests/db/run.sh",
-    "test:api": "node --test tests/api/*.test.js"
+    "test:api": "node --test tests/api/*.test.js",
+    "db:schema": "node db/schema-setup.js",
+    "db:app-login": "node db/app-login.js"
   },
   "dependencies": {
     "express": "^4.19.2",

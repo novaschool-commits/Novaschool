@@ -54,6 +54,21 @@ Builds a throwaway database with the demo school and a synthetic second school, 
 gated row-level security ones, runs the server as a restricted `nova_app` login and runs the cross-school tests plus the
 whole security suite. Expected: 25 pass. Everything is deleted afterwards.
 
+## 4c. The app on its own limited database login
+
+```bash
+TEST_PG="postgresql://$(whoami)@localhost:5432/postgres" bash tests/api/run-app-login.sh
+```
+Expected: 11 checks pass (the login reads and writes data but cannot create, change or drop tables, change school
+records or migration history, or bypass row-level security; the server starts on it; the security suite passes).
+
+Production set-up (owner connection = Neon's `neondb_owner` string):
+1. `MIGRATION_DATABASE_URL=<owner> npm run migrate -- --yes` (applies 0007)
+2. `MIGRATION_DATABASE_URL=<owner> npm run db:app-login -- --yes` (prints the app's connection string once)
+3. Put that string in Render's `DATABASE_URL`. Keep the owner string only in Neon.
+4. After a release that changes `db/schema.sql` or the catalogs: `MIGRATION_DATABASE_URL=<owner> npm run db:schema -- --yes`
+   before (or right after) pushing. The app on its limited login does not change tables itself.
+
 ## 5. Browser test (optional, needs Python + Playwright)
 
 ```bash

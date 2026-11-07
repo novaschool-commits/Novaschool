@@ -57,6 +57,11 @@ app.use((err, req, res, next) => {
     const msg = err.constraint === 'users_email_key' ? 'An account with that email already exists.' : 'That record already exists.';
     return res.status(409).json({ error: msg });
   }
+  if (err.code === 'NOVA_SCOPE_CLOSED' && (req.destroyed || res.destroyed || res.writableEnded)) {
+    // The browser left before the answer was ready; its work was rolled back.
+    console.warn(`[api] ${req.method} ${req.originalUrl}: client left before the response; rolled back`);
+    return;
+  }
   console.error(err);
   res.status(500).json({ error: 'Something went wrong on the server.' });
 });

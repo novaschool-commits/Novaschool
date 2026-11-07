@@ -49,7 +49,7 @@ step "1  legacy schema applies to an empty database";      run_file "$URL" db/sc
 step "2  legacy schema re-applies cleanly (server restart)"; run_file "$URL" db/schema.sql && ok || bad
 step "3  synthetic school A loads (old app shape)";         run_file "$URL" tests/db/fixtures_school_a.sql && ok || bad
 pg_dump -s -x -O "$URL" | grep -v -e '^--' -e '^\\restrict' -e '^\\unrestrict' | sed '/^$/d' | sort > "$OUT/schema-before.sql"
-step "4  migrations 0001-0003, 0005 apply (gated skipped)";   migrations ungated && ok || bad
+step "4  ungated migrations apply (0001-0003, 0005, 0007)";   migrations ungated && ok || bad
 step "5  backfill checks (test_backfill.sql)";              run_file "$URL" tests/db/test_backfill.sql && ok || bad
 step "6  module foundation checks (test_modules.sql)";      run_file "$URL" tests/db/test_modules.sql && ok || bad
 step "7  legacy schema still re-applies after migrations";  run_file "$URL" db/schema.sql && ok || bad
@@ -57,8 +57,8 @@ step "8  gated 0004, 0006 row-level security applies";            migrations gat
 step "9  synthetic school B loads";                          run_file "$URL" tests/db/fixtures_school_b.sql && ok || bad
 step "10 tenant isolation as nova_app (test_tenancy.sql)";  run_file "$URL" tests/db/test_tenancy.sql && ok || bad
 step "11 legacy schema still re-applies with RLS on";       run_file "$URL" db/schema.sql && ok || bad
-step "12 rollback 0006 down to 0001 in order";
-  ( for id in 0006 0005 0004 0003 0002 0001; do run_file "$URL" db/migrations/rollback/${id}_*.down.sql || exit 1; done ) && ok || bad
+step "12 rollback 0007 down to 0001 in order";
+  ( for id in 0007 0006 0005 0004 0003 0002 0001; do run_file "$URL" db/migrations/rollback/${id}_*.down.sql || exit 1; done ) && ok || bad
 pg_dump -s -x -O "$URL" | grep -v -e '^--' -e '^\\restrict' -e '^\\unrestrict' | sed '/^$/d' | sort > "$OUT/schema-after.sql"
 step "13 schema after rollback equals schema before";
   if diff -u "$OUT/schema-before.sql" "$OUT/schema-after.sql" > "$OUT/schema-diff.txt"; then ok; else bad; fi

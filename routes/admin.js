@@ -235,29 +235,19 @@ router.delete('/entrance-test-questions/:id', requirePermission('settings.edit')
 // every view is written to the audit log (finding S10).
 router.get('/messages', requirePermission('messages.oversee'), asyncHandler(async (req, res) => {
   await logAudit(req, 'messages.oversight_viewed', 'messages', null, { limit: 50 });
+  // Names in the same query (was up to 8 extra queries per message).
+  const nameOf = (alias) => `COALESCE(
+      (SELECT first_name || ' ' || last_name || ' (Student)' FROM students WHERE user_id = ${alias}),
+      (SELECT first_name || ' ' || last_name || ' (Parent)'  FROM parents  WHERE user_id = ${alias}),
+      (SELECT first_name || ' ' || last_name || ' (Teacher)' FROM teachers WHERE user_id = ${alias}),
+      (SELECT first_name || ' ' || last_name || ' (Admin)'   FROM admins   WHERE user_id = ${alias}),
+      'Unknown')`;
   const rows = await all(
-    `SELECT m.id, m.sender_id, m.recipient_id, m.body, m.sent_at,
-            su.email AS sender_email, ru.email AS recipient_email
-     FROM messages m JOIN users su ON su.id = m.sender_id JOIN users ru ON ru.id = m.recipient_id
-     ORDER BY m.sent_at DESC LIMIT 50`
+    `SELECT m.id, m.body, m.sent_at, ${nameOf('m.sender_id')} AS from_name, ${nameOf('m.recipient_id')} AS to_name
+       FROM messages m
+      ORDER BY m.sent_at DESC LIMIT 50`
   );
-
-  async function nameFor(userId, table) {
-    const tables = [['students', 'Student'], ['parents', 'Parent'], ['teachers', 'Teacher'], ['admins', 'Admin']];
-    for (const [t, label] of tables) {
-      const row = await get(`SELECT first_name, last_name FROM ${t} WHERE user_id = $1`, [userId]);
-      if (row) return `${row.first_name} ${row.last_name} (${label})`;
-    }
-    return 'Unknown';
-  }
-
-  const messages = [];
-  for (const r of rows) {
-    messages.push({
-      id: r.id, body: r.body, sentAt: r.sent_at,
-      from: await nameFor(r.sender_id), to: await nameFor(r.recipient_id)
-    });
-  }
+  const messages = rows.map(r => ({ id: r.id, body: r.body, sentAt: r.sent_at, from: r.from_name, to: r.to_name }));
 
   res.json({ messages });
 }));
