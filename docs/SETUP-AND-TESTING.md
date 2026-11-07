@@ -35,13 +35,24 @@ Expected: 14 steps PASS. The script creates and deletes its own database and ref
 createdb nova_api_test
 export DATABASE_URL="postgresql://$(whoami)@localhost:5432/nova_api_test"
 export JWT_SECRET="$(node -e "console.log(require('crypto').randomBytes(48).toString('hex'))")"
-SEED_DEMO=true nohup npm start > ~/nova-api-test.log 2>&1 &
+SEED_DEMO=true npm start            # first start: schema + demo data, then it asks for migrations
+MIGRATION_DATABASE_URL="$DATABASE_URL" npm run migrate -- --yes
+nohup npm start > ~/nova-api-test.log 2>&1 &
 sleep 5
 BASE_URL=http://localhost:3000 npm run test:api
 ```
 Expected: all tests pass (one may be skipped if the demo teacher does not teach the demo student's section). Stop the server afterwards with `pkill -f "node server.js"` and drop the database with `dropdb nova_api_test`.
 
 Never point these tests at the live database or the `redesign-test` branch: they create accounts and suspend them.
+
+## 4b. Two-school isolation test (row-level security ON)
+
+```bash
+TEST_PG="postgresql://$(whoami)@localhost:5432/postgres" bash tests/api/run-tenancy.sh
+```
+Builds a throwaway database with the demo school and a synthetic second school, applies every migration including the
+gated row-level security ones, runs the server as a restricted `nova_app` login and runs the cross-school tests plus the
+whole security suite. Expected: 25 pass. Everything is deleted afterwards.
 
 ## 5. Browser test (optional, needs Python + Playwright)
 

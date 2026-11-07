@@ -28,6 +28,15 @@ async function start() {
     }
   }
 
+  // Phase P3: sign-in needs the multi-school tables (migrations 0001-0003, 0005).
+  const { rows: ready } = await pool.query("SELECT to_regclass('public.institution_memberships') AS t");
+  if (!ready[0].t) {
+    console.error('\n[server] The multi-school tables are missing. Run the migrations, then start again:\n' +
+      '  MIGRATION_DATABASE_URL=<owner connection> npm run migrate -- --yes\n');
+    await pool.end();
+    process.exit(1);
+  }
+
   const server = http.createServer(app);
   attachWhiteboardWS(server);
   server.listen(PORT, () => {

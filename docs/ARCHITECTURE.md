@@ -56,7 +56,8 @@ consulted by all content modules; nothing depends on the AI layer.
 - Every school-owned table carries `institution_id` (49 tables). Shared catalogs (curriculums, boards, levels, lab experiments, question bank, glossary, frameworks) use NULL for platform-provided rows.
 - Enforcement (gated migration 0004): `ENABLE` + `FORCE ROW LEVEL SECURITY`, policies `TO nova_app` comparing `institution_id` with the transaction setting `app.institution_id`. The app role is not an owner and has `NOBYPASSRLS`. Migrations run as the owner role, which needs BYPASSRLS (or superuser).
 - Context handling: `lib/tenantContext.js#withTenant` opens a transaction and sets the school with `set_config(..., true)`, which ends at COMMIT or ROLLBACK, so pooled connections cannot carry context between requests. Missing context matches no rows; inserts without it fail.
-- Not yet done (Phase P3): routes do not yet run inside `withTenant`, memberships are not yet chosen at sign-in, and global unique keys (section code, admission number) are still global. Until then 0004 must stay off and the app behaves as one school.
+- Phase P3 (done in the working copy, 2026-10-21): every `/api` request runs in one database scope (`tenantScope` in `db/index.js`, AsyncLocalStorage): the first query opens a transaction and sets `app.institution_id`, `app.user_id` and `app.account_email` with `set_config(..., true)`; the scope commits before the response is sent and rolls back on 5xx; queries after the scope are refused. Sign-in picks the person's membership; the token carries the school (`ins`) and every request re-checks it. Whiteboard messages run in `runInTenant` with the joined person's school. New logins get a membership in the same transaction. Migration 0006 (gated) puts row-level security on the shared `users` table and makes platform catalogs read-only for the app.
+- Still global: unique keys (section code, admission number, email). A clash with another school's value is answered 409, not 500. `school_settings` is still a single row (school 1); per-school settings come with onboarding (Phase P4).
 
 ### 2.3 Curriculum OS (FOUNDATION)
 - NovaSchool's own frameworks (`curriculum_frameworks`) → `grade_levels` → `topics` → `learning_outcomes`, with `outcome_prerequisites` (a directed graph; self-links refused).
@@ -100,7 +101,7 @@ Provider-neutral adapter, off by default per school, monthly budget caps, no stu
 ## 4. Event flows
 
 - **Sign-in:** credentials → rate limits → bcrypt check → status check → token with `token_version`. PLANNED: membership choice when a person has more than one.
-- **Request:** token → `verifySession` (version, role, status) → permission check → (Phase P3) `withTenant` transaction → query.
+- **Request:** `tenantScope` (public school by default) → token → `verifySession` (membership in the token's school, version, role, status; sets the school for the scope) → permission check → queries in one transaction → COMMIT → response.
 - **Suspension:** admin action → status change + `token_version + 1` → next request or socket join refused.
 - **Public application:** IP rate limit → field and file validation → stored with a one-time entrance-test token → notifications.
 - **Lab attempt:** start (pinned experiment version) → events applied by server logic → completion evaluated and scored on the server.

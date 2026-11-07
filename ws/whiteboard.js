@@ -13,7 +13,7 @@
 
 const { WebSocketServer } = require('ws');
 const { verifySession } = require('../middleware/auth');
-const { get, all, run } = require('../db');
+const { get, all, run, runInTenant } = require('../db');
 const { isSafePngDataUrl } = require('../lib/validate');
 
 // Largest single message accepted (finding S11). A full-page PNG snapshot is
@@ -70,9 +70,19 @@ function attachWhiteboardWS(server) {
   const wss = new WebSocketServer({ server, path: '/ws/whiteboard', maxPayload: MAX_MESSAGE_BYTES });
 
   wss.on('connection', (ws) => {
-    let joined = null; // { whiteboardId, userId, role, isTeacher }
+    let joined = null; // { whiteboardId, userId, role, isTeacher, institutionId }
 
-    ws.on('message', async (raw) => {
+    // Each message runs in its own database scope with the school of the
+    // person who joined (Phase P3); before a join, the session check sets it.
+    ws.on('message', (raw) => {
+      const ctx = joined ? { institutionId: joined.institutionId, userId: joined.userId } : {};
+      runInTenant(ctx, () => handleMessage(raw)).catch((err) => {
+        console.error('[whiteboard] message failed:', err.message);
+        try { ws.send(JSON.stringify({ type: 'error', error: 'Something went wrong. Please rejoin.' })); } catch (e) { /* closed */ }
+      });
+    });
+
+    async function handleMessage(raw) {
       let msg;
       try { msg = JSON.parse(raw); } catch { return; }
 
@@ -88,7 +98,7 @@ function attachWhiteboardWS(server) {
         const access = await verifyAccess(payload.id, payload.role, msg.whiteboardId);
         if (!access) { ws.send(JSON.stringify({ type: 'error', error: 'You do not have access to this whiteboard.' })); return; }
 
-        joined = { whiteboardId: msg.whiteboardId, userId: payload.id, role: payload.role, isTeacher: access.isTeacher };
+        joined = { whiteboardId: msg.whiteboardId, userId: payload.id, role: payload.role, isTeacher: access.isTeacher, institutionId: payload.institutionId };
         const room = getRoom(msg.whiteboardId);
 
         // If this same user already has a connection in the room (a stale
@@ -189,7 +199,7 @@ function attachWhiteboardWS(server) {
         const target = findClientWsByUserId(room, msg.to);
         if (target) target.send(JSON.stringify({ type: 'rtc-ice-candidate', candidate: msg.candidate, from: joined.userId }));
       }
-    });
+    }
 
     ws.on('close', () => {
       if (!joined || joined.superseded) return; // a fresher connection from this same user already took over — nothing to clean up here

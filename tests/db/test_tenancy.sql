@@ -185,4 +185,42 @@ DO $$ BEGIN
   EXCEPTION WHEN not_null_violation THEN NULL; END;
 END $$;
 
+-- T13 (migration 0006): shared logins are visible only to their own schools,
+-- to the person themself, or to the one login being signed in to / created.
+BEGIN;
+SET LOCAL ROLE nova_app;
+SELECT set_config('app.institution_id', '1', true), set_config('app.user_id', '', true), set_config('app.account_email', '', true);
+DO $$
+DECLARE n INTEGER;
+BEGIN
+  ASSERT NOT EXISTS (SELECT 1 FROM users WHERE email = 'b.student@test.invalid'), 'T13: A cannot see a B-only login';
+  ASSERT EXISTS (SELECT 1 FROM users WHERE id = 101), 'T13: A sees its own admin login';
+  ASSERT EXISTS (SELECT 1 FROM users WHERE id = 102), 'T13: A sees a person who is a member of A and B';
+  UPDATE users SET last_login = NOW() WHERE id = 202;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  ASSERT n = 0, 'T13: A cannot update a B-only login';
+  BEGIN
+    INSERT INTO users (email, password_hash, role) VALUES ('sneaky@test.invalid', 'x', 'admin');
+    RAISE EXCEPTION 'T13 failed: login created without naming it';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  BEGIN
+    DELETE FROM users WHERE id = 101;
+    RAISE EXCEPTION 'T13 failed: app role deleted a login';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+  BEGIN
+    INSERT INTO locales (code, english_name, native_name, direction) VALUES ('xx', 'Test', 'Test', 'ltr');
+    RAISE EXCEPTION 'T13 failed: app role changed a platform catalog';
+  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
+END $$;
+SELECT set_config('app.account_email', 'b.student@test.invalid', true);
+DO $$ BEGIN
+  ASSERT (SELECT COUNT(*) FROM users WHERE email = 'b.student@test.invalid') = 1, 'T13: the named login is visible while signing in';
+  ASSERT NOT EXISTS (SELECT 1 FROM users WHERE email = 'b.teacher@test.invalid'), 'T13: only that one login';
+END $$;
+SELECT set_config('app.account_email', '', true), set_config('app.user_id', '202', true), set_config('app.institution_id', '', true);
+DO $$ BEGIN
+  ASSERT (SELECT COUNT(*) FROM users) = 1, 'T13: with no school, a person sees only their own login';
+END $$;
+ROLLBACK;
+
 \echo 'test_tenancy: all assertions passed'

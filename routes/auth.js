@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { get, run } = require('../db');
-const { authenticate, signSession, revokeSessions } = require('../middleware/auth');
+const { get, run, setTenantContext } = require('../db');
+const { authenticate, signSession, revokeSessions, resolveMembership } = require('../middleware/auth');
 const { notifyAdmin } = require('../middleware/permissions');
 const { createLimiter, clientIp, limitByIp } = require('../lib/rateLimit');
 
@@ -57,9 +57,14 @@ router.post('/login', async (req, res) => {
       return res.status(429).json({ error: `Too many sign-in attempts. Try again in ${Math.ceil(wait / 60)} minutes.` });
     }
 
+    // Logins are shared by all schools; row-level security shows this one
+    // row only because the email is named for this transaction (Phase P3).
+    await setTenantContext({ accountEmail: normalizedEmail });
     const user = await get('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
     const passwordOk = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+    const publicContext = { accountEmail: null };
     if (!user || !passwordOk) {
+      await setTenantContext(publicContext);
       await run('INSERT INTO failed_login_attempts (email) VALUES ($1)', [normalizedEmail]);
       // Keep the table bounded (finding S3).
       if (Math.random() < 0.05) await run("DELETE FROM failed_login_attempts WHERE attempted_at < NOW() - INTERVAL '30 days'");
@@ -72,6 +77,12 @@ router.post('/login', async (req, res) => {
       }
       return res.status(401).json({ error: 'Incorrect email or password.' });
     }
+
+    const membership = await resolveMembership(user.id, user.role, null);
+    if (!membership) {
+      return res.status(403).json({ error: 'This account is not linked to a school yet. Contact the school administration.' });
+    }
+    await setTenantContext({ userId: user.id, institutionId: membership.institution_id, accountEmail: null });
 
     if (user.role === 'staff') {
       const staffRow = await get('SELECT status FROM staff WHERE user_id = $1', [user.id]);
@@ -89,7 +100,7 @@ router.post('/login', async (req, res) => {
 
     loginPerIpEmail.reset(`${ip}|${normalizedEmail}`);
     const profile = await profileFor(user);
-    const token = signSession(user);
+    const token = signSession(user, membership.institution_id);
     await run('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [user.id]);
 
     res.json({
@@ -142,7 +153,7 @@ router.post('/change-password', authenticate, async (req, res) => {
       'UPDATE users SET password_hash = $1, token_version = token_version + 1 WHERE id = $2 RETURNING id, email, role, token_version',
       [newHash, user.id]
     );
-    res.json({ message: 'Password changed. Other devices have been signed out.', token: signSession(updated) });
+    res.json({ message: 'Password changed. Other devices have been signed out.', token: signSession(updated, req.user.institutionId) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error.' });

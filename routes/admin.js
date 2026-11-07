@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const { get, all, run, withTransaction } = require('../db');
+const { get, all, run, withTransaction, setTenantContext } = require('../db');
 const { authenticate, requireRole, revokeSessions } = require('../middleware/auth');
 const config = require('../lib/config');
 const { requirePermission, logAudit, userHasPermission, notifyAdmin } = require('../middleware/permissions');
@@ -51,7 +51,7 @@ router.get('/overview', requirePermission('reports.view'), asyncHandler(async (r
   // timestamps) — a fair, honest proxy given the app has no session/event
   // tracking, not a claim of continuous activity.
   const activityRow = await get(
-    "SELECT COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '1 day') AS dau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '7 days') AS wau FROM users"
+    "SELECT COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '1 day') AS dau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '7 days') AS wau FROM users u WHERE EXISTS (SELECT 1 FROM institution_memberships m WHERE m.user_id = u.id AND m.institution_id = nova_current_institution())"
   );
 
   res.json({
@@ -377,6 +377,7 @@ router.post('/teachers', requirePermission('teachers.create'), asyncHandler(asyn
   }
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
 
+  await setTenantContext({ accountEmail: email.toLowerCase().trim() }); // Phase P3: see the login being created
   const existing = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
   if (existing) return res.status(409).json({ error: 'An account with that email already exists.' });
 
@@ -384,6 +385,7 @@ router.post('/teachers', requirePermission('teachers.create'), asyncHandler(asyn
   // Both rows or neither (finding S14).
   const userId = await withTransaction(async (client) => {
     const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), passwordHash, 'teacher']);
+    await client.query('INSERT INTO institution_memberships (institution_id, user_id, role) VALUES (nova_current_institution(), $1, $2)', [u.rows[0].id, 'teacher']);
     await client.query('INSERT INTO teachers (user_id, first_name, last_name, subject) VALUES ($1,$2,$3,$4)', [u.rows[0].id, first_name, last_name, subject || null]);
     return u.rows[0].id;
   });
@@ -425,6 +427,7 @@ router.post('/students', requirePermission('students.create'), asyncHandler(asyn
   let passwordHash = null;
   if (email && password) {
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+    await setTenantContext({ accountEmail: email.toLowerCase().trim() }); // Phase P3: see the login being created
     const existingEmail = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
     if (existingEmail) return res.status(409).json({ error: 'An account with that email already exists.' });
     passwordHash = await bcrypt.hash(password, 10);
@@ -436,6 +439,7 @@ router.post('/students', requirePermission('students.create'), asyncHandler(asyn
     if (passwordHash) {
       const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), passwordHash, 'student']);
       uid = u.rows[0].id;
+      await client.query('INSERT INTO institution_memberships (institution_id, user_id, role) VALUES (nova_current_institution(), $1, $2)', [uid, 'student']);
     }
     const st = await client.query(
       'INSERT INTO students (user_id, admission_no, first_name, last_name, section_code) VALUES ($1,$2,$3,$4,$5) RETURNING id',
@@ -479,6 +483,7 @@ router.post('/parents', requirePermission('students.create'), asyncHandler(async
   }
   if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters.' });
 
+  await setTenantContext({ accountEmail: email.toLowerCase().trim() }); // Phase P3: see the login being created
   const existing = await get('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
   if (existing) return res.status(409).json({ error: 'An account with that email already exists.' });
 
@@ -490,6 +495,7 @@ router.post('/parents', requirePermission('students.create'), asyncHandler(async
   // Login, parent record and child link are created together (finding S14).
   const parentRow = await withTransaction(async (client) => {
     const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email.toLowerCase().trim(), passwordHash, 'parent']);
+    await client.query('INSERT INTO institution_memberships (institution_id, user_id, role) VALUES (nova_current_institution(), $1, $2)', [u.rows[0].id, 'parent']);
     const p = await client.query('INSERT INTO parents (user_id, first_name, last_name) VALUES ($1,$2,$3) RETURNING id', [u.rows[0].id, first_name, last_name]);
     if (student_id) {
       await client.query('INSERT INTO student_parent_map (student_id, parent_id) VALUES ($1,$2)', [Number(student_id), p.rows[0].id]);
@@ -798,7 +804,7 @@ router.get('/reports/admissions-summary', requirePermission('students.view'), as
 // current schema, so they're intentionally left out rather than faked.
 router.get('/analytics', requirePermission('reports.view'), asyncHandler(async (req, res) => {
   const activity = await get(
-    "SELECT COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '1 day') AS dau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '7 days') AS wau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '30 days') AS mau FROM users"
+    "SELECT COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '1 day') AS dau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '7 days') AS wau, COUNT(*) FILTER (WHERE last_login >= NOW() - INTERVAL '30 days') AS mau FROM users u WHERE EXISTS (SELECT 1 FROM institution_memberships m WHERE m.user_id = u.id AND m.institution_id = nova_current_institution())"
   );
 
   const attendanceBySection = await all(
@@ -945,11 +951,15 @@ router.post('/notifications/read-all', requireRole('admin'), asyncHandler(async 
 
 router.get('/security/overview', requireRole('admin'), asyncHandler(async (req, res) => {
   const recentLogins = await all(
-    `SELECT id, email, role, last_login FROM users WHERE last_login IS NOT NULL ORDER BY last_login DESC LIMIT 20`
+    `SELECT u.id, u.email, u.role, u.last_login FROM users u
+      WHERE u.last_login IS NOT NULL AND EXISTS (SELECT 1 FROM institution_memberships m WHERE m.user_id = u.id AND m.institution_id = nova_current_institution())
+      ORDER BY u.last_login DESC LIMIT 20`
   );
   const suspiciousLogins = await all(
     `SELECT email, COUNT(*) AS attempts, MAX(attempted_at) AS last_attempt
-     FROM failed_login_attempts WHERE attempted_at >= NOW() - INTERVAL '24 hours'
+     FROM failed_login_attempts f
+     WHERE attempted_at >= NOW() - INTERVAL '24 hours'
+       AND EXISTS (SELECT 1 FROM users u WHERE u.email = f.email AND EXISTS (SELECT 1 FROM institution_memberships m WHERE m.user_id = u.id AND m.institution_id = nova_current_institution()))
      GROUP BY email HAVING COUNT(*) >= 3 ORDER BY attempts DESC`
   );
   res.json({
@@ -960,7 +970,9 @@ router.get('/security/overview', requireRole('admin'), asyncHandler(async (req, 
 
 router.post('/security/force-logout/:userId', requireRole('admin'), asyncHandler(async (req, res) => {
   const userId = Number(req.params.userId);
-  const user = await get('SELECT id, email FROM users WHERE id = $1', [userId]);
+  if (!Number.isInteger(userId) || userId <= 0) return res.status(400).json({ error: 'Invalid user.' });
+  // Only people who belong to this school (Phase P3).
+  const user = await get('SELECT u.id, u.email FROM users u WHERE u.id = $1 AND EXISTS (SELECT 1 FROM institution_memberships m WHERE m.user_id = u.id AND m.institution_id = nova_current_institution())', [userId]);
   if (!user) return res.status(404).json({ error: 'User not found.' });
   await run('UPDATE users SET token_version = token_version + 1 WHERE id = $1', [userId]);
   await logAudit(req, 'security.force_logout', 'user', userId, { email: user.email });

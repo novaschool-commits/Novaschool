@@ -67,3 +67,25 @@ test('student answers and file names are escaped in teacher marking views', () =
   assert.ok(html.includes('${escapeHtml(s.body_text)}'));
   assert.ok(html.includes('Download ${escapeHtml(s.file_name)}'));
 });
+
+test('Phase P3: routes and the whiteboard never bypass the per-request school scope', () => {
+  const fs = require('fs');
+  const files = [...fs.readdirSync('routes').map(f => 'routes/' + f), 'ws/whiteboard.js', 'middleware/auth.js', 'middleware/permissions.js'];
+  for (const f of files) {
+    const src = read(f);
+    assert.equal(/\bpool\b/.test(src), false, `${f} must use get/all/run/withTransaction, not the pool directly`);
+  }
+  assert.ok(read('app.js').includes("app.use('/api', tenantScope("), 'every /api request runs in a school scope');
+  assert.ok(read('ws/whiteboard.js').includes('runInTenant(ctx, () => handleMessage(raw))'), 'every whiteboard message runs in a school scope');
+});
+
+test('Phase P3: every new login gets a school membership in the same transaction', () => {
+  for (const f of ['routes/admin.js', 'routes/management.js']) {
+    const src = read(f);
+    const parts = src.split('INSERT INTO users').slice(1);
+    assert.ok(parts.length > 0);
+    for (const after of parts) {
+      assert.ok(after.slice(0, 400).includes('INSERT INTO institution_memberships'), `${f}: a users insert without a membership`);
+    }
+  }
+});

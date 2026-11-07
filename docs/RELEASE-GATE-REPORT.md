@@ -32,6 +32,18 @@ took place, and none was authorized.
   student role 403, student's own card still 200). It needs the local server, so it runs on the owner's phone.
 - Rendered with mock data at phone and desktop width, including hostile text: no errors, no handlers fired.
 
+## Phase P3: school context on every request (not yet deployed)
+
+- Code: `db/index.js` (request scope, savepoint-aware `withTransaction`), `middleware/auth.js` (membership per token),
+  `routes/auth.js` (sign-in picks the school), account creation adds memberships, admin security page scoped to the
+  school, whiteboard messages scoped, startup refuses to run without the multi-school tables.
+- Migrations: `0005_membership_backfill` (ungated: memberships for logins made since 0002; refuses with two schools),
+  `0006_users_rls` (gated: login-row security, catalogs read-only). Rollbacks provided.
+- Tests: unit 36/36; database 14/14 (incl. new T13 login-row checks, rollback 0006→0001 restores the schema);
+  API with the lock OFF as on live today: 15/15; API with the lock ON and two schools: 25/25; XSS browser test PASS.
+- Live today keeps row-level security OFF. Before deploying the P3 code, migration 0005 must run on production
+  (rehearse on a Neon branch first), otherwise logins created after 0002 cannot sign in.
+
 ## Second deployment
 
 - 2026-10-20, 22:31 PKT: owner approved and pushed commit `5f3dfaa` (Option B admin, brand, result card, assignments,
@@ -93,7 +105,7 @@ took place, and none was authorized.
 | G17 | Migration runner `db/migrate.js` itself (status, dry run, lock, checksums, rollback order) | PARTLY PASS (owner's phone, 2026-10-12): status, apply and gating ran on Neon branch `rc1-rehearsal` (copy of production); 0001–0003 applied, 0004 skipped. Dry run, lock and rollback through the runner not yet run | Termux output |
 | G18 | `npm audit` dependency scan | PASS after `npm audit fix` (owner's phone): 4 findings (1 critical `proxy-addr`, 3 moderate `qs`/`body-parser`/`express`) fixed within semver; now 0 | Updated `package-lock.json` lives in the owner's copy |
 | G19 | Clean `npm install` from the lockfile | PASS (owner's phone, 101 packages) | |
-| G20 | Tenant isolation through the HTTP API, files, exports and background jobs | NOT TESTED | Routes are not wired to school context yet (Phase P3); there are no background jobs |
+| G20 | Tenant isolation through the HTTP API, files, exports and WebSocket | PASS (Phase P3, local PostgreSQL 16, 2026-10-21): `tests/api/run-tenancy.sh`, two schools, app as a `nova_app` login without BYPASSRLS, all 6 migrations: 10 cross-school tests + 15 security tests = 25/25. Negative control: same tests with row-level security off and the app as owner: 8 of 10 fail (leaks detected) | No background jobs exist |
 | G21 | Production configuration, secrets, database roles, backups, monitoring | NOT TESTED | Requires a separate, authorized review |
 | G22 | Package opens and matches its checksums | PASS | verified after packaging (see final message) |
 
@@ -111,7 +123,7 @@ took place, and none was authorized.
 | R-01 | Behaviour on Render differs from the phone (proxy, Postgres 16 vs 18, Neon TLS) | Low | Medium | Rehearsed 2026-10-12: RC started on Neon branch `rc1-rehearsal` (production copy, migrations 0001–0003 applied), health ok, admin sign-in and overview, sections and timetable showed existing data. Render proxy still unverified |
 | R-02 | Live `JWT_SECRET` shorter than 32 characters: the new server will refuse to start on Render | Medium | High (outage) | Check Render → Environment before deploying |
 | R-03 | Demo accounts with `password123` still on the live database | Closed | — | 2026-10-20: owner locked the 5 demo logins on production (random unknown passwords, data kept); all 6 accounts verified not `password123`. Rehearsed first on `rc1-rehearsal`. Neon backup branch `before-rc1` (no auto-delete) taken just before |
-| R-04 | Someone enables `ALLOW_RLS_ENFORCEMENT` before Phase P3 | Low | High (all data hidden) | Keep it false; gate 3 in the roadmap |
+| R-04 | Row-level security switched on in production before the app uses a `nova_app` login and `MIGRATE_ON_START=false` | Low | High (startup or all data fails) | P3 code is ready; enabling on Neon is a separate, approved step |
 | R-05 | Render uses more than one proxy hop (rate limits shared by all users) | Unknown | Medium | Check `req.ip` in logs after deploy; set `TRUST_PROXY_HOPS` |
 | R-06 | Remaining unescaped HTML sinks in the 7,900-line page | Medium | High | Finish the manual review; move to CSP |
 | R-07 | Updated lockfile exists only on the owner's phone | Medium | Medium | Commit the phone copy's `package-lock.json` with the release |

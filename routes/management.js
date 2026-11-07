@@ -1,7 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const { all, get, run } = require('../db');
+const { all, get, run, withTransaction, setTenantContext } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { requirePermission, logAudit, userHasPermission, notifyAdmin } = require('../middleware/permissions');
 const { asyncHandler } = require('../middleware/asyncHandler');
@@ -442,6 +442,7 @@ router.post('/staff/invite', requirePermission('staff.invite'), asyncHandler(asy
     return res.status(400).json({ error: 'email, first_name, and last_name are required.' });
   }
   const normalizedEmail = String(email).toLowerCase().trim();
+  await setTenantContext({ accountEmail: normalizedEmail }); // Phase P3: see the login being created
   const existingUser = await get('SELECT id FROM users WHERE email = $1', [normalizedEmail]);
   if (existingUser) return res.status(409).json({ error: 'An account with this email already exists.' });
 
@@ -456,12 +457,17 @@ router.post('/staff/invite', requirePermission('staff.invite'), asyncHandler(asy
   const unusablePassword = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10);
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // 7 days
 
-  const user = await get('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,\'staff\') RETURNING id', [normalizedEmail, unusablePassword]);
-  const staffRow = await get(
-    `INSERT INTO staff (user_id, first_name, last_name, staff_role_id, status, invited_by, activation_token, activation_expires)
-     VALUES ($1,$2,$3,$4,'invited',$5,$6,$7) RETURNING id`,
-    [user.id, first_name, last_name, staff_role_id || null, req.user.id, token, expires]
-  );
+  // Login, school membership and staff record together (finding S14, Phase P3).
+  const staffRow = await withTransaction(async (client) => {
+    const u = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,\'staff\') RETURNING id', [normalizedEmail, unusablePassword]);
+    await client.query('INSERT INTO institution_memberships (institution_id, user_id, role) VALUES (nova_current_institution(), $1, $2)', [u.rows[0].id, 'staff']);
+    const st = await client.query(
+      `INSERT INTO staff (user_id, first_name, last_name, staff_role_id, status, invited_by, activation_token, activation_expires)
+       VALUES ($1,$2,$3,$4,'invited',$5,$6,$7) RETURNING id`,
+      [u.rows[0].id, first_name, last_name, staff_role_id || null, req.user.id, token, expires]
+    );
+    return st.rows[0];
+  });
 
   await logAudit(req, 'staff.invited', 'staff', staffRow.id, { email: normalizedEmail });
   if (req.user.role === 'staff') {

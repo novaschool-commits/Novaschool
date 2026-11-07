@@ -39,11 +39,18 @@ async function seed({ force = false } = {}) {
         'invoices', 'messages', 'announcements', 'admission_applications',
         'student_parent_map', 'students', 'parents', 'sections', 'teachers', 'admins', 'users'
       ];
+      const m = await client.query("SELECT to_regclass('public.institution_memberships') AS t");
+      if (m.rows[0].t) await client.query('DELETE FROM institution_memberships');
       for (const t of tables) await client.query(`DELETE FROM ${t}`);
     }
 
     async function insertUser(email, role) {
       const r = await client.query('INSERT INTO users (email, password_hash, role) VALUES ($1,$2,$3) RETURNING id', [email, hash(DEMO_PASSWORD), role]);
+      // Phase P3: a login needs a school membership once the multi-school tables exist.
+      const hasMemberships = await client.query("SELECT to_regclass('public.institution_memberships') AS t");
+      if (hasMemberships.rows[0].t) {
+        await client.query('INSERT INTO institution_memberships (institution_id, user_id, role) VALUES (nova_current_institution(), $1, $2) ON CONFLICT DO NOTHING', [r.rows[0].id, role]);
+      }
       return r.rows[0].id;
     }
     async function insertAdmin(userId, first, last, title) {
