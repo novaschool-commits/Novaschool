@@ -38,7 +38,12 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+// The school app (all role tools, apply forms, staff activation links) lives
+// at /app; every other page address shows the public homepage.
+app.get(['/app', '/app/*', '/activate-staff/*'], (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'Not found.' });
   res.sendFile(path.join(__dirname, 'public', 'index.html'));

@@ -48,7 +48,7 @@ def main():
             body = fx.get(path, {'error': 'not in fixture'})
             r.fulfill(status=200 if path in fx else 404, content_type='application/json', body=json.dumps(body))
         page.route('**/api/**', route)
-        page.goto(f'http://127.0.0.1:{port}/index.html')
+        page.goto(f'http://127.0.0.1:{port}/app.html')
         page.wait_for_load_state('networkidle')
         page.evaluate("""async () => {
             for (const id of ['adminAdmissions','adminTeacherApps','adminMessages']) {

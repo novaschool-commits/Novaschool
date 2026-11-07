@@ -32,7 +32,9 @@ async function main() {
     const exists = (await client.query('SELECT 1 FROM pg_roles WHERE rolname = $1', [LOGIN])).rowCount > 0;
     const pw = client.escapeLiteral(password);
     if (exists) {
-      await client.query(`ALTER ROLE ${LOGIN} WITH LOGIN PASSWORD ${pw} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`);
+      // Only the password changes here: hosted PostgreSQL (Neon) refuses to
+      // restate superuser/bypass attributes. They are verified below instead.
+      await client.query(`ALTER ROLE ${LOGIN} WITH LOGIN PASSWORD ${pw}`);
     } else {
       await client.query(`CREATE ROLE ${LOGIN} WITH LOGIN PASSWORD ${pw} NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`);
     }

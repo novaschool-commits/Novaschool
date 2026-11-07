@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10264B">
+<meta name="robots" content="noindex">
+<title>Design system · NovaSchool OS</title>
+<link rel="icon" href="assets/ns-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/os.css">
+</head>
+<body class="site">
+<header class="site-nav">
+  <div class="wrap-w">
+    <a class="brand" href="index.html"><img src="assets/ns-mark.png" alt=""><span><span class="brand-name">Nova<span>School</span></span><span class="brand-sub">School OS</span></span></a>
+    <nav class="site-links" aria-label="Site"><a href="index.html">Home</a><a href="architecture.html">Architecture</a><a href="design-system.html" aria-current="page">Design system</a></nav>
+    <div class="site-cta"><a class="btn btn-secondary" href="admin.html?sample=1">Dashboards</a></div>
+  </div>
+</header>
+<main class="wrap-w" id="main" style="padding-top:48px;padding-bottom:80px">
+  <span class="eyebrow">Component library</span>
+  <h1 class="h-section">NovaSchool OS design system</h1>
+  <p class="lead">One set of tokens and components for every role and page. All of it lives in <code>assets/os.css</code>; the shared behaviours are in <code>assets/os.js</code>.</p>
+
+  <section class="ds-section"><div><h2>Colour</h2><p>Navy and royal blue carry the brand. Cyan marks what is active. Status colours only ever mean status.</p></div>
+    <div class="swatches">
+      <div class="swatch"><i style="background:#10264B"></i><div><b>Midnight navy</b>#10264B</div></div>
+      <div class="swatch"><i style="background:#2463EB"></i><div><b>Royal blue</b>#2463EB</div></div>
+      <div class="swatch"><i style="background:#21C7D9"></i><div><b>Electric cyan</b>#21C7D9 · highlights</div></div>
+      <div class="swatch"><i style="background:#F3F6FC"></i><div><b>Background</b>#F3F6FC</div></div>
+      <div class="swatch"><i style="background:#FFFFFF"></i><div><b>Cards</b>#FFFFFF</div></div>
+      <div class="swatch"><i style="background:#17243B"></i><div><b>Text</b>#17243B</div></div>
+      <div class="swatch"><i style="background:#718096"></i><div><b>Secondary text</b>#718096</div></div>
+      <div class="swatch"><i style="background:#E3EAF4"></i><div><b>Borders</b>#E3EAF4</div></div>
+      <div class="swatch"><i style="background:#168653"></i><div><b>Success</b>#168653</div></div>
+      <div class="swatch"><i style="background:#E5A126"></i><div><b>Warning</b>#E5A126</div></div>
+      <div class="swatch"><i style="background:#D64545"></i><div><b>Error</b>#D64545</div></div>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Typography</h2><p>Inter throughout. The wordmark alone uses Playfair Display.</p></div>
+    <div class="stack">
+      <div><span class="label">Display · 56/800</span><div class="h-display" style="font-size:44px">Whole school day</div></div>
+      <div><span class="label">Page heading · 28/700</span><h1>Good morning, Ayesha</h1></div>
+      <div><span class="label">Section heading · 18/650</span><h2>Needs attention</h2></div>
+      <div><span class="label">Statistic · 30/700</span><div class="stat-value mono">91.2%</div></div>
+      <div><span class="label">Body · 14/400</span><p>Here is what needs your attention across the school today.</p></div>
+      <div><span class="label">Label · 11.5/600 caps</span><div class="label">Students by grade</div></div>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Spacing & shape</h2><p>4-pixel steps. Cards 16px radius, controls 12px, chips fully round.</p></div>
+    <div class="ds-demo">
+      <span class="badge plain">4</span><span class="badge plain">8</span><span class="badge plain">12</span><span class="badge plain">16</span><span class="badge plain">20</span><span class="badge plain">24</span><span class="badge plain">32</span><span class="badge plain">40</span>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Buttons</h2><p>One primary action per area. Minimum 40px tall, 48px on large calls to action.</p></div>
+    <div class="ds-demo"><button class="btn btn-primary" type="button"><i data-icon="plus"></i>Primary</button><button class="btn btn-navy" type="button">Navy</button><button class="btn btn-secondary" type="button">Secondary</button><button class="btn btn-ghost" type="button">Ghost</button><button class="btn btn-danger" type="button">Danger</button><button class="btn btn-primary" type="button" disabled>Disabled</button><button class="btn btn-primary btn-sm" type="button">Small</button></div></section>
+
+  <section class="ds-section"><div><h2>Status</h2><p>Every module carries an honest status. Planned items are dashed and never styled as available.</p></div>
+    <div class="ds-demo"><span class="badge b-success">Working</span><span class="badge b-warning">Partial</span><span class="badge b-planned">Planned</span><span class="badge b-error">Live</span><span class="badge b-royal">New</span><span class="badge">Draft</span><span class="live-badge"><span class="live-dot"></span> LIVE</span></div></section>
+
+  <section class="ds-section"><div><h2>Cards & statistics</h2><p>A statistic always says where its number comes from.</p></div>
+    <div class="grid g-3">
+      <div class="card stat"><div class="stat-top"><span class="stat-label">Attendance</span><span class="stat-icon"><i data-icon="check"></i></span></div><div class="stat-value mono">91.2%</div><div class="meter good"><span style="width:91%"></span></div><div class="stat-note">All recorded days</div></div>
+      <div class="card stat"><div class="stat-top"><span class="stat-label">Fee collection</span><span class="stat-icon"><i data-icon="wallet"></i></span></div><div class="stat-value mono">78.4%</div><div class="meter warn"><span style="width:78%"></span></div><div class="stat-note">Of all amounts billed</div></div>
+      <div class="card stat"><div class="stat-top"><span class="stat-label">Attendance</span><span class="stat-icon"><i data-icon="check"></i></span></div><div class="stat-value mono">—</div><div class="stat-note">No attendance recorded yet</div></div>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Navigation</h2><p>Navy sidebar on desktop, collapsible. Bottom bar with five items on phones.</p></div>
+    <div class="grid g-2">
+      <div class="sidebar on-dark" style="position:static;height:auto;border-radius:16px"><a class="nav-item active" href="#"><i data-icon="grid"></i><span class="nav-text">Overview</span></a><a class="nav-item" href="#"><i data-icon="users"></i><span class="nav-text">People & Admissions</span><span class="nav-count">6</span></a><a class="nav-item" href="#"><i data-icon="check"></i><span class="nav-text">Attendance</span><span class="nav-tag">Partial</span></a></div>
+      <div class="card" style="display:grid;grid-template-columns:repeat(5,1fr);height:64px;align-self:end"><a class="ds-bn active" href="#" style="display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--royal);text-decoration:none"><i data-icon="home"></i>Home</a><a href="#" style="display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted-2);text-decoration:none"><i data-icon="users"></i>People</a><a href="#" style="display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted-2);text-decoration:none"><i data-icon="exam"></i>Exams</a><a href="#" style="display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted-2);text-decoration:none"><i data-icon="bell"></i>Alerts</a><a href="#" style="display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;color:var(--muted-2);text-decoration:none"><i data-icon="menu"></i>More</a></div>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Tables & pagination</h2><p>On phones each row becomes a small card.</p></div>
+    <section class="card"><div class="table-wrap"><table class="tbl cards"><thead><tr><th>Exam</th><th>Class</th><th>Status</th><th class="num">To grade</th></tr></thead><tbody>
+      <tr><td data-label="Exam"><b>Algebra quiz 3</b></td><td data-label="Class">8-A</td><td data-label="Status"><span class="badge b-success">Published</span></td><td data-label="To grade" class="num">4</td></tr>
+      <tr><td data-label="Exam"><b>Essay writing</b></td><td data-label="Class">10-A</td><td data-label="Status"><span class="badge">Draft</span></td><td data-label="To grade" class="num">0</td></tr>
+    </tbody></table></div><div class="pager" id="demoPager"></div></section></section>
+
+  <section class="ds-section"><div><h2>Forms & search</h2><p>Labels always visible. Focus ring in royal blue.</p></div>
+    <div class="grid g-2"><div class="field"><label for="f1">Student name</label><input class="input" id="f1" placeholder="e.g. Ayesha Khan"></div><div class="field"><label for="f2">Class</label><select class="select" id="f2"><option>8-A</option><option>9-B</option></select></div>
+      <label class="search"><i data-icon="search"></i><span class="sr-only">Search</span><input class="input" type="search" placeholder="Search pages and modules…"></label></div></section>
+
+  <section class="ds-section"><div><h2>Dropdowns, modals & notifications</h2><p>Escape closes them. Focus moves into a modal.</p></div>
+    <div class="ds-demo">
+      <div class="rel"><button class="btn btn-secondary" id="demoDropBtn" type="button" aria-haspopup="true" aria-expanded="false"><i data-icon="bell"></i>Notifications</button>
+        <div class="menu" id="demoDrop" style="left:0;right:auto"><div class="menu-head"><b>Notifications</b><span class="badge plain">1 new</span></div><ul class="list"><li><span class="li-icon warn"><i data-icon="alert"></i></span><span class="li-main"><span class="li-title">3+ failed sign-in attempts</span><span class="li-sub">2 h ago</span></span></li><li><span class="li-icon"><i data-icon="bell"></i></span><span class="li-main"><span class="li-title">New admission application</span><span class="li-sub">Yesterday</span></span></li></ul></div></div>
+      <button class="btn btn-primary" id="demoModal" type="button"><i data-icon="plus"></i>Open quick actions</button>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Empty, loading & error</h2><p>Never a blank card and never an invented number.</p></div>
+    <div class="grid g-3">
+      <div class="card"><div class="empty"><i data-icon="video"></i><b>No classes are live</b><span>When a teacher starts a live class it appears here.</span></div></div>
+      <div class="card"><div class="stack" style="padding:16px 20px;gap:12px"><div class="skeleton" style="height:38px"></div><div class="skeleton" style="height:38px"></div><div class="skeleton" style="height:38px"></div></div></div>
+      <div class="card"><div style="padding:16px 20px"><div class="error-state" role="alert"><i data-icon="alert"></i><div><b>Couldn't load this.</b><br>Could not reach the NovaSchool server.</div></div></div></div>
+    </div></section>
+
+  <section class="ds-section"><div><h2>Charts</h2><p>Simple bars and meters built in CSS. One colour, labelled values, no decoration.</p></div>
+    <div class="card"><div class="bars"><div class="bar-row"><span class="bar-l">Grade 1</span><span class="bar"><span style="width:90%"></span></span><span class="bar-v">38</span></div><div class="bar-row"><span class="bar-l">Grade 2</span><span class="bar"><span style="width:76%"></span></span><span class="bar-v">32</span></div><div class="bar-row"><span class="bar-l">Grade 3</span><span class="bar"><span style="width:100%"></span></span><span class="bar-v">41</span></div></div></div></section>
+
+  <section class="ds-section"><div><h2>Responsive rules</h2><p>Tested at 360, 390, 430, 768, 1024 and 1440 pixels wide.</p></div>
+    <section class="card"><div class="table-wrap"><table class="tbl cards"><thead><tr><th>Width</th><th>Navigation</th><th>Statistics</th><th>Cards</th></tr></thead><tbody>
+      <tr><td data-label="Width">≥ 1025px</td><td data-label="Navigation">Full sidebar, collapsible</td><td data-label="Statistics">4 across</td><td data-label="Cards">3 across</td></tr>
+      <tr><td data-label="Width">768–1024px</td><td data-label="Navigation">Icon sidebar</td><td data-label="Statistics">2 across</td><td data-label="Cards">2 across</td></tr>
+      <tr><td data-label="Width">≤ 767px</td><td data-label="Navigation">Drawer + bottom bar</td><td data-label="Statistics">2 across</td><td data-label="Cards">1 across</td></tr>
+    </tbody></table></div></section></section>
+</main>
+<script src="proto-config.js"></script>
+<script src="assets/os.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10264B">
+<meta name="robots" content="noindex">
+<title>Architecture · NovaSchool OS</title>
+<link rel="icon" href="assets/ns-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/os.css">
+</head>
+<body class="site">
+<header class="site-nav">
+  <div class="wrap-w">
+    <a class="brand" href="index.html"><img src="assets/ns-mark.png" alt=""><span><span class="brand-name">Nova<span>School</span></span><span class="brand-sub">School OS</span></span></a>
+    <nav class="site-links" aria-label="Site"><a href="index.html#platform">Platform</a><a href="index.html#roles">For your school</a><a href="architecture.html" aria-current="page">Architecture</a><a href="design-system.html">Design system</a></nav>
+    <div class="site-cta"><a class="btn btn-secondary" href="signin.html">Log in</a><a class="btn btn-primary" href="index.html#admissions">Apply</a></div>
+  </div>
+</header>
+
+<main id="main">
+<section class="section dark" aria-labelledby="archTitle" style="padding-top:56px">
+  <div class="wrap-w">
+    <div class="sec-head"><span class="eyebrow">NovaSchool OS architecture</span><h1 class="h-section" id="archTitle">Seven parts around one school record.</h1>
+      <p class="lead">Select a part to see its features and their real status today.</p></div>
+    <div class="ecx" data-eco>
+      <div class="ecx-stage" id="ecoStage"></div>
+      <div class="ecx-side">
+        <div class="eco-detail" id="ecoDetail" aria-live="polite"></div>
+        <div class="legend"><span><i></i>Working today</span><span><i class="p"></i>Planned / not yet available</span></div>
+      </div>
+      <div class="ecx-mobile" id="ecoList"></div>
+    </div>
+  </div>
+</section>
+<section class="section alt" aria-labelledby="stackTitle">
+  <div class="wrap-w">
+    <div class="sec-head"><span class="eyebrow">Layers</span><h2 class="h-section" id="stackTitle">How a request travels.</h2>
+      <p class="lead">People sign in once. One access layer decides what each role may do. Every module reads and writes the same school record, on a shared data and security foundation.</p></div>
+
+    <div class="row between wrap" style="margin-bottom:24px">
+      <div class="filter" id="archFilter" role="group" aria-label="Show">
+        <button type="button" data-f="all" aria-pressed="true">Everything</button>
+        <button type="button" data-f="working" aria-pressed="false">Working today</button>
+        <button type="button" data-f="planned" aria-pressed="false">Planned</button>
+      </div>
+      <div class="row wrap" style="gap:8px"><span data-status="working"></span><span data-status="partial"></span><span data-status="planned"></span></div>
+    </div>
+
+    <div class="arch" id="arch">
+      <!-- People -->
+      <section class="arch-layer card" aria-labelledby="l1"><h3 id="l1"><i data-icon="users"></i>People</h3>
+        <div class="arch-people">
+          <div class="arch-chip" data-s="working"><i data-icon="shield"></i>Administrators</div>
+          <div class="arch-chip" data-s="working"><i data-icon="cap"></i>Teachers</div>
+          <div class="arch-chip" data-s="working"><i data-icon="book"></i>Students</div>
+          <div class="arch-chip" data-s="working"><i data-icon="child"></i>Parents</div>
+          <div class="arch-chip" data-s="working"><i data-icon="user"></i>Office staff</div>
+        </div>
+      </section>
+      <div class="arch-link" aria-hidden="true"></div>
+
+      <!-- Identity & access -->
+      <section class="arch-layer arch-gate" aria-labelledby="l2"><h3 id="l2"><i data-icon="lock"></i>Identity, access & permissions</h3>
+        <div class="arch-chip" data-s="working"><i data-icon="user"></i>Sign-in with signed, revocable sessions</div>
+        <div class="arch-chip" data-s="working"><i data-icon="shield"></i>Roles and staff permission sets</div>
+        <div class="arch-chip" data-s="working"><i data-icon="check"></i>Checked on the server for every request</div>
+      </section>
+      <div class="arch-link" aria-hidden="true"></div>
+
+      <!-- Modules -->
+      <section class="arch-layer" aria-labelledby="l3" style="padding-left:0;padding-right:0"><h3 id="l3" style="padding:0 4px"><i data-icon="layers"></i>School modules</h3>
+        <div class="arch-mods">
+          <article class="card arch-mod" data-s="working"><div class="row between"><h3>School administration</h3><span class="stat-icon"><i data-icon="shield"></i></span></div>
+            <ul><li data-s="working">Admissions & applications<span data-status="working"></span></li><li data-s="working">Staff & permissions<span data-status="working"></span></li><li data-s="working">School settings<span data-status="working"></span></li></ul></article>
+          <article class="card arch-mod" data-s="working"><div class="row between"><h3>Academic management</h3><span class="stat-icon"><i data-icon="cap"></i></span></div>
+            <ul><li data-s="working">Years, terms & sections<span data-status="working"></span></li><li data-s="working">Timetable<span data-status="working"></span></li><li data-s="working">Gradebook & result cards<span data-status="working"></span></li><li class="is-planned" data-s="planned">Curriculum Map<span data-status="planned"></span></li></ul></article>
+          <article class="card arch-mod" data-s="working"><div class="row between"><h3>Classroom operations</h3><span class="stat-icon"><i data-icon="video"></i></span></div>
+            <ul><li data-s="working">Live classes & whiteboard<span data-status="working"></span></li><li data-s="working">Assignments<span data-status="working"></span></li><li data-s="working">Quizzes & exams<span data-status="working"></span></li><li class="is-planned" data-s="planned">Daily attendance register<span data-status="planned"></span></li></ul></article>
+          <article class="card arch-mod" data-s="partial"><div class="row between"><h3>Learning services</h3><span class="stat-icon"><i data-icon="book"></i></span></div>
+            <ul><li data-s="working">Courses & materials<span data-status="working"></span></li><li data-s="working">Recordings<span data-status="working"></span></li><li data-s="partial">Virtual Lab (3 of 100)<span data-status="partial"></span></li><li class="is-planned" data-s="planned">AI Tutor<span data-status="planned"></span></li></ul></article>
+          <article class="card arch-mod" data-s="partial"><div class="row between"><h3>Finance</h3><span class="stat-icon"><i data-icon="wallet"></i></span></div>
+            <ul><li data-s="working">Balances for parents<span data-status="working"></span></li><li data-s="working">Payment confirmation<span data-status="working"></span></li><li class="is-planned" data-s="planned">Invoice creation screen<span data-status="planned"></span></li><li class="is-planned" data-s="planned">Online payments<span data-status="planned"></span></li></ul></article>
+          <article class="card arch-mod" data-s="working"><div class="row between"><h3>Communications</h3><span class="stat-icon"><i data-icon="chat"></i></span></div>
+            <ul><li data-s="working">Messages<span data-status="working"></span></li><li data-s="working">Announcements<span data-status="working"></span></li><li data-s="working">Admin alerts<span data-status="working"></span></li></ul></article>
+          <article class="card arch-mod" data-s="working"><div class="row between"><h3>Data & reporting</h3><span class="stat-icon"><i data-icon="pie"></i></span></div>
+            <ul><li data-s="working">Exam & admissions reports<span data-status="working"></span></li><li data-s="working">At-risk students list<span data-status="working"></span></li><li class="is-planned" data-s="planned">Second Brain<span data-status="planned"></span></li></ul></article>
+          <article class="card arch-mod" data-s="working"><div class="row between"><h3>Security & permissions</h3><span class="stat-icon"><i data-icon="lock"></i></span></div>
+            <ul><li data-s="working">Sign-in activity & alerts<span data-status="working"></span></li><li data-s="working">Sign out everywhere<span data-status="working"></span></li><li class="is-planned" data-s="planned">Content Security Policy (main app)<span data-status="planned"></span></li></ul></article>
+        </div>
+      </section>
+      <div class="arch-link" aria-hidden="true"></div>
+
+      <!-- Foundation -->
+      <section class="arch-layer arch-found" aria-labelledby="l4"><h3 id="l4"><i data-icon="database"></i>Shared data & security foundation</h3>
+        <div class="arch-found-grid">
+          <div class="arch-chip" data-s="working"><i data-icon="database"></i><span>One PostgreSQL school record</span></div>
+          <div class="arch-chip" data-s="working"><i data-icon="layers"></i><span>School context on every request</span></div>
+          <div class="arch-chip" data-s="partial"><i data-icon="lock"></i><span>Row-level separation · prepared, not yet on</span></div>
+          <div class="arch-chip" data-s="planned"><i data-icon="cloudOff"></i><span>Tested backup restore · planned</span></div>
+        </div>
+      </section>
+    </div>
+    <p class="muted" style="margin-top:24px;font-size:13px">Status is taken from the running application, not from plans. Multi-school hosting is future architecture and is not offered today.</p>
+  </div>
+</section>
+</main>
+<script src="proto-config.js"></script>
+<script src="assets/os.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

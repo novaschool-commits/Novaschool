@@ -9,14 +9,14 @@ const root = path.join(__dirname, '..', '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
 
 test('S1: the page never builds an image address from raw applicant data', () => {
-  const html = read('public/index.html');
+  const html = read('public/app.html');
   assert.equal(/data:image\/\*;base64,\$\{/.test(html), false);
   assert.ok(html.includes('function safeImageSrc('));
   assert.equal((html.match(/safeImageSrc\(app\.photoBase64\)/g) || []).length, 6); // 3 places, test + use
 });
 
 test('S1: admin message oversight escapes message bodies', () => {
-  const html = read('public/index.html');
+  const html = read('public/app.html');
   assert.ok(html.includes('<div class="l-sub">${escapeHtml(m.body)}</div>'));
 });
 
@@ -62,7 +62,7 @@ test('Grade bug: auto-marked tests load the subject before writing the grade', (
 });
 
 test('student answers and file names are escaped in teacher marking views', () => {
-  const html = read('public/index.html');
+  const html = read('public/app.html');
   assert.equal(/\$\{a\.student_answer \|\|/.test(html), false, 'raw student_answer must not be placed in HTML');
   assert.ok(html.includes('${escapeHtml(s.body_text)}'));
   assert.ok(html.includes('Download ${escapeHtml(s.file_name)}'));
@@ -88,4 +88,31 @@ test('Phase P3: every new login gets a school membership in the same transaction
       assert.ok(after.slice(0, 400).includes('INSERT INTO institution_memberships'), `${f}: a users insert without a membership`);
     }
   }
+});
+
+test('Redesign: the live pages never ship sample data or the preview config', () => {
+  for (const f of ['index', 'signin', 'admin', 'teacher', 'student', 'parent', 'architecture']) {
+    const html = read(`public/${f}.html`);
+    assert.equal(/sample-data\.js|proto-config\.js|\?sample=1/.test(html), false, f);
+  }
+  const os = read('public/os/os.js');
+  assert.ok(os.includes("const mode = () => (session.token ? 'live' : 'none');"), 'no sample mode on the live site');
+  assert.equal(/NovaSample/.test(read('public/os/admin.js') + read('public/os/teacher.js') + read('public/os/student.js') + read('public/os/parent.js')), false);
+});
+
+test('Redesign: new pages insert data only through the escaping html`` helper', () => {
+  for (const f of ['os', 'site', 'admin', 'teacher', 'student', 'parent']) {
+    const js = read(`public/os/${f}.js`);
+    // innerHTML is only ever assigned from flat(...) (escaped) or fixed markup.
+    const bad = js.split('\n').filter((l) => /\.innerHTML\s*=/.test(l) && !/innerHTML\s*=\s*flat\(/.test(l) && !/insertAdjacentHTML|modal-backdrop/.test(l));
+    assert.deepEqual(bad, [], f);
+    assert.deepEqual(js.split('\n').filter((l) => /\.outerHTML\s*=/.test(l) && !/outerHTML = N\.flat\((icon|N\.statusBadge)\(/.test(l)), [], f);
+  }
+});
+
+test('Redesign: homepage is indexable and the school app keeps its addresses', () => {
+  assert.equal(read('public/index.html').includes('noindex'), false);
+  const app = read('app.js');
+  assert.ok(app.includes("app.get(['/app', '/app/*', '/activate-staff/*']"));
+  assert.ok(read('public/app.html').includes('function routeFromHash()'));
 });

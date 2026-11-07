@@ -34,6 +34,10 @@ took place, and none was authorized.
 
 ## Limited database login for the app (not yet deployed)
 
+- 2026-11-07: owner ran 0007 and created `nova_app_login` on production. Its first two passwords appeared in chat and
+  were rotated; the last rotation (17:08 PKT) printed no password. Render still uses the owner connection; switching
+  `DATABASE_URL` is a separate, approved step (run `npm run db:app-login` again then to get a fresh string).
+
 - Migration `0007_app_role` (ungated): role `nova_app` with data privileges only (no create/alter/drop, no bypass,
   read-only school and migration records, default privileges for future tables). `npm run db:app-login` creates the
   login `nova_app_login` (random 192-bit password, printed once, never stored) and verifies it is limited.

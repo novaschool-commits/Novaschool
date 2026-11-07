@@ -871,3 +871,57 @@ footer .foot-inner{row-gap:14px;}
 .prc-score .rc-grade{font-size:18px; min-width:46px; padding:8px 10px; border-radius:12px;}
 .prc-score > div{display:flex; flex-direction:column;} .prc-score > div b{font-family:var(--display); font-size:24px;} .prc-score > div span{font-size:12.5px; color:var(--nova-muted);}
 .prc .rc-actions{margin:0;} .prc .rc-preview[hidden]{display:none;}
+
+/* ==========================================================================
+   November 2026 redesign: one palette everywhere (matches /os/os.css).
+   Navy and royal blue carry the brand, cyan marks what is active, and green,
+   amber and red mean status only. No area gets its own dominant colour.
+   ========================================================================== */
+:root{
+  --nova-bg:#F3F6FC; --nova-surface:#FFFFFF; --nova-raised:#F6F8FC; --nova-line:#E3EAF4; --nova-line-strong:#D3DDEB;
+  --nova-text:#17243B; --nova-muted:#5F6E86; --nova-royal:#2463EB; --nova-royal-dark:#1B4FC4; --nova-link:#1B4FC4;
+  --nova-navy:#10264B; --nova-navy-2:#173462; --nova-cyan:#21C7D9; --nova-teal:#0B7F8C;
+  --nova-success:#168653; --nova-pending:#8A5A07; --nova-error:#D64545; --nova-error-text:#B42F2F; --nova-violet:#10264B;
+  --display:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --body:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+h1,h2,h3,h4{font-weight:650; letter-spacing:-.015em;}
+.app-sidebar{background:var(--nova-navy); background-image:none;}
+.side-link.active::before{background:var(--nova-cyan);}
+:focus-visible{outline:3px solid var(--nova-cyan); outline-offset:2px;}
+.btn-primary, .btn-ink{box-shadow:none;}
+
+/* Admin overview tabs: one style for every tab */
+.nova-tab[data-ov-tab]{color:var(--nova-muted);}
+.nova-tab.is-active[data-ov-tab]{background:var(--nova-navy); color:#fff; box-shadow:0 6px 14px -10px rgba(16,38,75,.8);}
+
+/* Decision rows, manage tiles and class badges: navy/royal only */
+.ovb-item[class*="t-"]{background:#F7F9FD;}
+.ovb-item[class*="t-"] .ovb-item-count{color:var(--nova-navy);}
+.ovb-item[class*="t-"] .ovb-item-go{background:var(--nova-royal);}
+.ovb-tile[class*="t-"]:not(.t-export){background:var(--nova-navy);}
+.ovb-tile[class*="t-"]:not(.t-export) svg{color:#7FD9E4;}
+[class*="t-"].ovb-sec-badge, [class*="t-"].ovb-sec-fill{background:var(--nova-royal);}
+.ovb-tile:focus-visible, .ovb-item:focus-visible, .nova-quick-btn:focus-visible{outline-color:var(--nova-cyan);}
+
+/* Live class banner: a calm card with a red live marker, not a red slab */
+.ovb-live{background:#fff; color:var(--nova-text); border:1px solid var(--nova-line); box-shadow:var(--shadow);}
+.ovb-live-dot{background:var(--nova-error); animation:none; box-shadow:0 0 0 4px rgba(214,69,69,.15);}
+.ovb-live-tag{color:var(--nova-error);}
+.ovb-live-sub{color:var(--nova-muted);}
+.ovb-live-btn{background:var(--nova-royal); color:#fff;}
+
+/* Summary strip and quick actions */
+.nova-glance-item:nth-child(n){background:#F7F9FD;}
+.nova-glance-item:nth-child(n)::before{background:var(--nova-royal);}
+.nova-glance-item:nth-child(n) .g-value{color:var(--nova-navy);}
+.nova-glance-item.is-alert{background:#FDF3E1;} .nova-glance-item.is-alert::before{background:#E5A126;} .nova-glance-item.is-alert .g-value{color:#8A5A07;}
+.nova-quick-btn:nth-child(n){background:var(--nova-navy);}
+.nova-quick-btn:nth-child(n):hover{background:var(--nova-royal); filter:none;}
+
+/* Public-page leftovers inside the app (apply screens) */
+.nova-section-head .eyebrow{background:#EAF0FE; color:var(--nova-royal-dark);}
+.nova-section-head .eyebrow::before{background:var(--nova-cyan);}
+.nova-cap:nth-child(n) .ci{background:var(--nova-royal);}
+.nova-role:nth-child(n) h3::before{background:var(--nova-royal);}
+.nova-role:nth-child(n) li{background:#F7F9FD; border-color:var(--nova-line); color:var(--nova-text);}

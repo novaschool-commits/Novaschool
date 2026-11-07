@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10264B">
+<meta name="robots" content="noindex">
+<title>Sign in · NovaSchool OS</title>
+<link rel="icon" href="assets/ns-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/os.css">
+</head>
+<body>
+<div class="auth">
+  <aside class="auth-side on-dark">
+    <a class="brand" href="index.html"><img src="assets/ns-mark-light.png" alt=""><span><span class="brand-name">Nova<span>School</span></span><span class="brand-sub">School OS</span></span></a>
+    <div class="auth-extra" style="position:relative">
+      <h1 style="color:#fff;font-size:34px;line-height:1.15;letter-spacing:-.02em;max-width:420px">One connected system for the whole school day.</h1>
+      <p style="color:#B9C8E4;margin-top:14px;max-width:420px">Sign in with the account your school gave you. You'll see the workspace for your role.</p>
+    </div>
+    <p class="auth-extra" style="color:#7F93B8;font-size:12.5px;position:relative">Design prototype · uses the existing sign-in of the app running next to it.</p>
+  </aside>
+  <main class="auth-main">
+    <form class="auth-form" id="signinForm" novalidate>
+      <div><h2 style="font-size:24px">Sign in</h2><p class="muted" style="margin-top:4px">Administrators, teachers, students and parents.</p></div>
+      <div id="signinMsg" aria-live="polite"></div>
+      <div class="field"><label for="email">Email</label><input class="input" id="email" name="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="password">Password</label><input class="input" id="password" name="password" type="password" autocomplete="current-password" required></div>
+      <button class="btn btn-primary btn-lg" type="submit">Sign in</button>
+      <div style="border-top:1px solid var(--line);padding-top:16px">
+        <p class="label" style="margin-bottom:10px">Or preview with sample data</p>
+        <div class="grid g-2" style="gap:8px">
+          <a class="btn btn-secondary btn-sm" href="admin.html?sample=1">Admin</a><a class="btn btn-secondary btn-sm" href="teacher.html?sample=1">Teacher</a>
+          <a class="btn btn-secondary btn-sm" href="student.html?sample=1">Student</a><a class="btn btn-secondary btn-sm" href="parent.html?sample=1">Parent</a>
+        </div>
+      </div>
+    </form>
+  </main>
+</div>
+<script src="proto-config.js"></script>
+<script src="assets/os.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>

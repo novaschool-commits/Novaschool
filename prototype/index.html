@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10264B">
+<meta name="robots" content="noindex">
+<title>NovaSchool OS · One connected system for the whole school day</title>
+<meta name="description" content="Classes, homework, examinations, learning resources, Virtual Lab, attendance and school communication — connected through one school operating system.">
+<link rel="icon" href="assets/ns-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/os.css">
+</head>
+<body class="site">
+<a class="sr-only" href="#main">Skip to content</a>
+
+<header class="site-nav">
+  <div class="wrap-w">
+    <a class="brand" href="index.html"><img src="assets/ns-mark.png" alt=""><span><span class="brand-name">Nova<span>School</span></span><span class="brand-sub">School OS</span></span></a>
+    <nav class="site-links" aria-label="Site">
+      <a href="#platform">Platform</a><a href="#roles">For your school</a><a href="#lab">Virtual Lab</a><a href="architecture.html">Architecture</a><a href="#admissions">Admissions</a>
+    </nav>
+    <div class="site-cta">
+      <a class="btn btn-secondary" href="signin.html">Log in</a>
+      <a class="btn btn-primary" data-app-link="#apply" href="#admissions">Apply</a>
+      <button class="icon-btn site-menu-btn" id="siteMenuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="siteMenu"><i data-icon="menu"></i></button>
+    </div>
+  </div>
+  <nav id="siteMenu" hidden aria-label="Site menu" class="wrap-w" style="padding-bottom:12px">
+    <ul class="list card"><li><a href="#platform">Platform</a></li><li><a href="#roles">For your school</a></li><li><a href="#lab">Virtual Lab</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="signin.html">Log in</a></li></ul>
+  </nav>
+</header>
+
+<main id="main">
+  <!-- 1. Hero -->
+  <section class="hero">
+    <div class="wrap-w hero-grid">
+      <div>
+        <span class="eyebrow">NovaSchool OS · Grades 1–12</span>
+        <h1 class="h-display" style="margin-top:18px">One Connected System for the <span>Whole School Day.</span></h1>
+        <p class="lead">Classes, homework, examinations, learning resources, Virtual Lab, attendance and school communication — connected through one school operating system.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" data-app-link="#apply" href="#admissions"><i data-icon="cap"></i>Apply for Admission</a>
+          <a class="btn btn-secondary btn-lg" href="signin.html"><i data-icon="user"></i>Log In</a>
+        </div>
+        <div class="hero-facts">
+          <div><b>4 workspaces</b>Admin · Teacher · Student · Parent</div>
+          <div><b>Live classes</b>With a shared whiteboard</div>
+          <div><b>Result cards</b>Ready to download</div>
+        </div>
+      </div>
+      <div style="padding-bottom:16px">
+        <div class="hx" role="img" aria-label="Illustration of the NovaSchool admin dashboard on a laptop and the student view on a phone, with sample figures">
+          <div class="hx-win" aria-hidden="true">
+            <div class="hx-side"><img src="assets/ns-mark-light.png" alt=""><i data-icon="grid" class="on"></i><i data-icon="inbox"></i><i data-icon="users"></i><i data-icon="calendar"></i><i data-icon="exam"></i><i data-icon="wallet"></i><i data-icon="chat"></i></div>
+            <div class="hx-main">
+              <div class="hx-top"><span class="hx-search"><i data-icon="search"></i>Search modules</span><span class="hx-bell"><i data-icon="bell"></i></span><span class="hx-av">P</span></div>
+              <div class="hx-welcome"><div><small>Sample School</small><b>Good morning, Principal</b><span class="hx-chip"><i data-icon="video"></i>2 classes live now</span></div><span class="hx-btn">Review approvals</span></div>
+              <div class="hx-kpis">
+                <div><small>Students</small><b>412</b><em style="--w:100%"></em></div>
+                <div><small>Teachers</small><b>27</b><em style="--w:100%"></em></div>
+                <div><small>Attendance</small><b>91%</b><em class="g" style="--w:91%"></em></div>
+                <div><small>Fees</small><b>78%</b><em class="a" style="--w:78%"></em></div>
+              </div>
+              <div class="hx-row">
+                <div class="hx-card hx-attn"><h6>Needs attention <span>9</span></h6>
+                  <p><i data-icon="users"></i>Student admissions<b>3</b></p>
+                  <p><i data-icon="cap"></i>Teacher applications<b>2</b></p>
+                  <p><i data-icon="wallet"></i>Fee payments<b>4</b></p></div>
+                <div class="hx-card"><h6>Students by grade</h6>
+                  <div class="hx-bars"><span style="--h:72%"></span><span style="--h:64%"></span><span style="--h:88%"></span><span style="--h:70%"></span><span style="--h:80%"></span><span style="--h:60%"></span><span style="--h:66%"></span><span style="--h:76%"></span><span style="--h:58%"></span><span style="--h:54%"></span></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="hx-phone" aria-hidden="true">
+            <div class="hx-ph-top"><img src="assets/ns-mark-light.png" alt=""><span>NovaSchool</span></div>
+            <div class="hx-ph-body">
+              <div class="hx-next"><small>Next class</small><b>Mathematics</b><span>8:30 AM · starts in 12 min</span></div>
+              <div class="hx-hw"><span class="d s">1<em>day</em></span><div><b>Worksheet</b><small>Mathematics</small></div></div>
+              <div class="hx-hw"><span class="d">3<em>days</em></span><div><b>Book review</b><small>English</small></div></div>
+            </div>
+            <div class="hx-ph-nav"><i data-icon="home"></i><i data-icon="doc"></i><i data-icon="exam"></i><i data-icon="chart"></i></div>
+          </div>
+          <span class="preview-tag">Illustration · sample figures</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Ecosystem -->
+  <section class="section dark" id="platform" aria-labelledby="ecoTitle">
+    <div class="wrap-w">
+      <div class="sec-head"><span class="eyebrow">How it fits together</span><h2 class="h-section" id="ecoTitle">Seven connected parts. One school record.</h2>
+        <p class="lead">Select a part to see what it does today. Working, Partial and Planned show the real state of the app.</p></div>
+      <div class="ecx" data-eco>
+        <div class="ecx-stage" id="ecoStage"></div>
+        <div class="ecx-side">
+          <div class="eco-detail" id="ecoDetail" aria-live="polite"></div>
+          <div class="legend"><span><i></i>Working today</span><span><i class="p"></i>Planned / not yet available</span></div>
+        </div>
+        <div class="ecx-mobile" id="ecoList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Modules -->
+  <section class="section alt" aria-labelledby="modTitle">
+    <div class="wrap-w">
+      <div class="sec-head"><span class="eyebrow">Available today</span><h2 class="h-section" id="modTitle">Everything a school runs on, in one place.</h2></div>
+      <div class="mod-grid">
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="calendar"></i></span><span data-status="working"></span></div><h3>Timetable & classes</h3><p>Sections, class teachers and a weekly timetable every role can see.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="video"></i></span><span data-status="working"></span></div><h3>Live classroom</h3><p>Teachers start a live class; students join the shared whiteboard.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="doc"></i></span><span data-status="working"></span></div><h3>Homework</h3><p>Set assignments, collect files and grade with feedback.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="exam"></i></span><span data-status="working"></span></div><h3>Quizzes & exams</h3><p>Build tests, publish to a class and mark answers.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="chart"></i></span><span data-status="working"></span></div><h3>Results & report cards</h3><p>Marks in a gradebook and a result card parents can download.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="chat"></i></span><span data-status="working"></span></div><h3>Messages & notices</h3><p>Messages between teachers and families, plus school announcements.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="check"></i></span><span data-status="partial"></span></div><h3>Attendance</h3><p>Attendance figures for students and parents. A daily register screen is still to come.</p></article>
+        <article class="card mod"><div class="row"><span class="stat-icon"><i data-icon="wallet"></i></span><span data-status="partial"></span></div><h3>Fees</h3><p>Parents see balances and tell the office they have paid. No online payments yet.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4–7. Role experiences -->
+  <section class="section" id="roles" aria-labelledby="rolesTitle">
+    <div class="wrap-w">
+      <div class="sec-head"><span class="eyebrow">Built for every role</span><h2 class="h-section" id="rolesTitle">A workspace for each person in the school.</h2>
+        <p class="lead">Each person signs in to their own view, and the server checks what they are allowed to see.</p></div>
+      <div class="role-grid">
+        <article class="card role-card"><div class="role-top"><span class="stat-icon"><i data-icon="shield"></i></span><div><h3>Administrators</h3><span class="li-sub">A command centre for the school</span></div></div>
+          <ul><li><i data-icon="check"></i>Admissions, staff and permissions</li><li><i data-icon="check"></i>Attendance and fee collection at a glance</li><li><i data-icon="check"></i>Live classes and items needing attention</li></ul>
+          <a class="btn btn-secondary btn-sm" style="align-self:flex-start" href="admin.html?sample=1">See the admin preview <i data-icon="arrowR"></i></a></article>
+        <article class="card role-card"><div class="role-top"><span class="stat-icon"><i data-icon="cap"></i></span><div><h3>Teachers</h3><span class="li-sub">Today's classes and grading in one view</span></div></div>
+          <ul><li><i data-icon="check"></i>Schedule with live-class start</li><li><i data-icon="check"></i>Grading queue for homework and quizzes</li><li><i data-icon="check"></i>Class roster and messages</li></ul>
+          <a class="btn btn-secondary btn-sm" style="align-self:flex-start" href="teacher.html?sample=1">See the teacher preview <i data-icon="arrowR"></i></a></article>
+        <article class="card role-card"><div class="role-top"><span class="stat-icon"><i data-icon="book"></i></span><div><h3>Students</h3><span class="li-sub">What's on today and what's due</span></div></div>
+          <ul><li><i data-icon="check"></i>Timetable and live classes</li><li><i data-icon="check"></i>Homework, quizzes and marks</li><li><i data-icon="check"></i>Study materials and Virtual Lab</li></ul>
+          <a class="btn btn-secondary btn-sm" style="align-self:flex-start" href="student.html?sample=1">See the student preview <i data-icon="arrowR"></i></a></article>
+        <article class="card role-card"><div class="role-top"><span class="stat-icon"><i data-icon="child"></i></span><div><h3>Parents</h3><span class="li-sub">Every child, one simple view</span></div></div>
+          <ul><li><i data-icon="check"></i>Attendance and recent marks</li><li><i data-icon="check"></i>Downloadable result cards</li><li><i data-icon="check"></i>Fee balance and school notices</li></ul>
+          <a class="btn btn-secondary btn-sm" style="align-self:flex-start" href="parent.html?sample=1">See the parent preview <i data-icon="arrowR"></i></a></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Virtual Lab -->
+  <section class="section alt" id="lab" aria-labelledby="labTitle">
+    <div class="wrap-w split">
+      <div><span class="eyebrow">Virtual Lab</span><h2 class="h-section" id="labTitle">Science experiments students can run themselves.</h2>
+        <p class="lead">Interactive experiments sit next to the lessons they belong to. Three are ready today; more are being built, and we will only list them once they work.</p></div>
+      <div class="lab-visual">
+        <span class="flask"><i data-icon="flask"></i></span>
+        <div class="lab-list">
+          <div class="lab-item"><i data-icon="flask"></i><b>3 experiments available now</b></div>
+          <div class="lab-item"><i data-icon="cap"></i><span>Linked to courses and lessons</span></div>
+          <div class="lab-item next"><i data-icon="clock"></i><span>More experiments · in development</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Courses -->
+  <section class="section" aria-labelledby="crsTitle">
+    <div class="wrap-w split">
+      <div class="grid g-2">
+        <div class="card mod"><span class="stat-icon"><i data-icon="book"></i></span><h3>Courses & units</h3><p>Teachers organise lessons into courses students follow.</p></div>
+        <div class="card mod"><span class="stat-icon"><i data-icon="layers"></i></span><h3>Study materials</h3><p>Notes, images and video links in one library.</p></div>
+        <div class="card mod"><span class="stat-icon"><i data-icon="video"></i></span><h3>Recordings</h3><p>Saved whiteboards from live classes.</p></div>
+        <div class="card mod" style="border-style:dashed"><div class="row"><span class="stat-icon"><i data-icon="sparkles"></i></span><span data-status="planned"></span></div><h3>AI Tutor</h3><p>Step-by-step study help. Not available yet.</p></div>
+      </div>
+      <div><span class="eyebrow">Courses & learning materials</span><h2 class="h-section" id="crsTitle">Learning that continues after the bell.</h2>
+        <p class="lead">Everything a teacher shares stays organised by subject and grade, so students can return to it before a test.</p></div>
+    </div>
+  </section>
+
+  <!-- 10. Security -->
+  <section class="section alt" aria-labelledby="secTitle">
+    <div class="wrap-w">
+      <div class="sec-head"><span class="eyebrow">Security & privacy</span><h2 class="h-section" id="secTitle">Children's information stays with the people it belongs to.</h2></div>
+      <div class="sec-list">
+        <div class="card sec-item"><span class="stat-icon"><i data-icon="lock"></i></span><div><h3>Checked on the server</h3><p class="muted">Every request is checked against the person's role and permissions before any data is returned.</p></div></div>
+        <div class="card sec-item"><span class="stat-icon"><i data-icon="child"></i></span><div><h3>Parents see their own children</h3><p class="muted">Results, attendance and fees are shown only for children linked to that parent's account.</p></div></div>
+        <div class="card sec-item"><span class="stat-icon"><i data-icon="shield"></i></span><div><h3>Protected sign-in</h3><p class="muted">Passwords are stored hashed, and the school can sign a person out of every device.</p></div></div>
+        <div class="card sec-item"><span class="stat-icon"><i data-icon="bell"></i></span><div><h3>Sign-in activity you can review</h3><p class="muted">Administrators see recent sign-ins and are alerted to repeated failed attempts.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. Admissions -->
+  <section class="section" id="admissions" aria-labelledby="admTitle">
+    <div class="wrap-w">
+      <div class="sec-head center"><span class="eyebrow">Admissions</span><h2 class="h-section" id="admTitle">Joining NovaSchool, step by step.</h2>
+        <p class="lead">Applications are made online. The school office reviews every one and contacts you.</p></div>
+      <div class="steps">
+        <div class="card step"><h3>Apply online</h3><p class="muted">Fill in the form with your child's details and documents.</p></div>
+        <div class="card step"><h3>Entrance test</h3><p class="muted">A short online test for the grade you are applying to.</p></div>
+        <div class="card step"><h3>Review</h3><p class="muted">The admissions team reviews the application.</p></div>
+        <div class="card step"><h3>Welcome</h3><p class="muted">Accounts for student and parent are created by the school.</p></div>
+      </div>
+      <div class="row wrap" style="justify-content:center;margin-top:36px"><a class="btn btn-primary btn-lg" data-app-link="#apply" href="#admissions">Apply for Admission</a><a class="btn btn-secondary btn-lg" href="signin.html">Log In</a></div>
+    </div>
+  </section>
+</main>
+
+<!-- 12. Footer -->
+<footer class="footer">
+  <div class="wrap-w">
+    <div class="foot-grid">
+      <div class="on-dark"><a class="brand" href="index.html"><img src="assets/ns-mark-light.png" alt=""><span><span class="brand-name">Nova<span>School</span></span><span class="brand-sub">School OS</span></span></a><p style="margin-top:14px;max-width:300px">One connected system for the whole school day. Novaschool.pk online school, Grades 1–12.</p></div>
+      <div><h4>Platform</h4><ul><li><a href="#platform">How it fits together</a></li><li><a href="architecture.html">Architecture</a></li><li><a href="#lab">Virtual Lab</a></li></ul></div>
+      <div><h4>School</h4><ul><li><a href="#admissions">Admissions</a></li><li><a href="signin.html">Log in</a></li></ul></div>
+      <div><h4>Prototype</h4><ul><li><a href="design-system.html">Design system</a></li><li><a href="admin.html?sample=1">Dashboards (sample)</a></li></ul></div>
+    </div>
+    <div class="foot-bottom"><span>© 2026 NovaSchool</span><span>Design prototype · not the live site</span></div>
+  </div>
+</footer>
+<script src="proto-config.js"></script>
+<script src="assets/os.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
