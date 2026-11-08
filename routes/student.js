@@ -557,17 +557,22 @@ router.get('/course-books', asyncHandler(async (req, res) => {
   if (!student) return res.status(404).json({ error: 'Student profile not found.' });
   const grade = await studentGrade(student);
   if (!grade) return res.json({ grade: null, books: [] });
-  res.json({ grade, books: courseBooks.list({ grade, kind: 'student' }).map(courseBooks.publicView) });
+  if (!courseBooks.configured()) return res.json({ configured: false, grade, books: [] });
+  try {
+    res.json({ configured: true, grade, books: (await courseBooks.list({ grade, kind: 'student' })).map(courseBooks.publicView) });
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
 router.get('/course-books/:id/file', asyncHandler(async (req, res) => {
   const student = await getStudent(req);
   if (!student) return res.status(404).json({ error: 'Student profile not found.' });
-  const book = courseBooks.find(req.params.id);
-  if (!book || book.kind !== 'student') return res.status(404).json({ error: 'Book not found.' });
-  const grade = await studentGrade(student);
-  if (!grade || book.grade !== grade) return res.status(403).json({ error: 'This book is not available to your grade.' });
-  courseBooks.send(res, book);
+  try {
+    const book = await courseBooks.find(req.params.id);
+    if (!book || book.kind !== 'student') return res.status(404).json({ error: 'Book not found.' });
+    const grade = await studentGrade(student);
+    if (!grade || book.grade !== grade) return res.status(403).json({ error: 'This book is not available to your grade.' });
+    await courseBooks.send(res, book);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
 // ---------- Nova textbooks (PDF + tap-a-word reader, own grade only) ----------

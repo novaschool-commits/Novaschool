@@ -1,0 +1,10 @@
+[
+ {"grade": 2, "term": 1, "subject": "English", "file": "grade-2/term-1/english.pdf", "kind": "student", "size": 45},
+ {"grade": 8, "term": 1, "subject": "Urdu", "file": "grade-8/term-1/urdu.pdf", "kind": "student", "size": 45},
+ {"grade": 8, "term": 1, "subject": "Mathematics", "file": "grade-8/term-1/mathematics.pdf", "kind": "student", "size": 45},
+ {"grade": 2, "term": 1, "subject": "Answer key", "file": "answer-keys/grade-2-term-1-answer-key.pdf", "kind": "answer-key", "size": 45},
+ {"grade": 8, "term": 1, "subject": "Answer key", "file": "answer-keys/grade-8-term-1-answer-key.pdf", "kind": "answer-key", "size": 45},
+ {"grade": 8, "term": 1, "subject": "Sneaky", "file": "../../server.js", "kind": "student"},
+ {"grade": 8, "term": 1, "subject": "Leaked key", "file": "answer-keys/grade-8-term-1-answer-key.pdf", "kind": "student"},
+ {"grade": 8, "term": 1, "subject": "Odd", "file": "grade-8/term-1/odd.txt", "kind": "student"}
+]

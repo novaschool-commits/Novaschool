@@ -159,7 +159,7 @@ Without `CURRICULUM_TOKEN`, the Course Books page says the textbooks are coming 
 
 ## Course books and simulations
 
-- **Course books** (`content/course-books/`): the Nova Research Curriculum as PDFs — a student edition for every subject, term and grade (1–8), and one answer key per grade and term. Files live outside `public/`, so every download goes through the API:
+- **Lesson packs** (`lesson-packs/` in the private nova-research-curriculum repository, read on the server with `CURRICULUM_TOKEN`, like the textbooks): a student pack for every subject, term and grade (1–8), and one answer key per grade and term. `lesson-packs/manifest.json` is the allow-list, and every download goes through the API:
   - `GET /api/student/course-books` and `/api/student/course-books/:id/file` — a student gets only the student edition for their own grade (from their section).
   - `GET /api/teacher/course-books` and `/api/teacher/course-books/:id/file` — teachers get every book and the answer keys.
   - `manifest.json` is the allow-list; an id that is not in it is never served.

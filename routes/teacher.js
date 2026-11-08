@@ -899,13 +899,18 @@ router.get('/gradebook', asyncHandler(async (req, res) => {
 // ---------- Course books and answer keys (teachers see every grade) ----------
 
 router.get('/course-books', asyncHandler(async (req, res) => {
-  res.json({ books: courseBooks.list().map(courseBooks.publicView) });
+  if (!courseBooks.configured()) return res.json({ configured: false, books: [] });
+  try {
+    res.json({ configured: true, books: (await courseBooks.list()).map(courseBooks.publicView) });
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
 router.get('/course-books/:id/file', asyncHandler(async (req, res) => {
-  const book = courseBooks.find(req.params.id);
-  if (!book) return res.status(404).json({ error: 'Book not found.' });
-  courseBooks.send(res, book);
+  try {
+    const book = await courseBooks.find(req.params.id);
+    if (!book) return res.status(404).json({ error: 'Book not found.' });
+    await courseBooks.send(res, book);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
 // ---------- Nova textbooks (teachers see every grade) ----------
