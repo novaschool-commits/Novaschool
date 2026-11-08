@@ -3,6 +3,7 @@ const { get, all, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
 const { buildReportCard } = require('../lib/reportCard');
+const courseBooks = require('../lib/courseBooks');
 
 const router = express.Router();
 router.use(authenticate, requireRole('student'));
@@ -531,6 +532,31 @@ router.get('/materials/:id/file', asyncHandler(async (req, res) => {
   if (!section || material.grade !== section.grade) return res.status(403).json({ error: 'This material is not available to your grade.' });
 
   res.json({ fileBase64: material.file_base64, fileName: material.file_name, fileMime: material.file_mime });
+}));
+
+// ---------- Course books (student edition PDFs, own grade only) ----------
+
+async function studentGrade(student) {
+  const section = await get('SELECT grade FROM sections WHERE section_code = $1', [student.section_code]);
+  return section ? courseBooks.gradeNumber(section.grade) : null;
+}
+
+router.get('/course-books', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+  const grade = await studentGrade(student);
+  if (!grade) return res.json({ grade: null, books: [] });
+  res.json({ grade, books: courseBooks.list({ grade, kind: 'student' }).map(courseBooks.publicView) });
+}));
+
+router.get('/course-books/:id/file', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+  const book = courseBooks.find(req.params.id);
+  if (!book || book.kind !== 'student') return res.status(404).json({ error: 'Book not found.' });
+  const grade = await studentGrade(student);
+  if (!grade || book.grade !== grade) return res.status(403).json({ error: 'This book is not available to your grade.' });
+  courseBooks.send(res, book);
 }));
 
 // ---------- Virtual classroom whiteboard (student side) ----------

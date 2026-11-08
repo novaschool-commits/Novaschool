@@ -226,3 +226,35 @@ test('S2: repeated wrong passwords are blocked with 429', async () => {
   assert.deepEqual(codes.slice(0, 8), Array(8).fill(401));
   assert.equal(codes[8], 429);
 });
+
+test('Course books: a student downloads only their own grade, never answer keys; teachers get keys', async () => {
+  const student = await login('student@novaschool.pk', DEMO_PASSWORD, '198.51.100.61');
+  const teacher = await login('teacher@novaschool.pk', DEMO_PASSWORD, '198.51.100.62');
+  const parent = await login('parent@novaschool.pk', DEMO_PASSWORD, '198.51.100.63');
+  assert.equal((await call('/student/course-books')).status, 401);
+  assert.equal((await call('/student/course-books', { token: parent })).status, 403);
+
+  const mine = await call('/student/course-books', { token: student });
+  assert.equal(mine.status, 200);
+  assert.ok(Number.isInteger(mine.data.grade));
+  assert.ok(mine.data.books.length > 0);
+  assert.ok(mine.data.books.every((b) => b.grade === mine.data.grade && b.kind === 'student'));
+
+  const own = await fetch(`${BASE}/api/student/course-books/${mine.data.books[0].id}/file`, { headers: { Authorization: `Bearer ${student}` } });
+  assert.equal(own.status, 200);
+  assert.equal(own.headers.get('content-type'), 'application/pdf');
+  assert.match(own.headers.get('content-disposition') || '', /^attachment; filename="Nova-Grade-/);
+  assert.equal(Buffer.from(await own.arrayBuffer()).subarray(0, 4).toString(), '%PDF');
+
+  const all = await call('/teacher/course-books', { token: teacher });
+  assert.equal(all.status, 200);
+  const other = all.data.books.find((b) => b.kind === 'student' && b.grade !== mine.data.grade);
+  const key = all.data.books.find((b) => b.kind === 'answer-key' && b.grade === mine.data.grade);
+  assert.equal((await call(`/student/course-books/${other.id}/file`, { token: student })).status, 403);
+  assert.equal((await call(`/student/course-books/${key.id}/file`, { token: student })).status, 404);
+  assert.equal((await call('/student/course-books/..%2F..%2Fserver/file', { token: student })).status, 404);
+  assert.equal((await call('/teacher/course-books', { token: student })).status, 403);
+  const k = await fetch(`${BASE}/api/teacher/course-books/${key.id}/file`, { headers: { Authorization: `Bearer ${teacher}` } });
+  assert.equal(k.status, 200);
+  assert.equal(k.headers.get('content-type'), 'application/pdf');
+});

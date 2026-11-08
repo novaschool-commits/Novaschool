@@ -2,6 +2,7 @@ const express = require('express');
 const { get, all, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
+const courseBooks = require('../lib/courseBooks');
 
 const router = express.Router();
 router.use(authenticate, requireRole('teacher'));
@@ -892,6 +893,18 @@ router.get('/gradebook', asyncHandler(async (req, res) => {
     sections: sectionCodes,
     subjects: subjectRows.map(r => r.subject)
   });
+}));
+
+// ---------- Course books and answer keys (teachers see every grade) ----------
+
+router.get('/course-books', asyncHandler(async (req, res) => {
+  res.json({ books: courseBooks.list().map(courseBooks.publicView) });
+}));
+
+router.get('/course-books/:id/file', asyncHandler(async (req, res) => {
+  const book = courseBooks.find(req.params.id);
+  if (!book) return res.status(404).json({ error: 'Book not found.' });
+  courseBooks.send(res, book);
 }));
 
 module.exports = router;

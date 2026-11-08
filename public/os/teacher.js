@@ -12,6 +12,8 @@
       { id: 'lessons', app: 'teacher/lessons', label: 'Lessons', icon: 'pen', status: 'working', desc: 'Lesson plans and recordings.' },
       { id: 'courses', app: 'teacher/courses', label: 'Courses', icon: 'book', status: 'working', desc: 'Your courses and their units.' },
       { id: 'materials', app: 'teacher/materials', label: 'Study Materials', icon: 'layers', status: 'working', desc: 'Documents, images and video links for your classes.' },
+      { id: 'books', label: 'Course Books & Keys', icon: 'download', status: 'working', desc: 'Student PDFs for every grade and the answer keys.' },
+      { id: 'sims', label: 'Simulations', icon: 'flask', status: 'partial', desc: 'Interactive simulations and animations.', gap: 'Maths and Science for Grades 1–8 so far.' },
     ] },
     { group: 'Assessment', items: [
       { id: 'assignments', app: 'teacher/assignments', label: 'Assignments', icon: 'doc', status: 'working', desc: 'Set work, review submissions and grade.' },
@@ -50,6 +52,8 @@
   if (!el) return; // redirected to the signed-in person's own workspace
 
   if (page === 'dashboard') dashboard();
+  else if (page === 'books') window.NovaBooks.teacherBooks(el);
+  else if (page === 'sims') window.NovaBooks.sims(el, 'teacher');
   else { const mod = ALL.find((m) => m.id === page); if (mod.app) location.replace(N.appUrl(mod.app)); else setHTML(el, N.modulePanel(mod, N.appUrl())); }
 
   function nowIndex(classes) {

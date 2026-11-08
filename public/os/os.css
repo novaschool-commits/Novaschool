@@ -840,3 +840,4 @@ table.tbl{width:100%; border-collapse:collapse; font-size:13.5px}
 .due span{font-size:11px} .st{font-size:11.5px} @media (max-width:767px){ .label{font-size:12px} }
 @media (max-width:767px){ #kids{flex-wrap:nowrap; overflow-x:auto; padding-bottom:2px; scrollbar-width:none} #kids .kid-tab{flex:none} }
 .all-clear > div{min-width:0} .all-clear .li-sub{white-space:normal}
+.arch-chip svg{flex:none}

@@ -8,6 +8,8 @@
     { group: '', items: [{ id: 'dashboard', label: 'Today', icon: 'home', status: 'working' }] },
     { group: 'Learning', items: [
       { id: 'courses', app: 'student/courses', label: 'My Courses', icon: 'book', status: 'working', desc: 'Your courses, units and lessons.' },
+      { id: 'books', label: 'Course Books', icon: 'download', status: 'working', desc: 'Your subject books as PDFs to download and study offline.' },
+      { id: 'sims', label: 'Simulations', icon: 'flask', status: 'partial', desc: 'Interactive simulations and animations for your topics.', gap: 'Maths and Science for Grades 1–8 so far; other subjects follow.' },
       { id: 'materials', app: 'student/materials', label: 'Study Materials', icon: 'layers', status: 'working', desc: 'Notes, images and videos from your teachers.' },
       { id: 'recordings', app: 'student/recordings', label: 'Recordings', icon: 'video', status: 'working', desc: 'Saved whiteboards from live classes.' },
       { id: 'lab', app: 'student/lab', label: 'Virtual Lab', icon: 'flask', status: 'partial', desc: 'Interactive science experiments.', gap: '3 of the planned 100 experiments are built.' },
@@ -42,6 +44,8 @@
   if (!el) return; // redirected to the signed-in person's own workspace
 
   if (page === 'dashboard') dashboard();
+  else if (page === 'books') window.NovaBooks.studentBooks(el);
+  else if (page === 'sims') window.NovaBooks.sims(el, 'student');
   else { const mod = ALL.find((m) => m.id === page); if (mod.app) location.replace(N.appUrl(mod.app)); else setHTML(el, N.modulePanel(mod, N.appUrl())); }
 
   const mins = (t) => { const [h, m] = String(t || '').split(':').map(Number); return Number.isNaN(h) ? null : h * 60 + (m || 0); };
