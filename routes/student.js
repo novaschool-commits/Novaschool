@@ -4,6 +4,7 @@ const { authenticate, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
 const { buildReportCard } = require('../lib/reportCard');
 const courseBooks = require('../lib/courseBooks');
+const novaBooks = require('../lib/novaBooks');
 
 const router = express.Router();
 router.use(authenticate, requireRole('student'));
@@ -557,6 +558,32 @@ router.get('/course-books/:id/file', asyncHandler(async (req, res) => {
   const grade = await studentGrade(student);
   if (!grade || book.grade !== grade) return res.status(403).json({ error: 'This book is not available to your grade.' });
   courseBooks.send(res, book);
+}));
+
+// ---------- Nova textbooks (PDF + tap-a-word reader, own grade only) ----------
+
+router.get('/nova-books', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+  const grade = await studentGrade(student);
+  if (!novaBooks.configured()) return res.json({ configured: false, grade, books: [] });
+  if (!grade) return res.json({ configured: true, grade: null, books: [] });
+  try {
+    const books = await novaBooks.list({ grade });
+    res.json({ configured: true, grade, books: books.map((b) => novaBooks.publicView(b, req.user.id)) });
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
+}));
+
+router.get('/nova-books/:id/pdf', asyncHandler(async (req, res) => {
+  const student = await getStudent(req);
+  if (!student) return res.status(404).json({ error: 'Student profile not found.' });
+  try {
+    const book = await novaBooks.find(req.params.id);
+    if (!book) return res.status(404).json({ error: 'Book not found.' });
+    const grade = await studentGrade(student);
+    if (!grade || book.grade !== grade) return res.status(403).json({ error: 'This book is not available to your grade.' });
+    await novaBooks.sendPdf(res, book);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
 // ---------- Virtual classroom whiteboard (student side) ----------

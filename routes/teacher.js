@@ -3,6 +3,7 @@ const { get, all, run } = require('../db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/asyncHandler');
 const courseBooks = require('../lib/courseBooks');
+const novaBooks = require('../lib/novaBooks');
 
 const router = express.Router();
 router.use(authenticate, requireRole('teacher'));
@@ -905,6 +906,24 @@ router.get('/course-books/:id/file', asyncHandler(async (req, res) => {
   const book = courseBooks.find(req.params.id);
   if (!book) return res.status(404).json({ error: 'Book not found.' });
   courseBooks.send(res, book);
+}));
+
+// ---------- Nova textbooks (teachers see every grade) ----------
+
+router.get('/nova-books', asyncHandler(async (req, res) => {
+  if (!novaBooks.configured()) return res.json({ configured: false, books: [] });
+  try {
+    const books = await novaBooks.list();
+    res.json({ configured: true, books: books.map((b) => novaBooks.publicView(b, req.user.id)) });
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
+}));
+
+router.get('/nova-books/:id/pdf', asyncHandler(async (req, res) => {
+  try {
+    const book = await novaBooks.find(req.params.id);
+    if (!book) return res.status(404).json({ error: 'Book not found.' });
+    await novaBooks.sendPdf(res, book);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
 module.exports = router;

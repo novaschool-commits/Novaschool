@@ -8,7 +8,7 @@
     { group: '', items: [{ id: 'dashboard', label: 'Today', icon: 'home', status: 'working' }] },
     { group: 'Learning', items: [
       { id: 'courses', app: 'student/courses', label: 'My Courses', icon: 'book', status: 'working', desc: 'Your courses, units and lessons.' },
-      { id: 'books', label: 'Course Books', icon: 'download', status: 'working', desc: 'Your subject books as PDFs to download and study offline.' },
+      { id: 'books', label: 'Course Books', icon: 'download', status: 'working', desc: 'Your textbooks to read with word help, and your books as PDFs to study offline.' },
       { id: 'sims', label: 'Simulations', icon: 'flask', status: 'partial', desc: 'Interactive simulations and animations for your topics.', gap: 'Maths and Science for Grades 1–8 so far; other subjects follow.' },
       { id: 'materials', app: 'student/materials', label: 'Study Materials', icon: 'layers', status: 'working', desc: 'Notes, images and videos from your teachers.' },
       { id: 'recordings', app: 'student/recordings', label: 'Recordings', icon: 'video', status: 'working', desc: 'Saved whiteboards from live classes.' },

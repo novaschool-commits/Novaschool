@@ -258,3 +258,47 @@ test('Course books: a student downloads only their own grade, never answer keys;
   assert.equal(k.status, 200);
   assert.equal(k.headers.get('content-type'), 'application/pdf');
 });
+
+test('Nova textbooks: a student lists and downloads only their own grade; reader links are signed and expire', async () => {
+  const student = await login('student@novaschool.pk', DEMO_PASSWORD, '198.51.100.71');
+  const teacher = await login('teacher@novaschool.pk', DEMO_PASSWORD, '198.51.100.72');
+  const parent = await login('parent@novaschool.pk', DEMO_PASSWORD, '198.51.100.73');
+  assert.equal((await call('/student/nova-books')).status, 401);
+  assert.equal((await call('/student/nova-books', { token: parent })).status, 403);
+  assert.equal((await call('/teacher/nova-books', { token: student })).status, 403);
+
+  const mine = await call('/student/nova-books', { token: student });
+  assert.equal(mine.status, 200);
+  assert.equal(mine.data.configured, true, 'run with the mock GitHub server (tests/api/run-tenancy.sh)');
+  assert.ok(mine.data.books.length > 0);
+  assert.ok(mine.data.books.every((b) => b.grade === mine.data.grade && /^\/books\/read\//.test(b.readerUrl)));
+  assert.ok(mine.data.books.every((b) => !JSON.stringify(b).includes(student)), 'no session token in links');
+
+  const own = mine.data.books[0];
+  const pdf = await fetch(`${BASE}/api/student/nova-books/${own.id}/pdf`, { headers: { Authorization: `Bearer ${student}` } });
+  assert.equal(pdf.status, 200);
+  assert.equal(pdf.headers.get('content-type'), 'application/pdf');
+  assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 4).toString(), '%PDF');
+
+  const all = await call('/teacher/nova-books', { token: teacher });
+  assert.equal(all.status, 200);
+  const other = all.data.books.find((b) => b.grade !== mine.data.grade);
+  assert.ok(other, 'fixture has another grade');
+  assert.equal((await call(`/student/nova-books/${other.id}/pdf`, { token: student })).status, 403);
+  assert.equal((await call('/student/nova-books/..%2F..%2Fserver/pdf', { token: student })).status, 404);
+  assert.equal((await call('/student/nova-books/g8-sneaky-term-1/pdf', { token: student })).status, 404);
+  const tpdf = await fetch(`${BASE}/api/teacher/nova-books/${other.id}/pdf`, { headers: { Authorization: `Bearer ${teacher}` } });
+  assert.equal(tpdf.status, 200);
+
+  const page = await fetch(BASE + own.readerUrl);
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get('content-type'), /^text\/html/);
+  assert.match(page.headers.get('content-security-policy') || '', /default-src 'none'/);
+  assert.match(await page.text(), /Tap a word/);
+  const u = new URL(BASE + own.readerUrl);
+  const forged = await fetch(`${BASE}/books/read/${other.id}${u.search}`);
+  assert.equal(forged.status, 403, 'a link for one book does not open another');
+  u.searchParams.set('e', String(Math.floor(Date.now() / 1000) - 10));
+  assert.equal((await fetch(BASE + u.pathname + u.search)).status, 403, 'expired or altered link');
+  assert.equal((await fetch(`${BASE}/books/read/${own.id}`)).status, 403, 'no link, no book');
+});

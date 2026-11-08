@@ -139,6 +139,24 @@ nova-school-app/
     └── index.html                # Frontend — landing, login, 4 dashboards
 ```
 
+## Nova textbooks (reader and PDF)
+
+The Grade 1–8 textbooks live in the private `novaschool-commits/nova-research-curriculum` repository, not in this app. The server reads them from GitHub with a **read-only token** and keeps recent files in memory, so the app always shows the latest pushed books.
+
+- Students see only their own grade's textbooks; teachers see every grade. Each book has **Read** (the tap-a-word reader, in a new tab) and **PDF** (download).
+- `dist/catalog.json` in the curriculum repo is the allow-list: an id or a file path that is not in it is never fetched.
+- The reader opens with a signed link that works for two hours and names the user and the book. The sign-in token is never put in a link. The reader page gets its own strict Content-Security-Policy.
+
+Settings (Render → Environment):
+
+| Key | Value |
+| --- | --- |
+| `CURRICULUM_TOKEN` | a fine-grained GitHub token with **read-only "Contents"** access to the one curriculum repository |
+| `CURRICULUM_REPO` | optional, default `novaschool-commits/nova-research-curriculum` |
+| `CURRICULUM_REF` | optional, default `main` |
+
+Without `CURRICULUM_TOKEN`, the Course Books page says the textbooks are coming soon, and everything else works as before.
+
 ## Course books and simulations
 
 - **Course books** (`content/course-books/`): the Nova Research Curriculum as PDFs — a student edition for every subject, term and grade (1–8), and one answer key per grade and term. Files live outside `public/`, so every download goes through the API:

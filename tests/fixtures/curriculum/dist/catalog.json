@@ -1,0 +1,6 @@
+{"version": 1, "books": [
+ {"id": "g2-english-term-1", "grade": 2, "term": 1, "subject": "English", "title": "My English Book", "language": "en", "chapters": 12, "pdf": "dist/grade-2/english-term-1/student.pdf", "pdfKb": 1, "reader": "dist/grade-2/english-term-1/reader.html", "readerKb": 1},
+ {"id": "g8-physics-term-1", "grade": 8, "term": 1, "subject": "Physics", "title": "My Physics Book", "language": "en", "chapters": 6, "pdf": "dist/grade-8/physics-term-1/student.pdf", "pdfKb": 1, "reader": "dist/grade-8/physics-term-1/reader.html", "readerKb": 1},
+ {"id": "g8-sneaky-term-1", "grade": 8, "term": 1, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-8/../../server.js", "reader": "dist/grade-8/sneaky-term-1/reader.html"},
+ {"id": "../etc", "grade": 1, "term": 1, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-1/x-term-1/student.pdf", "reader": "dist/grade-1/x-term-1/reader.html"}
+]}

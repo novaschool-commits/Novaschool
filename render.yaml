@@ -14,3 +14,7 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
+      # Read-only GitHub token for the private nova-research-curriculum repo
+      # (textbooks). Paste it in Render; never put it in the code.
+      - key: CURRICULUM_TOKEN
+        sync: false

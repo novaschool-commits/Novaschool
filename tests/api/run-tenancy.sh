@@ -28,7 +28,7 @@ SECRET="$(node -e "console.log(require('crypto').randomBytes(30).toString('base6
 SERVER_PID=""
 
 cleanup() {
-  [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null; sleep 1
+  [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null; [ -n "${MOCK_PID:-}" ] && kill "$MOCK_PID" 2>/dev/null; sleep 1
   psql -X -q "$TEST_PG" -c "DROP DATABASE IF EXISTS $DB" >/dev/null 2>&1
   psql -X -q "$TEST_PG" -c "DROP ROLE IF EXISTS $ROLE" >/dev/null 2>&1
 }
@@ -60,6 +60,11 @@ bypass=$(psql -X -At "$OWNER_URL" -c "SELECT rolbypassrls OR rolsuper FROM pg_ro
 [ "$bypass" = "f" ] || fail "app role can bypass row-level security"
 
 echo "5. server as the app role on port $PORT"
+# A stand-in for GitHub serves the textbook fixtures (tests/fixtures/curriculum).
+MOCK_PORT="${MOCK_GITHUB_PORT:-3013}"; MOCK_TOKEN="mock-$$"
+node tests/fixtures/mock-github.js "$MOCK_PORT" "$MOCK_TOKEN" > /dev/null 2>&1 &
+MOCK_PID=$!
+CURRICULUM_TOKEN="$MOCK_TOKEN" CURRICULUM_API_BASE="http://127.0.0.1:$MOCK_PORT" \
 DATABASE_URL="$APP_URL" JWT_SECRET="$SECRET" PORT="$PORT" MIGRATE_ON_START=false node server.js > "$LOG" 2>&1 &
 SERVER_PID=$!
 for i in $(seq 1 30); do curl -s "localhost:$PORT/api/health" | grep -q ok && break; sleep 1; done

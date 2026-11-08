@@ -38,6 +38,24 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Nova textbook reader: opened in its own tab with a signed, short-lived link
+// that the book list gives out after checking the grade (see lib/novaBooks.js).
+const novaBooks = require('./lib/novaBooks');
+function bookMessage(res, status, text) {
+  res.status(status).set('Cache-Control', 'no-store').set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+    .type('html').send(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>NovaSchool book</title><body style="font:16px/1.5 system-ui,sans-serif;max-width:32rem;margin:15vh auto;padding:0 16px;color:#1f2a37"><h1 style="font-size:20px">${text}</h1><p>Go back to your Course Books page and open the book again.</p></body>`);
+}
+app.get('/books/read/:id', async (req, res) => {
+  try {
+    if (!novaBooks.checkLink(req.params.id, req.query)) return bookMessage(res, 403, 'This book link has expired.');
+    const book = await novaBooks.find(req.params.id);
+    if (!book) return bookMessage(res, 404, 'Book not found.');
+    await novaBooks.sendReader(res, book);
+  } catch (err) {
+    bookMessage(res, err.status || 500, 'The book could not be loaded right now.');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
 // The school app (all role tools, apply forms, staff activation links) lives
 // at /app; every other page address shows the public homepage.
