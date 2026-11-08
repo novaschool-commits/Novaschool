@@ -286,6 +286,19 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
   #reportCardArea .table-simple th, #reportCardArea .table-simple td{ white-space:normal; }
   #reportCardArea .table-scroll{ overflow-x:visible; }
 }
+
+/* Forms: full-width fields use the normal font, stay readable and stack on phones */
+.grade-input[style*="width:100%"] { font-family:inherit; font-size:14px; padding:10px 12px; min-height:42px; box-sizing:border-box; background:var(--card, #fff); color:inherit; }
+select.grade-input { font-family:inherit; }
+.grade-input:disabled { opacity:.65; }
+.form-hint { font-size:12px; color:var(--ink-soft); margin:-4px 0 10px; }
+.ovb-sec-actions { display:flex; gap:6px; flex-shrink:0; }
+@media (max-width:640px){
+  div[style*="grid-template-columns"]:has(> .grade-input) { grid-template-columns:1fr !important; }
+  div[style*="grid-template-columns"]:has(> .grade-input) > * { grid-column:auto !important; }
+  .ovb-sec { flex-wrap:wrap; }
+  .ovb-sec-actions { width:100%; justify-content:flex-end; }
+}
 </style>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
@@ -1127,7 +1140,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <input class="grade-input" style="width:100%;" id="newStudentFirst" placeholder="First name">
             <input class="grade-input" style="width:100%;" id="newStudentLast" placeholder="Last name">
             <input class="grade-input" style="width:100%;" id="newStudentAdmNo" placeholder="Admission number">
-            <input class="grade-input" style="width:100%;" id="newStudentSection" placeholder="Section code (e.g. 8B)">
+            <select class="grade-input section-select" style="width:100%;" id="newStudentSection" aria-label="Section"><option value="">Choose section</option></select>
             <input class="grade-input" style="width:100%;" id="newStudentEmail" placeholder="Login email (optional)">
             <input class="grade-input" style="width:100%;" id="newStudentPassword" placeholder="Password (optional, min 8 chars)">
           </div>
@@ -1157,7 +1170,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
       <div data-ov="classes" id="ovSectionsCard" class="card"><div class="card-head"><h3>Sections at a glance</h3></div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
           <input class="grade-input" style="width:100%;" id="newSectionCode" placeholder="Section code (e.g. 8B)">
-          <input class="grade-input" style="width:100%;" id="newSectionGrade" placeholder="Grade (e.g. Grade 8, O Level)">
+          <select class="grade-input" style="width:100%;" id="newSectionGrade" aria-label="Grade"><option value="">Choose grade</option><option value="Grade 1">Grade 1</option><option value="Grade 2">Grade 2</option><option value="Grade 3">Grade 3</option><option value="Grade 4">Grade 4</option><option value="Grade 5">Grade 5</option><option value="Grade 6">Grade 6</option><option value="Grade 7">Grade 7</option><option value="Grade 8">Grade 8</option><option value="Grade 9">Grade 9</option><option value="Grade 10">Grade 10</option><option value="Grade 11">Grade 11</option><option value="Grade 12">Grade 12</option><option value="O Level">O Level</option><option value="A Level">A Level</option></select>
           <input class="grade-input" style="width:100%;" id="newSectionName" placeholder="Section name (e.g. B)">
           <input class="grade-input" style="width:100%;" type="number" id="newSectionCapacity" placeholder="Capacity" value="30">
           <select class="grade-input" style="width:100%;" id="newSectionCurriculum">
@@ -1166,7 +1179,8 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
           </select>
           <select class="grade-input" style="width:100%; grid-column:1 / -1;" id="newSectionTeacher"><option value="">Class teacher (optional)</option></select>
         </div>
-        <button class="btn btn-primary btn-sm" style="margin-bottom:16px;" onclick="createSection()">Create section</button>
+        <p class="form-hint">The grade decides which textbooks the students in this section see. Section 2A should be Grade 2.</p>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;"><button class="btn btn-primary btn-sm" id="sectionSaveBtn" onclick="createSection()">Create section</button><button class="btn btn-outline btn-sm" id="sectionCancelBtn" style="display:none;" onclick="cancelSectionEdit()">Cancel</button></div>
         <div class="ovb-sections" id="adminSectionsTable"></div>
       </div>
 
@@ -1564,7 +1578,7 @@ footer{border-top:1px solid var(--line); padding:44px 0; margin-top:20px;}
             <input class="grade-input" style="width:100%;" id="staffStudentFirst" placeholder="First name">
             <input class="grade-input" style="width:100%;" id="staffStudentLast" placeholder="Last name">
             <input class="grade-input" style="width:100%;" id="staffStudentAdmNo" placeholder="Admission number">
-            <input class="grade-input" style="width:100%;" id="staffStudentSection" placeholder="Section code (e.g. 8B)">
+            <select class="grade-input section-select" style="width:100%;" id="staffStudentSection" aria-label="Section"><option value="">Choose section</option></select>
             <input class="grade-input" style="width:100%;" id="staffStudentEmail" placeholder="Login email (optional)">
             <input class="grade-input" style="width:100%;" id="staffStudentPassword" placeholder="Password (optional, min 8 chars)">
           </div>
@@ -3283,6 +3297,7 @@ async function loadStaffDashboard(){
 }
 
 async function loadStaffStudents(){
+  refreshSectionSelects();
   try {
     const d = await api('/admin/students');
     document.getElementById('staffStudentsList').innerHTML = d.students.length
@@ -6924,6 +6939,8 @@ async function loadAdminDashboard(){
     await loadAdmissions();
 
     const s = await api('/admin/sections');
+    adminSectionsCache = s.sections;
+    fillSectionSelects(s.sections);
     document.getElementById('adminSectionsTable').innerHTML = s.sections.length
       ? s.sections.map((sec, i) => {
           const n = Number(sec.studentCount) || 0, cap = Number(sec.capacity) || 0;
@@ -6936,7 +6953,7 @@ async function loadAdminDashboard(){
               <div class="ovb-sec-sub">${escapeHtml(sec.classTeacher || 'No class teacher')} · ${escapeHtml(sec.curriculum)}</div>
               <div class="ovb-sec-track" role="img" aria-label="${n} of ${cap} seats filled"><div class="ovb-sec-fill ${tone}" style="width:${pct}%;"></div></div>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="deleteSection(${jsArg(sec.sectionCode)})">Delete</button>
+            <div class="ovb-sec-actions"><button class="btn btn-outline btn-sm" onclick="editSection(${jsArg(sec.sectionCode)})">Edit</button><button class="btn btn-outline btn-sm" onclick="deleteSection(${jsArg(sec.sectionCode)})">Delete</button></div>
           </div>`;
         }).join('')
       : '<p class="empty">No sections yet. Create the first one above.</p>';
@@ -7791,11 +7808,15 @@ async function createSection(){
   const curriculum = document.getElementById('newSectionCurriculum').value;
 
   if (!section_code || !grade || !name) { toast('Section code, grade, and section name are required.'); return; }
+  const lead = section_code.match(/^(\d{1,2})/), gnum = grade.match(/(\d{1,2})/);
+  if (lead && gnum && Number(lead[1]) !== Number(gnum[1])) { toast(`Section ${section_code} looks like Grade ${Number(lead[1])}, but you chose ${grade}. Please check the grade.`); return; }
 
   try {
-    const res = await api('/admin/sections', { method: 'POST', body: JSON.stringify({ section_code, grade, name, capacity, class_teacher_id, curriculum }) });
+    const res = editingSectionCode
+      ? await api(`/admin/sections/${encodeURIComponent(editingSectionCode)}`, { method: 'PATCH', body: JSON.stringify({ grade, name, capacity, class_teacher_id, curriculum }) })
+      : await api('/admin/sections', { method: 'POST', body: JSON.stringify({ section_code, grade, name, capacity, class_teacher_id, curriculum }) });
     toast(res.message);
-    ['newSectionCode','newSectionGrade','newSectionName'].forEach(id => document.getElementById(id).value = '');
+    cancelSectionEdit();
     loadAdminDashboard();
   } catch (err) {
     toast(err.message);
@@ -7827,6 +7848,55 @@ async function rejectFeeConfirmation(invoiceId){
     toast(res.message);
     loadAdminPendingFees();
   } catch (err) { toast(err.message); }
+}
+
+let adminSectionsCache = [];
+let editingSectionCode = null;
+
+// Put the section's values into the form above the list so they can be corrected.
+function editSection(code){
+  const sec = adminSectionsCache.find(x => x.sectionCode === code);
+  if (!sec) return;
+  editingSectionCode = code;
+  const codeEl = document.getElementById('newSectionCode');
+  codeEl.value = sec.sectionCode; codeEl.disabled = true;
+  const gradeEl = document.getElementById('newSectionGrade');
+  if (![...gradeEl.options].some(o => o.value === sec.grade)) {
+    const o = document.createElement('option'); o.value = sec.grade; o.textContent = sec.grade; gradeEl.appendChild(o);
+  }
+  gradeEl.value = sec.grade;
+  document.getElementById('newSectionName').value = sec.sectionName || '';
+  document.getElementById('newSectionCapacity').value = sec.capacity || 30;
+  document.getElementById('newSectionCurriculum').value = sec.curriculum || 'Pakistani';
+  document.getElementById('newSectionTeacher').value = sec.classTeacherId || '';
+  document.getElementById('sectionSaveBtn').textContent = `Save changes to ${code}`;
+  document.getElementById('sectionCancelBtn').style.display = '';
+  document.getElementById('ovSectionsCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function cancelSectionEdit(){
+  editingSectionCode = null;
+  const codeEl = document.getElementById('newSectionCode');
+  codeEl.disabled = false;
+  ['newSectionCode','newSectionGrade','newSectionName'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('newSectionTeacher').value = '';
+  document.getElementById('sectionSaveBtn').textContent = 'Create section';
+  document.getElementById('sectionCancelBtn').style.display = 'none';
+}
+
+// The add-student forms pick from the sections that exist ("2A — Grade 2"),
+// so a student can't be put in a mistyped section.
+function fillSectionSelects(sections){
+  document.querySelectorAll('select.section-select').forEach(el => {
+    const keep = el.value;
+    el.innerHTML = '<option value="">' + (sections.length ? 'Choose section' : 'No sections yet — create one first') + '</option>' +
+      sections.map(sec => `<option value="${escapeHtml(sec.sectionCode)}">${escapeHtml(sec.sectionCode)} — ${escapeHtml(sec.grade)}</option>`).join('');
+    el.value = keep;
+  });
+}
+
+async function refreshSectionSelects(){
+  try { const s = await api('/admin/sections'); adminSectionsCache = s.sections; fillSectionSelects(s.sections); } catch (err) { /* non-critical */ }
 }
 
 async function deleteSection(code){

@@ -416,7 +416,17 @@ router.get('/courses', asyncHandler(async (req, res) => {
     params
   );
 
-  res.json({ courses: courses.map(c => ({
+  // Show only the student's own grade: a course for another grade ("Grade 3")
+  // is hidden, and O/AS/A Level courses are hidden below Grade 9.
+  const grade = await studentGrade(student);
+  const forMyGrade = (c) => {
+    if (!grade) return true;
+    const m = String(c.level || '').match(/grade\s*(\d{1,2})/i);
+    if (m) return Number(m[1]) === grade;
+    if (/\b(o|as|a)\s*level\b/i.test(String(c.level || ''))) return grade >= 9;
+    return true;
+  };
+  res.json({ grade, courses: courses.filter(forMyGrade).map(c => ({
     id: c.id, subject: c.subject, curriculum: c.curriculum, level: c.level,
     title: c.title, description: c.description,
     lessonCount: Number(c.lesson_count), completedCount: Number(c.completed_count)
@@ -566,11 +576,14 @@ router.get('/nova-books', asyncHandler(async (req, res) => {
   const student = await getStudent(req);
   if (!student) return res.status(404).json({ error: 'Student profile not found.' });
   const grade = await studentGrade(student);
-  if (!novaBooks.configured()) return res.json({ configured: false, grade, books: [] });
-  if (!grade) return res.json({ configured: true, grade: null, books: [] });
+  // The class code is sent back so the page can say where the grade comes from
+  // ("Grade 2 · from your class 2A"), which makes a wrongly set class easy to spot.
+  const section = student.section_code || null;
+  if (!novaBooks.configured()) return res.json({ configured: false, grade, section, books: [] });
+  if (!grade) return res.json({ configured: true, grade: null, section, books: [] });
   try {
     const books = await novaBooks.list({ grade });
-    res.json({ configured: true, grade, books: books.map((b) => novaBooks.publicView(b, req.user.id)) });
+    res.json({ configured: true, grade, section, books: books.map((b) => novaBooks.publicView(b, req.user.id)) });
   } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 

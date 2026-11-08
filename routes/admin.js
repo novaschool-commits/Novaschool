@@ -124,13 +124,13 @@ router.post('/admissions/:id/decision', requirePermission('students.create'), as
 
 router.get('/sections', requirePermission('students.view', 'courses.view'), asyncHandler(async (req, res) => {
   const rows = await all(
-    `SELECT se.section_code, se.grade, se.name, se.capacity, se.curriculum,
+    `SELECT se.section_code, se.grade, se.name, se.capacity, se.curriculum, se.class_teacher_id,
             t.first_name AS teacher_first, t.last_name AS teacher_last,
             COUNT(st.id) AS student_count
      FROM sections se
      LEFT JOIN teachers t ON t.id = se.class_teacher_id
      LEFT JOIN students st ON st.section_code = se.section_code
-     GROUP BY se.id, t.first_name, t.last_name ORDER BY se.grade`
+     GROUP BY se.id, t.first_name, t.last_name ORDER BY se.grade, se.section_code`
   );
 
   const sections = rows.map(r => ({
@@ -140,6 +140,7 @@ router.get('/sections', requirePermission('students.view', 'courses.view'), asyn
     curriculum: r.curriculum || 'Pakistani',
     studentCount: Number(r.student_count),
     capacity: r.capacity,
+    classTeacherId: r.class_teacher_id || null,
     classTeacher: r.teacher_first ? `${r.teacher_first} ${r.teacher_last}` : 'Unassigned'
   }));
 
@@ -521,11 +522,25 @@ router.patch('/parents/:id/status', requirePermission('students.edit'), asyncHan
 
 // ---------- Sections / classes ----------
 
+// A section code that starts with a number (2A, 10B) must match its grade
+// (Grade 2, Grade 10). This stops a Grade 2 class being saved as Grade 3, which
+// would show students the wrong year's books.
+function gradeMismatch(sectionCode, grade) {
+  const c = String(sectionCode || '').match(/^\s*(\d{1,2})/);
+  const g = String(grade || '').match(/(\d{1,2})/);
+  if (c && g && Number(c[1]) !== Number(g[1])) {
+    return `Section ${sectionCode} looks like Grade ${Number(c[1])}, but the grade chosen is ${grade}. Please check the grade.`;
+  }
+  return null;
+}
+
 router.post('/sections', requirePermission('courses.edit', 'settings.edit'), asyncHandler(async (req, res) => {
   const { section_code, grade, name, capacity, class_teacher_id, curriculum } = req.body || {};
   if (!section_code || !grade || !name) {
     return res.status(400).json({ error: 'Section code, grade, and section name are required.' });
   }
+  const mismatch = gradeMismatch(section_code, grade);
+  if (mismatch) return res.status(400).json({ error: mismatch });
 
   const existing = await get('SELECT section_code FROM sections WHERE section_code = $1', [section_code]);
   if (existing) return res.status(409).json({ error: `Section "${section_code}" already exists.` });
@@ -536,6 +551,27 @@ router.post('/sections', requirePermission('courses.edit', 'settings.edit'), asy
   );
   await logAudit(req, 'section.created', 'section', section_code, { grade, curriculum });
   res.status(201).json({ message: `Section ${section_code} created.` });
+}));
+
+// Edit a section's grade, name, capacity, class teacher or curriculum. The code stays the same,
+// because students and timetables are linked to it.
+router.patch('/sections/:code', requirePermission('courses.edit', 'settings.edit'), asyncHandler(async (req, res) => {
+  const code = req.params.code;
+  const section = await get('SELECT * FROM sections WHERE section_code = $1', [code]);
+  if (!section) return res.status(404).json({ error: 'Section not found.' });
+  const body = req.body || {};
+  const grade = body.grade !== undefined ? String(body.grade).trim() : section.grade;
+  const name = body.name !== undefined ? String(body.name).trim() : section.name;
+  if (!grade || !name) return res.status(400).json({ error: 'Grade and section name are required.' });
+  const mismatch = gradeMismatch(code, grade);
+  if (mismatch) return res.status(400).json({ error: mismatch });
+  const capacity = body.capacity !== undefined ? (Number(body.capacity) || 30) : section.capacity;
+  const teacher = body.class_teacher_id !== undefined ? (body.class_teacher_id || null) : section.class_teacher_id;
+  const curriculum = body.curriculum !== undefined ? (body.curriculum || 'Pakistani') : section.curriculum;
+  await run('UPDATE sections SET grade = $1, name = $2, capacity = $3, class_teacher_id = $4, curriculum = $5 WHERE section_code = $6',
+    [grade, name, capacity, teacher, curriculum, code]);
+  await logAudit(req, 'section.updated', 'section', code, { from: section.grade, grade, curriculum });
+  res.json({ message: `Section ${code} updated.` });
 }));
 
 router.delete('/sections/:code', requirePermission('courses.edit', 'settings.edit'), asyncHandler(async (req, res) => {

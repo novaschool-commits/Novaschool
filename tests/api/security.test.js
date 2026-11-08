@@ -302,3 +302,28 @@ test('Nova textbooks: a student lists and downloads only their own grade; reader
   assert.equal((await fetch(BASE + u.pathname + u.search)).status, 403, 'expired or altered link');
   assert.equal((await fetch(`${BASE}/books/read/${own.id}`)).status, 403, 'no link, no book');
 });
+
+test('Sections: the grade must match the section code, and a wrong grade can be corrected', async () => {
+  const admin = await login('admin@novaschool.pk', DEMO_PASSWORD, '198.51.100.81');
+  const student = await login('student@novaschool.pk', DEMO_PASSWORD, '198.51.100.82');
+  const code = `2${uniq().slice(0, 3).replace(/\d/g, 'x').toUpperCase()}`;
+  const bad = await call('/admin/sections', { method: 'POST', token: admin, body: { section_code: code, grade: 'Grade 3', name: 'Z' } });
+  assert.equal(bad.status, 400);
+  assert.match(bad.data.error, /looks like Grade 2/);
+  assert.equal((await call('/admin/sections', { method: 'POST', token: admin, body: { section_code: code, grade: 'Grade 2', name: 'Z' } })).status, 201);
+  assert.equal((await call(`/admin/sections/${code}`, { method: 'PATCH', token: admin, body: { grade: 'Grade 5' } })).status, 400);
+  assert.equal((await call(`/admin/sections/${code}`, { method: 'PATCH', token: student, body: { grade: 'Grade 2' } })).status, 403);
+  assert.equal((await call('/admin/sections/NOPE9', { method: 'PATCH', token: admin, body: { grade: 'Grade 2' } })).status, 404);
+  const ok = await call(`/admin/sections/${code}`, { method: 'PATCH', token: admin, body: { name: 'Zeta', capacity: 25 } });
+  assert.equal(ok.status, 200);
+  const list = await call('/admin/sections', { token: admin });
+  const sec = list.data.sections.find((s) => s.sectionCode === code);
+  assert.equal(sec.grade, 'Grade 2'); assert.equal(sec.sectionName, 'Zeta'); assert.equal(sec.capacity, 25);
+  assert.ok('classTeacherId' in sec);
+  const mine = await call('/student/nova-books', { token: student });
+  assert.equal(mine.data.section, '8B', 'the page can say which class the grade comes from');
+  const courses = await call('/student/courses', { token: student });
+  assert.equal(courses.status, 200);
+  assert.ok(courses.data.courses.every((c) => !/grade\s*\d/i.test(c.level) || /grade\s*8\b/i.test(c.level)), 'only my grade');
+  await call(`/admin/sections/${code}`, { method: 'DELETE', token: admin });
+});

@@ -52,7 +52,8 @@
     if (!r.data.configured) return setHTML(body, empty('Textbooks coming soon', 'Your school is connecting the Nova textbooks.', 'book'));
     if (!r.data.grade) return setHTML(body, empty('No grade yet', 'Your school has not placed you in a class yet.', 'book'));
     if (!r.data.books.length) return setHTML(body, empty('No textbooks yet', 'Textbooks for your grade will appear here.', 'book'));
-    setHTML(body, html`<div class="card-head"><h2>My textbooks · Grade ${r.data.grade}</h2><span class="badge plain">${r.data.books.length} books</span></div>${textbookTerms(r.data.books)}${TEXTBOOK_NOTE}`);
+    const from = r.data.section ? html`<p class="muted" style="padding:0 20px;font-size:12.5px">Grade ${r.data.grade} comes from your class ${r.data.section}. Wrong grade? Please tell the school office.</p>` : '';
+    setHTML(body, html`<div class="card-head"><h2>My textbooks · Grade ${r.data.grade}</h2><span class="badge plain">${r.data.books.length} books</span></div>${from}${textbookTerms(r.data.books)}${TEXTBOOK_NOTE}`);
   }
 
   async function teacherTextbooks(body, sel) {
