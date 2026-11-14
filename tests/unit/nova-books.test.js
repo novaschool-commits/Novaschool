@@ -14,7 +14,7 @@ test.after(() => server.close());
 test('the catalog keeps only well-formed books and drops unsafe paths and ids', async () => {
   books._reset();
   const all = await books.list();
-  assert.deepEqual(all.map((b) => b.id), ['g2-english-term-1', 'g8-physics-term-1']);
+  assert.deepEqual(all.map((b) => b.id), ['g2-english-term-1', 'g8-physics-term-1', 'g9-physics']);
   assert.deepEqual((await books.list({ grade: 8 })).map((b) => b.id), ['g8-physics-term-1']);
   assert.equal(await books.find('../etc'), null);
   assert.equal(await books.find('g8-sneaky-term-1'), null);
@@ -61,4 +61,42 @@ test('a wrong token gives a friendly error, not GitHub details', async () => {
   process.env.CURRICULUM_TOKEN = 'wrong'; books._reset();
   await assert.rejects(books.list(), (e) => e.status === 502 && !/credentials/i.test(e.message));
   process.env.CURRICULUM_TOKEN = saved; books._reset();
+});
+
+test('Grade 9 books are year-long (term 0), and malformed senior entries are dropped', async () => {
+  books._reset();
+  const nine = await books.list({ grade: 9 });
+  assert.deepEqual(nine.map((b) => b.id), ['g9-physics'], 'wrong term, borrowed answer key, mismatched folder and grade 13 are all rejected');
+  assert.equal(nine[0].term, 0);
+  assert.equal(await books.find('g9-wrongterm'), null);
+  assert.equal(await books.find('g9-keyelsewhere'), null);
+  assert.equal(await books.find('g13-physics'), null);
+});
+
+test('the answer key is reported to teachers only, and its path is never sent', async () => {
+  books._reset();
+  const b = await books.find('g9-physics');
+  const student = books.publicView(b, 7);
+  const teacher = books.publicView(b, 7, { teacher: true });
+  assert.equal(student.hasAnswers, undefined);
+  assert.equal(teacher.hasAnswers, true);
+  for (const v of [student, teacher]) assert.ok(!JSON.stringify(v).includes('answers.pdf'));
+  const sent = {}; const res = { set(k, v) { sent[k.toLowerCase()] = v; return this; }, send(buf) { sent.body = buf; } };
+  await books.sendAnswers(res, b);
+  assert.match(sent['content-disposition'], /^attachment; filename="Nova-Grade-9-Physics-Answer-Key\.pdf"$/);
+  assert.match(sent.body.toString(), /answer key fixture/);
+  await books.sendPdf(res, b);
+  assert.match(sent['content-disposition'], /filename="Nova-Grade-9-Physics\.pdf"/);
+  const eight = await books.find('g8-physics-term-1');
+  await assert.rejects(books.sendAnswers(res, eight), (e) => e.status === 404);
+});
+
+test('only the teacher routes can send an answer key', () => {
+  const fs = require('fs'); const path = require('path');
+  const dir = path.join(__dirname, '../../routes');
+  for (const f of fs.readdirSync(dir)) {
+    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    if (f !== 'teacher.js') assert.ok(!src.includes('sendAnswers'), f + ' must not send answer keys');
+  }
+  assert.ok(!fs.readFileSync(path.join(__dirname, '../../app.js'), 'utf8').includes('sendAnswers'));
 });

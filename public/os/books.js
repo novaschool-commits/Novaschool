@@ -6,12 +6,12 @@
   const { html, icon, setHTML, empty, errorBox, load } = N;
   const ID = /^[a-z0-9-]{1,120}$/;
 
-  // path: '/course-books/<id>/file' (lesson packs) or '/nova-books/<id>/pdf' (textbooks)
+  // path: '/course-books/<id>/file' (lesson packs), '/nova-books/<id>/pdf' (textbooks) or '/nova-books/<id>/answers' (teacher answer keys)
   async function download(base, id, btn, kind) {
     if (!ID.test(id)) return;
     const label = btn.textContent; btn.disabled = true; btn.textContent = 'Downloading…';
     try {
-      const path = kind === 'nova' ? '/nova-books/' + encodeURIComponent(id) + '/pdf' : '/course-books/' + encodeURIComponent(id) + '/file';
+      const path = kind === 'nova' ? '/nova-books/' + encodeURIComponent(id) + '/pdf' : kind === 'answers' ? '/nova-books/' + encodeURIComponent(id) + '/answers' : '/course-books/' + encodeURIComponent(id) + '/file';
       const res = await fetch('/api' + base + path, { headers: { Authorization: 'Bearer ' + (N.session.token || '') } });
       if (!res.ok) { let msg = 'Download failed (' + res.status + ').'; try { msg = (await res.json()).error || msg; } catch (e) { /* not JSON */ } throw new Error(msg); }
       const blob = await res.blob();
@@ -35,13 +35,15 @@
   function textbookRow(b) {
     const reader = b.readerUrl ? N.safeUrl(b.readerUrl) : '';
     return html`<li><span class="li-icon">${icon('book')}</span>
-      <span class="li-main"><span class="li-title">${b.subject}</span><span class="li-sub">${b.title} · Term ${b.term} · ${b.chapters} chapters · PDF ${b.pdfKb} KB</span></span>
+      <span class="li-main"><span class="li-title">${b.subject}</span><span class="li-sub">${b.title} · ${b.term ? 'Term ' + b.term : 'Full year'} · ${b.chapters} chapters · PDF ${b.pdfKb} KB</span></span>
       <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
         ${reader ? html`<a class="btn btn-primary btn-sm" href="${reader}" target="_blank" rel="noopener noreferrer">${icon('book')} Read</a>` : ''}
-        <button class="btn btn-ghost btn-sm" type="button" data-book="${b.id}" data-kind="nova">${icon('download')} PDF</button></span></li>`;
+        <button class="btn btn-ghost btn-sm" type="button" data-book="${b.id}" data-kind="nova">${icon('download')} PDF</button>
+        ${b.hasAnswers ? html`<button class="btn btn-ghost btn-sm" type="button" data-book="${b.id}" data-kind="answers" title="Teachers only">${icon('lock')} Answer key</button>` : ''}</span></li>`;
   }
   function textbookTerms(list) {
-    return [1, 2, 3].map((t) => { const l = list.filter((b) => b.term === t); return l.length ? html`<div class="acad-h" style="padding:10px 20px 0;font-weight:650">Term ${t}</div><ul class="list">${l.map(textbookRow)}</ul>` : ''; });
+    // Grades 1-8: one book per term. Grades 9-12: term 0, one book for the whole year (FBISE).
+    return [0, 1, 2, 3].map((t) => { const l = list.filter((b) => b.term === t); return l.length ? html`<div class="acad-h" style="padding:10px 20px 0;font-weight:650">${t ? 'Term ' + t : 'Full-year books (FBISE syllabus)'}</div><ul class="list">${l.map(textbookRow)}</ul>` : ''; });
   }
   const TEXTBOOK_NOTE = html`<p class="muted" style="padding:12px 20px;font-size:12.5px">Read: tap any word to see its meaning in Urdu (or English, in Urdu books) and hear how to say it. PDF: download to print or study offline. NovaSchool's own books, not officially accredited.</p>`;
 
@@ -86,7 +88,7 @@
   // Teacher: every grade, with answer keys.
   async function teacherBooks(el) {
     setHTML(el, html`<div class="page-head"><div><h1>Course Books &amp; Answer Keys</h1><p>Textbooks for every grade, lesson packs, and the answer keys (teachers only).</p></div></div>
-      <section class="card card-pad" style="margin-bottom:12px"><label class="li-sub" for="bkGrade">Grade</label> <select id="bkGrade" class="select" style="max-width:220px">${[1, 2, 3, 4, 5, 6, 7, 8].map((g) => html`<option value="${g}">Grade ${g}</option>`)}</select>
+      <section class="card card-pad" style="margin-bottom:12px"><label class="li-sub" for="bkGrade">Grade</label> <select id="bkGrade" class="select" style="max-width:220px">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((g) => html`<option value="${g}">Grade ${g}</option>`)}</select>
       <a class="btn btn-ghost btn-sm" href="?page=sims" style="margin-left:8px">${icon('flask')} Simulations</a></section>
       <section class="card" id="novaBody" style="margin-bottom:12px">${N.skeletonRows(4)}</section>
       <section class="card" id="booksBody">${N.skeletonRows(4)}</section>`);

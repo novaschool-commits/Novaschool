@@ -919,7 +919,7 @@ router.get('/nova-books', asyncHandler(async (req, res) => {
   if (!novaBooks.configured()) return res.json({ configured: false, books: [] });
   try {
     const books = await novaBooks.list();
-    res.json({ configured: true, books: books.map((b) => novaBooks.publicView(b, req.user.id)) });
+    res.json({ configured: true, books: books.map((b) => novaBooks.publicView(b, req.user.id, { teacher: true })) });
   } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 
@@ -928,6 +928,15 @@ router.get('/nova-books/:id/pdf', asyncHandler(async (req, res) => {
     const book = await novaBooks.find(req.params.id);
     if (!book) return res.status(404).json({ error: 'Book not found.' });
     await novaBooks.sendPdf(res, book);
+  } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
+}));
+
+// Teacher answer keys (Grades 9-12). There is no student route for these.
+router.get('/nova-books/:id/answers', asyncHandler(async (req, res) => {
+  try {
+    const book = await novaBooks.find(req.params.id);
+    if (!book || !book.answers) return res.status(404).json({ error: 'Answer key not found.' });
+    await novaBooks.sendAnswers(res, book);
   } catch (err) { res.status(err.status || 500).json({ error: err.message }); }
 }));
 

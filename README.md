@@ -141,10 +141,12 @@ nova-school-app/
 
 ## Nova textbooks (reader and PDF)
 
-The Grade 1–8 textbooks live in the private `novaschool-commits/nova-research-curriculum` repository, not in this app. The server reads them from GitHub with a **read-only token** and keeps recent files in memory, so the app always shows the latest pushed books.
+The Grade 1–12 textbooks live in the private `novaschool-commits/nova-research-curriculum` repository, not in this app. The server reads them from GitHub with a **read-only token** and keeps recent files in memory, so the app always shows the latest pushed books.
 
 - Students see only their own grade's textbooks; teachers see every grade. Each book has **Read** (the tap-a-word reader, in a new tab) and **PDF** (download).
 - `dist/catalog.json` in the curriculum repo is the allow-list: an id or a file path that is not in it is never fetched.
+- Grades 1–8 have one book per term (`g4-maths-term-1`). Grades 9–12 follow the FBISE year-long syllabus: one book per subject for the whole year (`g9-physics`, term 0, shown as "Full year").
+- Grade 9–12 books can have a **teacher answer key** (`answers.pdf`). Only the teacher route `GET /api/teacher/nova-books/:id/answers` sends it; students never see that it exists, and its file path is never sent to the browser.
 - The reader opens with a signed link that works for two hours and names the user and the book. The sign-in token is never put in a link. The reader page gets its own strict Content-Security-Policy.
 
 Settings (Render → Environment):

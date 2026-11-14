@@ -2,5 +2,10 @@
  {"id": "g2-english-term-1", "grade": 2, "term": 1, "subject": "English", "title": "My English Book", "language": "en", "chapters": 12, "pdf": "dist/grade-2/english-term-1/student.pdf", "pdfKb": 1, "reader": "dist/grade-2/english-term-1/reader.html", "readerKb": 1},
  {"id": "g8-physics-term-1", "grade": 8, "term": 1, "subject": "Physics", "title": "My Physics Book", "language": "en", "chapters": 6, "pdf": "dist/grade-8/physics-term-1/student.pdf", "pdfKb": 1, "reader": "dist/grade-8/physics-term-1/reader.html", "readerKb": 1},
  {"id": "g8-sneaky-term-1", "grade": 8, "term": 1, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-8/../../server.js", "reader": "dist/grade-8/sneaky-term-1/reader.html"},
- {"id": "../etc", "grade": 1, "term": 1, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-1/x-term-1/student.pdf", "reader": "dist/grade-1/x-term-1/reader.html"}
+ {"id": "../etc", "grade": 1, "term": 1, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-1/x-term-1/student.pdf", "reader": "dist/grade-1/x-term-1/reader.html"},
+ {"id": "g9-physics", "grade": 9, "term": 0, "subject": "Physics", "title": "Physics 9", "language": "en", "chapters": 9, "pdf": "dist/grade-9/physics/student.pdf", "pdfKb": 1, "reader": "dist/grade-9/physics/reader.html", "readerKb": 1, "answers": "dist/grade-9/physics/answers.pdf", "answersKb": 1},
+ {"id": "g9-wrongterm", "grade": 9, "term": 2, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-9/wrongterm/student.pdf", "reader": "dist/grade-9/wrongterm/reader.html"},
+ {"id": "g9-keyelsewhere", "grade": 9, "term": 0, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-9/keyelsewhere/student.pdf", "reader": "dist/grade-9/keyelsewhere/reader.html", "answers": "dist/grade-9/physics/answers.pdf"},
+ {"id": "g9-otherfolder", "grade": 9, "term": 0, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-9/physics/student.pdf", "reader": "dist/grade-9/physics/reader.html"},
+ {"id": "g13-physics", "grade": 13, "term": 0, "subject": "Bad", "title": "Bad", "pdf": "dist/grade-13/physics/student.pdf", "reader": "dist/grade-13/physics/reader.html"}
 ]}
